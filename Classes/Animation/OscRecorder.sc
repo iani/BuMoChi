@@ -8,7 +8,7 @@ file to exist before continuing.
 */
 
 OscRecorder : NamedInstance {
-	var <>data;
+	var <>data, <>sessionData;
 	var <>maxItems = 1000; // Keep files small!
 	var <>excludedMessages;
 	var <>verbose = false;
@@ -36,10 +36,15 @@ OscRecorder : NamedInstance {
 	}
 
 	startSession {
-		var check;
+		var check, rootPath, dayPath;
+		rootPath = OscRecorderPath.rootDir.fullPath;
+		dayPath = rootPath +/+ Date.getDate.dayStamp;
 		sessionPath = OscRecorderPath.sessionPath;
+		sessionData = [];
+		if (File.exists(rootPath).not) { File.mkdir(rootPath) };
+		if (File.exists(dayPath).not) { File.mkdir(dayPath) };
 		check = File.mkdir(sessionPath);
-		if (check.not) {
+		if (check.not and: { File.exists(sessionPath).not }) {
 			postln("Could not create directory:" + sessionPath);
 			^"OscRecorder cannot start recording".postln;
 		};
@@ -119,7 +124,14 @@ OscRecorder : NamedInstance {
 		}
 	}
 
-	update { | ... args | postln("Will Record OS! args are:" + args) }
+	// OscControl.value publishes:
+	// changed(message address, complete message, receive time, sender address).
+	// Dependants receive the publisher as the first update argument.
+	update { |theChanger, what, msg, time, addr|
+		if (theChanger === OscControl and: { msg.notNil }) {
+			this.osc(time, addr, msg);
+		};
+	}
 	addData { | time, msg |
 		if (file.isNil or: { file.isOpen.not}) {
 			file.postln;
@@ -130,6 +142,8 @@ OscRecorder : NamedInstance {
 			^nil; // do not save or record if file is closed!
 		};
 		data = data add: [time, msg];
+		sessionData = sessionData add: [time, msg];
+
 		// ensure code messages are stored as strings:
 		if (msg[0] == '/code') {
 			msg[1] = msg[1].asString;
@@ -141,19 +155,14 @@ OscRecorder : NamedInstance {
 
 	stopRecording {
 		this.disable;
-		// this closeFile: file;
-		file.close;
+		this.closeFile(file);
 		postln("OscRecorder stopped recording at:" + filePath);
 	}
 
 	closeFile { | argFile |
-		"Debugging close file".postln;
-		postln("argFile === file?" + (argFile === file));
+		argFile = argFile ?? { file };
 		if (argFile.notNil) {
-			argFile.close;
-			postln("OscRecorder closed file:\n" + argFile);
-		}{
-			"OscRecorder cannot close file nil".postln;
+			if (argFile.isOpen) { argFile.close };
 		}
 	}
 
