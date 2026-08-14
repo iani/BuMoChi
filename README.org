@@ -2,6 +2,17 @@
 
 A library for live coding animation in GODOT engine with XR-Animator
 
+* Start here: installation and required downloads
+:PROPERTIES:
+:UNNUMBERED: notoc
+:END:
+
+See [[file:INSTALLATION.md][INSTALLATION.md]] before running the examples. BuMoChi includes its own
+SuperCollider, Python, protocol-test, and Godot example code. XR Animator,
+SuperCollider, Godot, and OSCGroups are external projects and are not bundled
+with this repository. The installation guide links to their official download
+pages and explains which components are required for each pipeline test.
+
 Earlier version: (sc-dance)
 (To be reviewed for alpha release of present library)
 
