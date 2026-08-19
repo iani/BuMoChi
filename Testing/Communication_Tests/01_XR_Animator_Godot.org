@@ -1,0 +1,72 @@
+* Test 1 --- XR Animator → Godot
+:PROPERTIES:
+:CUSTOM_ID: test-1--xr-animator--godot
+:END:
+** Purpose
+:PROPERTIES:
+:CUSTOM_ID: purpose
+:END:
+Confirm that XR Animator's native VMC output can animate the canonical
+Godot project without the Bunraku encoder, OSCGroups, or SuperCollider.
+This is the control test for the rest of the pipeline.
+
+** Signal path
+:PROPERTIES:
+:CUSTOM_ID: signal-path
+:END:
+=XR Animator --VMC--> Godot=
+
+** Port configuration
+:PROPERTIES:
+:CUSTOM_ID: port-configuration
+:END:
+| Component                   | Setting           |
+|-----------------------------+-------------------|
+| XR Animator VMC destination | =127.0.0.1:39539= |
+| Godot VMC input             | UDP =39539=       |
+
+If XR Animator and Godot run on different computers, replace =127.0.0.1=
+with the Godot computer's local network address and allow UDP =39539=
+through its firewall.
+
+** Procedure
+:PROPERTIES:
+:CUSTOM_ID: procedure
+:END:
+1. Open =../GodotVMCReference/project.godot= in Godot and run the
+   project.
+2. Start XR Animator and load the intended avatar and tracking setup.
+3. Configure XR Animator's VMC output for =127.0.0.1=, port =39539=.
+4. Enable VMC output.
+5. Move the hips, head, both arms, and both legs separately.
+6. Continue moving for at least 60 seconds.
+
+** Pass criteria
+:PROPERTIES:
+:CUSTOM_ID: pass-criteria
+:END:
+- Godot follows every visible body region responsively.
+- There is no persistent freezing, limb swapping, or progressive delay.
+- Godot remains stable for at least 60 seconds.
+
+If this test fails, do not continue to Test 2. Check the destination
+address, port, macOS firewall, XR Animator VMC output, and Godot project
+first.
+
+** Optional camera-free check
+:PROPERTIES:
+:CUSTOM_ID: optional-camera-free-check
+:END:
+To test Godot without XR Animator, open a terminal in =Testing= and run:
+
+#+begin_src sh
+python3 pipeline_test_sender.py --format vmc --target-port 39539
+#+end_src
+
+The avatar should move for approximately five seconds.
+
+** Shutdown
+:PROPERTIES:
+:CUSTOM_ID: shutdown
+:END:
+Disable XR Animator VMC output and stop the running Godot project.

@@ -1,0 +1,161 @@
+# Bunraku software architecture
+
+## Purpose
+
+The Bunraku pipeline transports complete skeletal animation frames from a
+motion-capture source, through networked live-coding tools, to an unmodified
+VMC-compatible rendering project. The central interchange representation is
+the Bunraku Frame: one OSC message containing the identity and all 21 skeletal
+bone transforms for one animation frame.
+
+The complete live path is:
+
+`XR Animator -> BunrakuOSCEncoder -> OSCGroups -> SuperCollider with BuMoChi -> BunrakuOSCDecoder -> Godot`
+
+## Components
+
+### 1. XR Animator
+
+XR Animator is the motion-capture source. It tracks the performer and sends
+standard Virtual Motion Capture (VMC) OSC packets. In the complete single-Mac
+test it sends to `127.0.0.1:39538`.
+
+Input: camera or other supported tracking data.
+
+Output: VMC OSC messages, principally `/VMC/Ext/Bone/Pos` skeletal updates.
+
+### 2. BunrakuOSCEncoder.py
+
+The encoder receives standard VMC packets and accumulates the required bone
+updates. It converts a complete pose into one protocol-version-1 message at
+`/bunraku/vmc/frame`. Each frame carries:
+
+- Protocol version
+- Avatar name
+- Source identifier
+- Frame number
+- Timestamp
+- 21 ordered bone transforms
+- Seven values per bone: `x, y, z, qx, qy, qz, qw`
+
+In the complete test it listens on UDP `39538` and sends Bunraku frames to the
+local OSCGroups sender client on UDP `22244`.
+
+The fixed representation preserves frame identity and avoids dividing one
+animation frame into unrelated network messages. A normal Bunraku Frame is
+designed to remain below the OSCGroups packet-size limit.
+
+### 3. OSCGroups clients and server
+
+OSCGroups provides the network transport between participating computers.
+There are normally two local client roles:
+
+- The sending client receives Bunraku frames locally from the encoder and
+  transmits them to the OSCGroups server.
+- The receiving client receives frames from the shared OSCGroups session and
+  forwards them locally to SuperCollider.
+
+The OSCGroups server relays packets between authenticated members of the same
+group. In the complete test, the sender's local input is UDP `22244` and the
+receiver forwards to UDP `57130`.
+
+OSCGroups transports the Bunraku message without interpreting its skeletal
+contents.
+
+### 4. SuperCollider
+
+SuperCollider is the live-coding, processing, recording, montage, and playback
+environment. It receives `/bunraku/vmc/frame` messages from the OSCGroups
+receiving client on UDP `57130`.
+
+SuperCollider can:
+
+- Inspect frames and named bone transforms
+- Record mocap clips
+- Select body regions or individual bones
+- Modify or substitute bone data
+- Combine parts from different clips or frames
+- Generate new animation clips
+- Play and forward Bunraku frames in real time
+
+In the complete single-Mac test, processed frames are sent to the decoder on
+`127.0.0.1:39537`.
+
+### 5. BuMoChi SuperCollider library
+
+BuMoChi is the SuperCollider class library required for Bunraku-style work. It
+provides the classes and helpers used to receive, represent, inspect, record,
+edit, combine, and play skeletal animation data. This includes the `Avatar`
+class and its dependent helpers, OSC recording support, joint access, and the
+`Bmc` frame- and sequence-combination operations.
+
+BuMoChi is loaded by the SuperCollider language. It is therefore shown as a
+library inside the SuperCollider stage rather than as a separate network hop.
+
+### 6. BunrakuOSCDecoder.py
+
+The decoder receives one complete `/bunraku/vmc/frame` message and reconstructs
+a standard VMC OSC bundle. The output contains 21 `/VMC/Ext/Bone/Pos` messages
+plus Bunraku avatar/source/frame metadata.
+
+In the complete single-Mac test it listens on UDP `39537` and sends VMC to
+Godot on UDP `39539`.
+
+The decoder validates the protocol version, OSC type signature, payload size,
+and complete 21-bone frame before producing VMC. It can also filter by avatar
+name or override the emitted avatar metadata.
+
+### 7. Godot VMC project
+
+Godot is the rendering endpoint. The canonical test project uses the Godot XR
+VMC Tracker and listens for standard VMC on UDP `39539`. Because conversion
+back to VMC happens outside Godot, a project that works directly with XR
+Animator can work through the Bunraku pipeline without project-specific
+translation scripts.
+
+Input: reconstructed VMC OSC bundle.
+
+Output: real-time rendered avatar animation.
+
+## Complete single-Mac connection map
+
+| From | To | Format | Destination |
+|---|---|---|---:|
+| XR Animator | BunrakuOSCEncoder | Standard VMC OSC | UDP `39538` |
+| BunrakuOSCEncoder | OSCGroups sender client | Bunraku Frame v1 | UDP `22244` |
+| OSCGroups sender client | OSCGroups server | Bunraku Frame v1 | Internet |
+| OSCGroups server | OSCGroups receiver client | Bunraku Frame v1 | Internet |
+| OSCGroups receiver client | SuperCollider + BuMoChi | Bunraku Frame v1 | UDP `57130` |
+| SuperCollider + BuMoChi | BunrakuOSCDecoder | Bunraku Frame v1 | UDP `39537` |
+| BunrakuOSCDecoder | Godot | Standard VMC OSC bundle | UDP `39539` |
+
+Two programs on one computer cannot normally listen on the same UDP address
+and port. The distinct ports in this table prevent collisions during the
+complete test.
+
+## Data representations
+
+### Standard VMC
+
+XR Animator and Godot use standard VMC. A pose may arrive as several OSC
+messages or bundles, with one `/VMC/Ext/Bone/Pos` message per bone.
+
+### Bunraku Frame protocol version 1
+
+The network and SuperCollider stages use one `/bunraku/vmc/frame` OSC message
+per complete skeletal frame. The fixed bone order makes every group of seven
+numbers unambiguous while avatar, source, frame number, and timestamp preserve
+identity and sequence.
+
+## Diagnostic paths
+
+The basic troubleshooting suite introduces the components incrementally:
+
+1. XR Animator -> Godot
+2. XR Animator -> Encoder -> OSCGroups -> Decoder -> Godot
+3. SuperCollider playback -> Decoder -> Godot
+4. XR Animator -> Encoder -> OSCGroups -> SuperCollider -> Decoder -> Godot
+
+Godot remains the visible endpoint in every test, making it easier to identify
+which newly introduced component causes a failure.
+

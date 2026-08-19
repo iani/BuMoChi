@@ -1,5 +1,5 @@
 
-Correct: the 147 numerical values are 21 consecutive bone transforms, each containing:
+The 147 numerical values are 21 consecutive bone transforms, each containing:
 
 ```
 x, y, z, qx, qy, qz, qw
