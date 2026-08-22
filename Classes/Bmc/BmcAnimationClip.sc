@@ -1,0 +1,1 @@
+BmcAnimationClip : BmcClip { }
