@@ -4,10 +4,7 @@
 
 ## 1. What BuMoChi is
 
-BuMoChi is a SuperCollider library for performing with motion-capture data and
-animated characters. It lets a live coder treat movement as material: receive
-it from a camera, record it, replay it, change its timing, combine selected body
-parts, and send the result to an animated character.
+BuMoChi is a SuperCollider library for performing with motion-capture data and animated characters. It lets a live coder treat movement as material: receive it from a camera, record it, replay it, change its timing, combine selected body parts, and send the result to an animated character.
 
 The library is intended for networked dance, theatre, music, animation, and
 other performance situations in which movement should remain open to live
@@ -142,10 +139,7 @@ protocol-v1 encoder and decoder in `Testing_BuMoChi`.
 
 ### OSCGroups
 
-OSCGroups carries OSC messages between collaborators. All participants connect
-to the same OSCGroups server and group. Each participant uses a local send port
-and a local receive port; applications continue sending ordinary UDP OSC to
-localhost.
+OSCGroups carries OSC messages between collaborators. All participants connect to the same OSCGroups server and group. Each participant uses a local send port and a local receive port; applications continue sending ordinary UDP OSC to localhost.
 
 BuMoChi includes OSCGroups documentation and some prebuilt clients under:
 
@@ -159,14 +153,11 @@ Upstream source and build instructions are available from:
 - <https://github.com/RossBencina/oscpack>
 - <http://www.rossbencina.com/code/oscgroups>
 
-You do not need OSCGroups for the first local test. Introduce it after the
-encoder-to-BuMoChi-to-decoder path works on one computer. Detailed staged tests
-are in `Testing_BuMoChi/Communication_Tests/`.
+You do not need OSCGroups for the first local test. Introduce it after the encoder-to-BuMoChi-to-decoder path works on one computer. Detailed staged tests are in `Testing_BuMoChi/Communication_Tests/`.
 
 ### Godot
 
-Godot renders the animated character. Download a current compatible Godot 4
-editor from the official site:
+Godot renders the animated character. Download a current compatible Godot 4 editor from the official site:
 
 - <https://godotengine.org/download/>
 
@@ -271,9 +262,7 @@ Host: 127.0.0.1
 Port: 39538
 ```
 
-Enable VMC output and move in front of the camera. The Godot character should
-follow the motion. Evaluate `Bmc.status` again; the `received` count should be
-increasing.
+Enable VMC output and move in front of the camera. The Godot character should follow the motion. Evaluate `Bmc.status` again; the `received` count should be increasing.
 
 ### Step 6: record a clip
 
@@ -323,14 +312,11 @@ Bmc.stopPlayback;
 Bmc.stop;
 ```
 
-Then disable XR Animator output, press **Control-C** in the encoder and decoder
-terminals, and stop the Godot project. `Bmc.stop` stops the BuMoChi receiver and
-playback; it does not stop the external applications.
+Then disable XR Animator output, press **Control-C** in the encoder and decoder terminals, and stop the Godot project. `Bmc.stop` stops the BuMoChi receiver and playback; it does not stop the external applications.
 
 ## 4. Bmc method reference
 
-`Bmc` is the recommended entry point for ordinary sessions. The methods below
-delegate work to the appropriate supporting object.
+`Bmc` is the recommended entry point for ordinary sessions. The methods below delegate work to the appropriate supporting object.
 
 ### System control
 
@@ -346,22 +332,17 @@ OSC receiver. It does not stop XR Animator, Python, OSCGroups, or Godot.
 
 #### `Bmc.status`
 
-Posts and returns an event containing receiver, recording, playback, clip, and
-wire statistics. Useful keys include `running`, `port`, `received`, `rejected`,
-`dropped`, `recording`, `playing`, `currentClip`, and `clipCount`.
+Posts and returns an event containing receiver, recording, playback, clip, and wire statistics. Useful keys include `running`, `port`, `received`, `rejected`, `dropped`, `recording`, `playing`, `currentClip`, and `clipCount`.
 
 #### `Bmc.reset`
 
-Stops the current session and replaces the working clip library, avatars,
-recorder, player, dispatcher, and wires with fresh objects. Unsaved in-memory
-clips are lost, so use it deliberately.
+Stops the current session and replaces the working clip library, avatars, recorder, player, dispatcher, and wires with fresh objects. Unsaved in-memory clips are lost, so use it deliberately.
 
 ### Avatars and output
 
 #### `Bmc.addAvatar(name, displayName)`
 
-Creates an avatar destination. Its name should match the avatar name carried by
-incoming frames when it is intended to receive that stream directly.
+Creates an avatar destination. Its name should match the avatar name carried by incoming frames when it is intended to receive that stream directly.
 
 #### `Bmc.avatar(name)`
 
@@ -395,8 +376,7 @@ Bmc.record(\take1);                 // record all frames as \take1
 Bmc.record(\take1, "actor", "camA");
 ```
 
-`capturePoint` is `\rawFrame` by default. Use `\completedFrame` to record the
-selected avatar after reference-pose completion and live wiring.
+`capturePoint` is `\rawFrame` by default. Use `\completedFrame` to record the selected avatar after reference-pose completion and live wiring.
 
 #### `Bmc.stopRecording`
 
@@ -431,8 +411,7 @@ Returns the currently selected clip.
 
 #### `Bmc.listClips`
 
-Posts clip names, frame counts, and durations in the SuperCollider post window.
-The current clip is marked with `*`.
+Posts clip names, frame counts, and durations in the SuperCollider post window. The current clip is marked with `*`.
 
 #### `Bmc.showClips`
 
@@ -552,38 +531,27 @@ Removes every live wire from every Bmc avatar.
 
 Most users can work entirely through `Bmc`. These supporting classes explain
 how responsibilities are divided and provide extension points for advanced
-work.
+work
 
 ### `Bmc`
 
-The public live-coding facade. It owns the current working environment and
-translates short user commands into operations on the dispatcher, recorder,
-clip library, player, avatars, and wires. It also retains lower-level frame and
-sequence combination methods.
+The public live-coding facade. It owns the current working environment and translates short user commands into operations on the dispatcher, recorder, clip library, player, avatars, and wires. It also retains lower-level frame and sequence combination methods.
 
 ### `BmcDispatcher`
 
-Receives `/bunraku/vmc/frame` OSC messages, validates them, counts rejected or
-discontinuous frames, and routes valid frames to registered destinations and
-avatars.
+Receives `/bunraku/vmc/frame` OSC messages, validates them, counts rejected or discontinuous frames, and routes valid frames to registered destinations and avatars.
 
 ### `BmcAvatar`
 
-Represents one controllable output character. It holds the current pose and a
-neutral reference pose, completes missing data, applies live wires, and sends
-completed frames to a function or network destination.
+Represents one controllable output character. It holds the current pose and a neutral reference pose, completes missing data, applies live wires, and sends completed frames to a function or network destination.
 
 ### `BmcFrame`
 
-A typed representation of one Bunraku animation frame. It contains protocol
-version, avatar, source, frame number, encoder timestamp, and a `BmcPose`. It
-converts between class objects and OSC message arrays.
+A typed representation of one Bunraku animation frame. It contains protocol version, avatar, source, frame number, encoder timestamp, and a `BmcPose`. It converts between class objects and OSC message arrays.
 
 ### `BmcPose`
 
-The spatial state of a skeleton: a collection mapping standardized bone names
-to transforms. It can copy selected bones and fill missing bones from another
-pose.
+The spatial state of a skeleton: a collection mapping standardized bone names to transforms. It can copy selected bones and fill missing bones from another pose.
 
 ### `BmcBoneTransform`
 
@@ -592,8 +560,7 @@ The position and rotation of one bone, stored as seven values:
 
 ### `BmcBoneSets`
 
-Named body regions used by clip combination and live wiring. It supplies groups
-such as `leftArm`, `rightArm`, `legs`, `torso`, and `upperBody`.
+Named body regions used by clip combination and live wiring. It supplies groups such as `leftArm`, `rightArm`, `legs`, `torso`, and `upperBody`.
 
 ### `BmcClip`
 
@@ -602,8 +569,7 @@ relative times, duration, copying, and archive reading or writing.
 
 ### `BmcMocapClip`
 
-A `BmcClip` produced by recording motion-capture input. It can retain capture
-metadata such as filters, capture point, performer, and source.
+A `BmcClip` produced by recording motion-capture input. It can retain capture metadata such as filters, capture point, performer, and source.
 
 ### `BmcAnimationClip`
 
@@ -612,8 +578,7 @@ algorithmic generation rather than direct capture.
 
 ### `BmcClipRecorder`
 
-Collects validated frames, filters them by avatar and source, preserves relative
-arrival timing, and returns a `BmcMocapClip` when stopped.
+Collects validated frames, filters them by avatar and source, preserves relative arrival timing, and returns a `BmcMocapClip` when stopped.
 
 ### `BmcClipPlayer`
 
@@ -629,15 +594,11 @@ archive save/load.
 
 ### `BmcWire`
 
-A live rule connecting a selected source and body region to a target avatar.
-It can filter by source and source-avatar name and carries a priority for cases
-where several wires affect the same target.
+A live rule connecting a selected source and body region to a target avatar. It can filter by source and source-avatar name and carries a priority for cases where several wires affect the same target.
 
 ### `BunrakuParser`
 
-An older compatibility parser for symbol-labelled Bunraku messages and control
-bus layouts. The fixed Bunraku Frame protocol-v1 path primarily uses
-`BmcFrame`, `BmcPose`, and `Bmc.bone` instead.
+An older compatibility parser for symbol-labelled Bunraku messages and control bus layouts. The fixed Bunraku Frame protocol-v1 path primarily uses `BmcFrame`, `BmcPose`, and `Bmc.bone` instead.
 
 ## Further testing and troubleshooting
 
@@ -650,7 +611,7 @@ The repository includes four staged communication tests:
 
 They are located in:
 
-```text
+```
 Testing_BuMoChi/Communication_Tests/
 ```
 
