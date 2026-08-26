@@ -31,6 +31,24 @@ BmcClip {
 		^path
 	}
 
+	// Write every entry in the human-readable OscRecorder .scd format.
+	// Unlike OscRecorder, this deliberately keeps the whole clip in one file.
+	writeScd { |path|
+		var file = File(path.standardizePath, "w");
+		if(file.isOpen.not) {
+			Error("Could not open % for writing".format(path)).throw;
+		};
+		protect {
+			entries.do { |entry|
+				file.putString("\n//:--[" ++ entry[0].asCompileString ++ "]\n");
+				file.putString(entry[1].asCompileString);
+			};
+		} {
+			file.close;
+		};
+		^path
+	}
+
 	*read { |path|
 		var clip = Object.readArchive(path);
 		if(clip.isKindOf(BmcClip).not) {

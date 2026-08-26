@@ -209,6 +209,52 @@ or otherwise clearing the in-memory clip library.
    Bmc.currentClip.duration;
    #+end_src
 
+* Convert a clip to an SCD file
+
+Use =Bmc.clipToScd= when you need a complete, human-readable SuperCollider
+version of a recorded clip:
+
+#+begin_src supercollider
+~scdPath = Bmc.clipToScd(\take1);
+~scdPath.postln;
+#+end_src
+
+This writes =take1.scd= in the same directory as =take1.bmc= and returns its
+full path. =Bmc.convertClipToScd(\take1)= is an equivalent, more explicit
+name for the same operation.
+
+It is not necessary to call =Bmc.loadClip= first when the archive is in the
+default clip directory. If =take1= is absent from memory,
+=Bmc.clipToScd(\take1)= automatically looks for:
+
+#+begin_src supercollider
+BmcClipLibrary.defaultDirectory +/+ "take1.bmc"
+#+end_src
+
+When a clip was loaded from, or saved to, a custom path during the current
+SuperCollider session, the converter remembers that path and puts the =.scd=
+beside that =.bmc= file.
+
+The output repeats the following pair for every frame. The number in the
+comment is the frame's clip-relative time in seconds:
+
+#+begin_src supercollider
+//:--[0.125]
+[ '/bunraku/vmc/frame', 1, 'Avatar', 'source', 2 ]
+#+end_src
+
+The message is produced with sclang's =asCompileString= representation. All
+frames are written to one file, even when the clip contains more than 1,000
+messages. The converter does not create numbered parts. Running it again for
+the same clip replaces the existing =.scd= export.
+
+To confirm the destination before opening the file:
+
+#+begin_src supercollider
+~scdPath.postln;
+PathName(~scdPath).pathOnly.postln;
+#+end_src
+
 * Play a clip
 
 1. Make sure the Python decoder and Godot are running as described in the

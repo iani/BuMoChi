@@ -530,6 +530,36 @@ directory inside =Platform.userAppSupportDir= and the =.bmc= extension.
 Loads a saved Bmc clip. If =name= is omitted, the filename becomes the clip
 name.
 
+**** =Bmc.clipToScd(name)= / =Bmc.convertClipToScd(name)=
+:PROPERTIES:
+:CUSTOM_ID: bmccliptoscdname--bmcconvertcliptoscdname
+:END:
+Exports a recorded clip as a human-readable SuperCollider =.scd= file. The
+file is placed beside the clip's =.bmc= archive and uses the same base name;
+for example, =take1.bmc= becomes =take1.scd=. The returned value is the full
+path of the exported file.
+
+#+begin_src supercollider
+~scdPath = Bmc.clipToScd(\take1);
+~scdPath.postln;
+#+end_src
+
+If the named clip is not currently loaded, this method automatically looks
+for its =.bmc= file in =BmcClipLibrary.defaultDirectory= and loads it. Clips
+loaded or saved at a custom path are exported beside that remembered path.
+
+Each frame is written as an OscRecorder-style commented clip-relative
+timestamp followed by the message's sclang representation:
+
+#+begin_src supercollider
+//:--[0.125]
+[ '/bunraku/vmc/frame', 1, 'Avatar', 'source', 2 ]
+#+end_src
+
+The entire clip is stored in one =.scd= file; it is not divided into groups
+of 1,000 messages. Exporting again replaces an existing =.scd= file of the
+same name.
+
 *** Playback
 :PROPERTIES:
 :CUSTOM_ID: playback

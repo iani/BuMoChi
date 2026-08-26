@@ -135,6 +135,8 @@ Bmc {
 	*load { |path, name| ^this.loadClip(path, name) }
 	*saveClip { |name, path| ^library.save(name, path) }
 	*save { |name, path| ^this.saveClip(name, path) }
+	*clipToScd { |name| ^library.exportScd(name) }
+	*convertClipToScd { |name| ^this.clipToScd(name) }
 
 	// ----- playback -----
 	*play { |name|

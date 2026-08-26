@@ -1,5 +1,5 @@
 BmcClipLibrary {
-	var <clips, <currentName;
+	var <clips, <currentName, <paths;
 	classvar defaultDirectory;
 
 	*defaultDirectory {
@@ -12,16 +12,22 @@ BmcClipLibrary {
 
 	init {
 		clips = IdentityDictionary.new;
+		paths = IdentityDictionary.new;
 		^this
 	}
 
-	add { |name, clip|
+	add { |name, clip, path|
 		if(clip.isKindOf(BmcClip).not) {
 			Error("BmcClipLibrary can only store BmcClip objects").throw;
 		};
 		name = name ?? { this.nextName };
 		name = name.asSymbol;
 		clips[name] = clip;
+		if(path.isNil) {
+			paths.removeAt(name);
+		} {
+			paths[name] = path.standardizePath;
+		};
 		currentName = name;
 		^clip
 	}
@@ -54,26 +60,29 @@ BmcClipLibrary {
 		var result;
 		name = name.asSymbol;
 		result = clips.removeAt(name);
+		paths.removeAt(name);
 		if(currentName == name) { currentName = clips.keys.asArray.first };
 		^result
 	}
 
 	rename { |oldName, newName|
 		var clip = this.at(oldName);
+		var path = paths[oldName.asSymbol];
 		if(clip.isNil) { Error("Unknown Bmc clip: %".format(oldName)).throw };
 		this.remove(oldName);
-		^this.add(newName, clip)
+		^this.add(newName, clip, path)
 	}
 
 	clear {
 		clips.clear;
+		paths.clear;
 		currentName = nil;
 		^this
 	}
 
 	load { |path, name|
 		var clip = BmcClip.read(path);
-		^this.add(name ?? { PathName(path).fileNameWithoutExtension.asSymbol }, clip)
+		^this.add(name ?? { PathName(path).fileNameWithoutExtension.asSymbol }, clip, path)
 	}
 
 	defaultPathFor { |name|
@@ -88,7 +97,35 @@ BmcClipLibrary {
 		if(clip.isNil) { Error("No Bmc clip selected").throw };
 		name = name ?? { currentName };
 		path = path ?? { this.defaultPathFor(name) };
-		^clip.write(path)
+		clip.write(path);
+		paths[name.asSymbol] = path.standardizePath;
+		^path
+	}
+
+	pathFor { |name|
+		name = name ?? { currentName };
+		if(name.isNil) { ^nil };
+		^paths[name.asSymbol] ?? { this.defaultPathFor(name) }
+	}
+
+	exportScd { |name|
+		var clip;
+		var bmcPath, scdPath, pathName;
+		name = name ?? { currentName };
+		if(name.isNil) { Error("No Bmc clip name supplied or selected").throw };
+		clip = this.at(name);
+		if(clip.isNil) {
+			bmcPath = this.defaultPathFor(name);
+			if(File.exists(bmcPath).not) {
+				Error("Unknown Bmc clip %, and no file exists at %"
+					.format(name, bmcPath)).throw;
+			};
+			clip = this.load(bmcPath, name);
+		};
+		bmcPath = this.pathFor(name);
+		pathName = PathName(bmcPath);
+		scdPath = pathName.pathOnly +/+ (pathName.fileNameWithoutExtension ++ ".scd");
+		^clip.writeScd(scdPath)
 	}
 
 	list {
