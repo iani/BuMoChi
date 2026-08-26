@@ -1,0 +1,328 @@
+#+title: Recording And Playback
+
+This guide tests recording and playback with XR-Animator, the Bunraku OSC
+encoder, SuperCollider/BuMoChi, the Bunraku OSC decoder, and Godot on the same
+computer.  A recording is stored and managed as a /clip/.  The examples below
+use clip methods such as =Bmc.record=,
+=Bmc.listClips=, and =Bmc.playClip=.
+
+Use this port map throughout the test:
+
+| From              | To             | UDP port |
+|-------------------+----------------+----------|
+| XR-Animator       | Python encoder |    39538 |
+| Python encoder    | BuMoChi        |    57130 |
+| BuMoChi           | Python decoder |    39537 |
+| Python decoder    | Godot          |    39539 |
+
+Only one application can listen on a particular UDP port.  Stop any older
+encoder or decoder processes before starting this test.
+
+* Connect XR-Animator to SuperCollider via OscEncoder
+
+1. In XR-Animator, open the VMC/OSC output settings and set the destination to:
+
+   #+begin_example
+   Host: 127.0.0.1
+   Port: 39538
+   #+end_example
+
+   Enable VMC output.  XR-Animator may remain running while the other parts of
+   the pipeline are started.
+
+2. Open Terminal and change to BuMoChi's testing directory:
+
+   #+begin_src sh
+   cd /Users/iani/Obsidian/Iani/Projects/260715_ICLC27/AppsAndCode/BuMoChi/Testing_BuMoChi
+   #+end_src
+
+3. Start the Python encoder in that terminal:
+
+   #+begin_src sh
+   python3 BunrakuOSCEncoder.py \
+     --listen-port 39538 \
+     --target-port 57130 \
+     --avatar "BunrakuTestAvatar" \
+     --source "xr-animator" \
+     --verbose
+   #+end_src
+
+   Keep this terminal open.  When XR-Animator is sending data, the encoder's
+   received/sent counters should increase.
+
+4. In SuperCollider, evaluate the following block.  Evaluate the entire block
+   by placing the cursor inside it and pressing =Command-Return=.
+
+   #+begin_src supercollider
+   (
+   Bmc.reset;
+
+   // This identifier must match the encoder's --avatar value.
+   Bmc.addAvatar(\BunrakuTestAvatar, "BunrakuTestAvatar");
+   Bmc.selectAvatar(\BunrakuTestAvatar);
+
+   // Playback and live frames will be sent to the decoder on this port.
+   Bmc.output(NetAddr("127.0.0.1", 39537));
+
+   // Receive encoded XR-Animator frames here.
+   Bmc.start(57130);
+   )
+   #+end_src
+
+5. Confirm that SuperCollider is receiving frames:
+
+   #+begin_src supercollider
+   Bmc.status;
+   #+end_src
+
+   In the Post window, =running= should be =true=, =port= should be =57130=,
+   and =received= should increase while you move in front of XR-Animator.
+
+6. Optional but recommended: make the live and replayed motion visible in
+   Godot.  Run a Godot project whose VMC tracker listens on port =39539=, such
+   as the Mother input of =Seed_4_Mother_Ishidomaru_C=.  Then open a second
+   terminal in =Testing_BuMoChi= and start the decoder:
+
+   #+begin_src sh
+   python3 BunrakuOSCDecoder.py \
+     --listen-port 39537 \
+     --target-port 39539 \
+     --accept-avatar "BunrakuTestAvatar" \
+     --verbose
+   #+end_src
+
+   The avatar in Godot should now follow the live XR-Animator motion.  This
+   confirms the complete path before recording.
+
+
+* Record
+
+1. Make sure XR-Animator is sending, the encoder is running, and
+   =Bmc.status= shows an increasing =received= count.
+
+2. Choose a name for the take and begin recording:
+
+   #+begin_src supercollider
+   Bmc.record(\take1, "BunrakuTestAvatar", "xr-animator");
+   #+end_src
+
+   The second and third arguments are filters.  They must match the encoder's
+   =--avatar= and =--source= values exactly.  To record all incoming frames
+   without these filters, use =Bmc.record(\take1)=.
+
+3. Perform a short, recognisable movement in front of the camera for five to
+   ten seconds.
+
+4. Stop recording and retain the resulting clip in a SuperCollider variable:
+
+   #+begin_src supercollider
+   ~take1 = Bmc.stopRecording;
+   #+end_src
+
+5. Inspect the result:
+
+   #+begin_src supercollider
+   ~take1.size;       // number of recorded frames
+   ~take1.duration;   // duration in seconds
+   Bmc.status;
+   #+end_src
+
+   A successful recording has a frame count and duration greater than zero,
+   and =Bmc.status= reports =recording: false=.
+
+6. If you started a take accidentally, discard it instead of storing it:
+
+   #+begin_src supercollider
+   Bmc.cancelRecording;
+   #+end_src
+
+7. Save the recording to disk so that it can be loaded after a restart:
+
+   #+begin_src supercollider
+   ~take1Path = Bmc.saveClip(\take1);
+   ~take1Path.postln;
+   #+end_src
+
+   With no explicit path, BuMoChi saves =take1.bmc= in the =BmcClips=
+   directory inside =Platform.userAppSupportDir=.  Display that directory at
+   any time with:
+
+   #+begin_src supercollider
+   BmcClipLibrary.defaultDirectory.postln;
+   #+end_src
+
+* List clips
+
+List all clips currently held in memory:
+
+#+begin_src supercollider
+Bmc.listClips;
+#+end_src
+
+The Post window shows the clip name, number of frames, and duration.  The
+current clip is marked with an asterisk.  To inspect the names as an array:
+
+#+begin_src supercollider
+Bmc.library.names;
+#+end_src
+
+To open a small selection window:
+
+#+begin_src supercollider
+Bmc.showClips;
+#+end_src
+
+Clicking a row makes that clip current.  These commands list clips in memory;
+they do not scan the disk for every saved =.bmc= file.
+
+* Load a clip
+
+Loading is necessary after restarting SuperCollider, evaluating =Bmc.reset=,
+or otherwise clearing the in-memory clip library.
+
+1. Find the default clip directory:
+
+   #+begin_src supercollider
+   ~clipDirectory = BmcClipLibrary.defaultDirectory;
+   ~clipDirectory.postln;
+   #+end_src
+
+2. Construct the path and load the saved clip:
+
+   #+begin_src supercollider
+   ~take1Path = ~clipDirectory +/+ "take1.bmc";
+   Bmc.loadClip(~take1Path, \take1);
+   #+end_src
+
+   The second argument is the name the clip will have in the current library.
+   It may be omitted; in that case, the filename becomes the clip name:
+
+   #+begin_src supercollider
+   Bmc.loadClip(~take1Path);
+   #+end_src
+
+3. Verify that loading succeeded:
+
+   #+begin_src supercollider
+   Bmc.listClips;
+   Bmc.currentClip.size;
+   Bmc.currentClip.duration;
+   #+end_src
+
+* Play a clip
+
+1. Make sure the Python decoder and Godot are running as described in the
+   first section.  The selected Bmc avatar must still output to decoder port
+   =39537=:
+
+   #+begin_src supercollider
+   Bmc.selectAvatar(\BunrakuTestAvatar);
+   Bmc.output(NetAddr("127.0.0.1", 39537));
+   #+end_src
+
+2. Disable VMC output in XR-Animator before playback.  Otherwise live frames
+   and replayed frames will both reach the same Godot tracker and compete with
+   one another.  The encoder may remain running while XR-Animator output is
+   disabled.
+
+3. Select and play the clip:
+
+   #+begin_src supercollider
+   Bmc.selectClip(\take1);
+   Bmc.playClip;             // plays the current clip
+   #+end_src
+
+   A named clip can also be played directly:
+
+   #+begin_src supercollider
+   Bmc.playClip(\take1);
+   #+end_src
+
+4. Test the transport controls:
+
+   #+begin_src supercollider
+   Bmc.pause;
+   Bmc.resume;
+   Bmc.stopPlayback;
+   #+end_src
+
+5. Test speed, seeking, and looping:
+
+   #+begin_src supercollider
+   Bmc.rate(0.5);       // half speed
+   Bmc.loop(true);
+   Bmc.playClip(\take1);
+
+   Bmc.seek(2.0);       // move to approximately two seconds
+   Bmc.loop(false);
+   Bmc.rate(1.0);       // restore normal speed
+   Bmc.stopPlayback;
+   #+end_src
+
+6. When testing is complete, stop BuMoChi and the external processes:
+
+   #+begin_src supercollider
+   Bmc.stop;
+   #+end_src
+
+   Disable XR-Animator VMC output, press =Control-C= in the encoder and decoder
+   terminals, and stop the running Godot project.
+
+* Set clip and avatar name
+
+There are three related but distinct names:
+
+- The /clip name/ (for example =\take1=) identifies a recording in
+  BuMoChi's library.
+- The /avatar name/ (for example =BunrakuTestAvatar=) identifies the intended
+  avatar stream.
+- The /source name/ (for example =xr-animator=) identifies where that stream
+  came from.
+
+Set the avatar and source names when starting the encoder:
+
+#+begin_src sh
+python3 BunrakuOSCEncoder.py \
+  --listen-port 39538 \
+  --target-port 57130 \
+  --avatar "Ishidomaru" \
+  --source "xr-animator-camera-1" \
+  --verbose
+#+end_src
+
+Register and select the same avatar identifier in SuperCollider:
+
+#+begin_src supercollider
+Bmc.addAvatar(\Ishidomaru, "Ishidomaru");
+Bmc.selectAvatar(\Ishidomaru);
+Bmc.output(NetAddr("127.0.0.1", 39537));
+#+end_src
+
+Give each take its own clip name and use matching avatar/source filters:
+
+#+begin_src supercollider
+Bmc.record(\ishidomaru_take_01, "Ishidomaru", "xr-animator-camera-1");
+// Perform the movement, then:
+Bmc.stopRecording;
+#+end_src
+
+If the decoder uses =--accept-avatar=, restart it with the matching name:
+
+#+begin_src sh
+python3 BunrakuOSCDecoder.py \
+  --listen-port 39537 \
+  --target-port 39539 \
+  --accept-avatar "Ishidomaru" \
+  --verbose
+#+end_src
+
+To rename only an existing in-memory clip, without changing the avatar or
+source stored in its frames, use:
+
+#+begin_src supercollider
+Bmc.renameClip(\ishidomaru_take_01, \ishidomaru_take_01_good);
+#+end_src
+
+Choose the avatar and source identifiers before recording whenever possible.
+Renaming a clip changes its library key, but it does not rewrite the avatar or
+source metadata embedded in the recorded frames.
