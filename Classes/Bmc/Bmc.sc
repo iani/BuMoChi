@@ -314,4 +314,8 @@ Bmc {
 				.format(role, message[1])).throw;
 		};
 	}
+
+	// utilities
+	*trace { OSCFunc.trace(true, true); }
+	*untrace { OSCFunc.trace(false, false); }
 }

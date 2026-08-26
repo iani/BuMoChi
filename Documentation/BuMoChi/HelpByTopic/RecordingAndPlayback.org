@@ -47,6 +47,17 @@ encoder or decoder processes before starting this test.
      --verbose
    #+end_src
 
+   Alternatively, if you have installed a globally accessible copy of BurakuOSCEncoder, try:
+
+   #+begin_src sh
+BunrakuOSCEncoder \
+  --listen-port 39538 \
+  --target-port 57130 \
+  --avatar "BunrakuTestAvatar" \
+  --source "xr-animator" \
+  --verbose
+   #+end_src
+
    Keep this terminal open.  When XR-Animator is sending data, the encoder's
    received/sent counters should increase.
 
