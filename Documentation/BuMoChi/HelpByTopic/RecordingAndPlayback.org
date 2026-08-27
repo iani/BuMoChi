@@ -243,9 +243,14 @@ BuMoChi supports two clip storage schemes:
 To save the selected in-memory clip under the default =BmcClips= directory:
 
 #+begin_src supercollider
+Bmc.record(\take1);
+// perform the motion
+Bmc.stopRecording;
 ~path = Bmc.saveClipScd(\take1);
 ~path.postln;
 #+end_src
+
+=Bmc.record= itself remains an in-memory recorder. =Bmc.saveClipScd= writes the completed clip after =Bmc.stopRecording=; selecting =.scd= does not change how frames are accumulated during capture.
 
 The default result is =BmcClips/take1.scd=. Supply an explicit path as the second argument when required:
 
@@ -270,7 +275,22 @@ The readable loader uses SuperCollider's =interpret= operation for each message 
 
 The =.scd= scheme is expected to tolerate substantially more frames when the limiting failure is =Object.writeArchive= or =Object.readArchive= processing one very large object graph. Both writing and parsing the readable file proceed frame by frame.
 
-It is not intrinsically more compact. An =.scd= file is normally considerably larger and slower to load because every number is stored as text. After loading, the complete =BmcClip= still resides in SuperCollider memory. Therefore there is no fixed promise that an =.scd= clip can be a particular multiple longer than a =.bmc= clip. For recordings lasting many hours, a future streaming recorder/player would be safer than either whole-clip representation.
+It is not intrinsically more compact. An =.scd= file is normally considerably larger and slower to load because every number is stored as text. After loading, the complete =BmcClip= still resides in SuperCollider memory. Therefore there is no fixed promise that an =.scd= clip can be a particular multiple longer than a =.bmc= clip. For recordings lasting many hours, =OscRecorder= already provides chunked disk capture; dynamic/streaming Bmc playback would be a separate future development.
+
+** Relationship to OscRecorder
+
+The existing =OscRecorder= class provides the proven long-duration recording strategy used in earlier work. It writes incoming OSC messages directly to readable =.scd= files and starts a new file after =maxItems= messages; the default is =1,000=. Because completed chunks are already on disk, recording duration is not limited by the size that one archive file can serialize. =OscRecorder.sessionData= may still retain the complete session in memory for later use.
+
+This is different from =Bmc.record=:
+
+| Recorder | Disk behavior during capture | In-memory behavior |
+|----------+------------------------------+--------------------|
+| =Bmc.record= | does not write until =Bmc.saveClip= or =Bmc.saveClipScd= | retains the complete clip |
+| =OscRecorder= | writes successive limited-size =.scd= files while recording | may retain the complete session in =sessionData= |
+
+The relevant implementation is [[file:../../../Classes/Animation/OscRecorder.sc][Classes/Animation/OscRecorder.sc]]. Its companion =SessionData= and =OscFile= classes read the sequence of recorder files. By contrast, =Bmc.loadClipScd(path)= loads one complete =.scd= clip file. Loading an entire directory of numbered =OscRecorder= chunks as one Bmc clip is not currently part of =Bmc.loadClipScd=.
+
+This division is useful: use =OscRecorder= when uninterrupted, effectively unlimited capture to chunked files is the priority; use the Bmc clip methods when the recording must immediately participate in Bmc selection, composition, session assignment, and playback.
 
 ** Convert an existing BMC archive to SCD
 

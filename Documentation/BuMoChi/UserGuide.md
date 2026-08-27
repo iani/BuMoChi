@@ -448,7 +448,16 @@ Loads a saved `.bmc` or `.scd` clip; the extension selects the reader. If
 
 Saves a clip directly in the complete, human-readable timestamp/message
 format. When `path` is omitted, the file is saved as `name.scd` in the default
-`BmcClips` directory.
+`BmcClips` directory. This method is called after `Bmc.stopRecording`; Bmc
+retains the complete recording in memory during capture and then writes it
+frame by frame to the `.scd` file.
+
+```supercollider
+Bmc.record(\take1);
+// perform the motion
+Bmc.stopRecording;
+Bmc.saveClipScd(\take1);
+```
 
 #### `Bmc.loadClipScd(path, name)`
 
@@ -456,6 +465,13 @@ Loads a readable `.scd` clip explicitly. The first stored timestamp is
 normalized to zero while all frame intervals are preserved. Load only trusted
 `.scd` files because their message lines are interpreted as SuperCollider
 code.
+
+```supercollider
+Bmc.loadClipScd(
+    BmcClipLibrary.defaultDirectory +/+ "take1.scd",
+    \take1
+);
+```
 
 #### `Bmc.clipToScd(name)` / `Bmc.convertClipToScd(name)`
 
