@@ -1,0 +1,146 @@
+#+title: Avatar Port Numbers
+
+This guide explains how recorded or live Bmc frames for several avatars are
+routed through separate Bunraku decoders into separate Godot VMC trackers.
+
+* Why each avatar needs a separate route
+
+A UDP port identifies one receiving socket on a host. Only one decoder or
+Godot tracker can listen on a particular host/port combination at a time.
+When two staged avatars must move independently, their frame streams must not
+compete for the same VMC tracker. Give each stream its own decoder listening
+port and its own Godot destination port.
+
+An avatar name and a port perform different jobs:
+
+- The /avatar name/ is carried inside each Bunraku frame. It identifies and
+  filters the logical performer or character.
+- The /UDP port/ selects the process and tracker that physically receives the
+  packet.
+
+Names alone do not replace separate ports when two independent Godot VMC
+tracker instances are being driven. The safest routing scheme uses both a
+distinct avatar name and a distinct port path.
+
+* Multi-avatar pipeline
+
+For playback, each route has three stages:
+
+#+begin_example
+Bmc avatar output
+    -> BunrakuOSCDecoder listening port
+    -> Godot VMC tracker listening port
+#+end_example
+
+For a two-avatar scene such as =Seed_4_Mother_Ishidomaru_C=, a practical map
+is:
+
+| Avatar      | Bmc sends to decoder | Decoder sends to Godot | Godot tracker |
+|-------------+----------------------+------------------------+---------------|
+| Mother      |                39537 |                  39539 | default VMC   |
+| Ishidomaru  |                39541 |                  39540 | second VMC    |
+
+The ports stored in a Bmc session are the ports in the second column: the
+ports on which the Python decoders listen. The decoder command separately
+specifies the Godot target port.
+
+* Start the decoders
+
+Start one decoder per avatar in a separate Terminal window.
+
+Mother:
+
+#+begin_src sh
+BunrakuOSCDecoder \
+  --listen-port 39537 \
+  --target-port 39539 \
+  --accept-avatar "Mother" \
+  --verbose
+#+end_src
+
+Ishidomaru:
+
+#+begin_src sh
+BunrakuOSCDecoder \
+  --listen-port 39541 \
+  --target-port 39540 \
+  --accept-avatar "Ishidomaru" \
+  --verbose
+#+end_src
+
+The =--accept-avatar= filters are recommended even though the ports are
+already separate. They catch an incorrectly routed frame before it moves the
+wrong character.
+
+* Configure Godot
+
+The Godot scene needs one VMC source/tracker per independent incoming stream.
+For the example above:
+
+- Mother's default VMC tracker listens on =39539= and publishes to Mother's
+  body and face tracker names.
+- Ishidomaru's second VMC tracker listens on =39540= and publishes to
+  Ishidomaru's distinct body and face tracker names.
+
+Each avatar's =XRBodyModifier3D= and =XRFaceModifier3D= nodes must reference
+the tracker names produced by that avatar's VMC source. Distinct UDP ports do
+not help if both modifier nodes still reference the same XR tracker name.
+
+* Configure Bmc directly
+
+Without a saved session, configure the two Bmc avatar outputs explicitly:
+
+#+begin_src supercollider
+(
+Bmc.addAvatar(\Mother, "Mother");
+Bmc.avatar(\Mother).output_(NetAddr("127.0.0.1", 39537));
+
+Bmc.addAvatar(\Ishidomaru, "Ishidomaru");
+Bmc.avatar(\Ishidomaru).output_(NetAddr("127.0.0.1", 39541));
+)
+#+end_src
+
+For ordinary single-clip playback, =Bmc.selectAvatar= chooses which of these
+avatar objects receives the player's frames. The selected Bmc avatar also
+rewrites the outgoing frame's embedded avatar name, so both the port route and
+the decoder's =--accept-avatar= filter agree:
+
+#+begin_src supercollider
+Bmc.selectAvatar(\Mother);
+Bmc.playClip(\mother_take_01);
+#+end_src
+
+* Store routes in a session
+
+The same outputs can be restored from session data:
+
+#+begin_src supercollider
+~avatarSettings = IdentityDictionary[
+    \Mother -> (host: "127.0.0.1", port: 39537),
+    \Ishidomaru -> (host: "127.0.0.1", port: 39541)
+];
+#+end_src
+
+After =Bmc.loadSession=, evaluate =Bmc.applySession=. Bmc creates any missing
+avatar objects and assigns each one a =NetAddr= made from its stored host and
+port. =Bmc.playSessionClip= applies the session automatically before playing.
+
+* Port rules and troubleshooting
+
+1. A port may be reused as a sending destination, but only one process may
+   listen on that host/port combination.
+2. Do not give both decoders the same =--listen-port=.
+3. Do not give both Godot VMC sources the same listening port.
+4. The decoder's =--listen-port= must equal the port stored for that avatar in
+   the Bmc session.
+5. The decoder's =--target-port= must equal that avatar's Godot VMC source
+   port.
+6. The session avatar name, frame avatar name, decoder =--accept-avatar=, and
+   intended Godot character should agree.
+7. On one computer, use =127.0.0.1=. Across computers, store the receiving
+   machine's reachable IP address and allow the chosen UDP ports through its
+   firewall.
+
+An =Address already in use= error means another process already owns the
+reported listening port. Stop the older decoder, encoder, Godot instance, or
+SuperCollider OSC listener before restarting the intended process.

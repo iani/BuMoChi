@@ -26,7 +26,10 @@ BmcAvatar {
 		completedPose.fillMissingFrom(currentPose);
 		completedPose.fillMissingFrom(referencePose);
 		currentPose = completedPose;
-		currentFrame = typed.withPose(completedPose);
+		// The destination avatar controls both routing and the avatar name
+		// embedded in the outgoing frame. This permits a saved clip to be
+		// assigned to another staged avatar during playback.
+		currentFrame = typed.withPose(completedPose).withAvatar(avatarName);
 		this.changed(\completedFrame, currentFrame.asOSCMessage, time ?? { SystemClock.seconds });
 		this.send(currentFrame.asOSCMessage);
 		^currentFrame

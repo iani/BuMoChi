@@ -183,8 +183,21 @@ To open a small selection window:
 Bmc.showClips;
 #+end_src
 
-Clicking a row makes that clip current.  These commands list clips in memory;
-they do not scan the disk for every saved =.bmc= file.
+The window initially lists clips in memory. Clicking an in-memory row makes
+that clip current. After recompiling the SuperCollider class library or
+calling =Bmc.reset=, this initial list can therefore be empty.
+
+Use the buttons above the list as follows:
+
+- =List saved= scans the default =BmcClips= directory and lists the names of
+  its =.bmc= files. It does not load their frame data into memory.
+- Select a row and press =Play selected=. If the clip is only on disk, Bmc
+  loads it first and then starts playback. If it is already in memory, Bmc
+  plays the existing in-memory clip directly.
+
+The saved-file scan is limited to =BmcClipLibrary.defaultDirectory=. Files
+stored in other directories must first be loaded explicitly with
+=Bmc.loadClip=.
 
 * Load a clip
 
@@ -254,10 +267,7 @@ comment is the frame's clip-relative time in seconds:
 [ '/bunraku/vmc/frame', 1, 'Avatar', 'source', 2 ]
 #+end_src
 
-The message is produced with sclang's =asCompileString= representation. All
-frames are written to one file, even when the clip contains more than 1,000
-messages. The converter does not create numbered parts. Running it again for
-the same clip replaces the existing =.scd= export.
+The message is produced with sclang's =asCompileString= representation. All frames are written to one file, even when the clip contains more than 1,000 messages. The converter does not create numbered parts. Running it again for the same clip replaces the existing =.scd= export.
 
 To confirm the destination before opening the file:
 
@@ -277,10 +287,7 @@ PathName(~scdPath).pathOnly.postln;
    Bmc.output(NetAddr("127.0.0.1", 39537));
    #+end_src
 
-2. Disable VMC output in XR-Animator before playback.  Otherwise live frames
-   and replayed frames will both reach the same Godot tracker and compete with
-   one another.  The encoder may remain running while XR-Animator output is
-   disabled.
+2. Disable VMC output in XR-Animator before playback. Otherwise live frames and replayed frames will both reach the same Godot tracker and compete with one another. The encoder may remain running while XR-Animator output is disabled.
 
 3. Select and play the clip:
 
@@ -324,6 +331,181 @@ PathName(~scdPath).pathOnly.postln;
 
    Disable XR-Animator VMC output, press =Control-C= in the encoder and decoder
    terminals, and stop the running Godot project.
+
+* Clip Playback Settings
+
+A clip archive contains recorded frame data and frame timing. It does not by
+itself specify which staged avatar should receive the replay or which OSC port
+should carry it. Replaying a clip therefore requires the following settings:
+
+1. A /clip key/: the name used inside a session, such as =\motherEntrance=.
+2. A /clip name/: the saved =.bmc= archive, such as =\mother_take_01=.
+3. An /avatar name/: the Bmc avatar destination, such as =\Mother=.
+4. A /route/: the host and UDP port to which Bmc sends encoded frames for that
+   avatar. Normally the host is =127.0.0.1= and the port is the corresponding
+   Bunraku decoder's listening port.
+5. Optional transport values: playback =rate=, =loop= state, and starting time
+   in seconds.
+
+The minimum useful clip setting contains the clip and avatar names:
+
+#+begin_src supercollider
+(clip: \mother_take_01, avatar: \Mother)
+#+end_src
+
+Bmc supplies these defaults when the optional settings are absent:
+
+#+begin_src supercollider
+(
+clip: \mother_take_01,
+avatar: \Mother,
+rate: 1.0,
+loop: false,
+start: 0.0
+)
+#+end_src
+
+An optional =path= may identify a =.bmc= file outside the default BmcClips
+directory:
+
+#+begin_src supercollider
+(
+clip: \mother_take_01,
+avatar: \Mother,
+path: "/absolute/path/to/mother_take_01.bmc"
+)
+#+end_src
+
+The loading and replay sequence is:
+
+1. Find the settings by their clip key.
+2. Register the named avatar if it is not already registered.
+3. Set that avatar's output to its configured host and port.
+4. Use the in-memory clip when available; otherwise load its =.bmc= archive.
+5. Select the configured avatar as the player's output.
+6. Rewrite the outgoing frame's avatar field to the selected avatar name.
+7. Apply =rate=, =loop=, and =start=.
+8. Start playback.
+
+This sequence is performed automatically by =Bmc.playSessionClip=.
+
+* Sessions
+
+A Bmc playback session is a named collection of clip playback settings and
+avatar OSC routes. It is configuration data, not recorded motion data: the
+=.bmc= clip archives remain separate files.
+
+The proposed two-dictionary design is correct. Bmc stores both dictionaries
+inside one top-level session data object:
+
+#+begin_src supercollider
+(
+name: \duet_rehearsal,
+clips: IdentityDictionary[
+    \motherEntrance -> (
+        clip: \mother_take_01,
+        avatar: \Mother,
+        rate: 1.0,
+        loop: false,
+        start: 0.0
+    ),
+    \ishidomaruReply -> (
+        clip: \ishidomaru_take_03,
+        avatar: \Ishidomaru,
+        rate: 0.75,
+        loop: false,
+        start: 1.2
+    )
+],
+avatars: IdentityDictionary[
+    \Mother -> (host: "127.0.0.1", port: 39537),
+    \Ishidomaru -> (host: "127.0.0.1", port: 39541)
+]
+)
+#+end_src
+
+Although the clip name can equal the clip key, storing it explicitly is
+useful: a dramaturgical cue such as =\motherEntrance= can refer to an archive
+named =\mother_take_01=. The avatar name is required. The host is stored as
+well as the port so that the same session format also works across computers.
+A bare port number is accepted as shorthand for localhost:
+
+#+begin_src supercollider
+\Mother -> 39537
+#+end_src
+
+** Save a session
+
+Construct the dictionaries and save them:
+
+#+begin_src supercollider
+(
+~clipSettings = IdentityDictionary[
+    \motherEntrance -> (clip: \mother_take_01, avatar: \Mother),
+    \ishidomaruReply -> (
+        clip: \ishidomaru_take_03,
+        avatar: \Ishidomaru,
+        rate: 0.75
+    )
+];
+
+~avatarSettings = IdentityDictionary[
+    \Mother -> 39537,
+    \Ishidomaru -> 39541
+];
+
+~session = Bmc.saveSession(
+    \duet_rehearsal,
+    ~clipSettings,
+    ~avatarSettings
+);
+~session.path.postln;
+)
+#+end_src
+
+By default this creates:
+
+#+begin_example
+Platform.userAppSupportDir/BmcSessions/duet_rehearsal.scd
+#+end_example
+
+The session name becomes the filename. The =.scd= file contains readable
+sclang data and may be inspected or edited as text. A custom destination may
+be supplied as the fourth argument to =Bmc.saveSession=. Because loading an
+=.scd= file asks sclang to interpret its contents, load session files only
+from sources you trust.
+
+** Load and apply a session
+
+After recompiling or restarting SuperCollider, load by session name:
+
+#+begin_src supercollider
+Bmc.loadSession(\duet_rehearsal);
+Bmc.applySession;
+#+end_src
+
+=Bmc.loadSession= also accepts an absolute =.scd= path. =Bmc.applySession=
+registers the configured avatars when needed and restores their OSC output
+routes. It does not load all clips; clips are loaded on demand.
+
+** Play a configured clip
+
+Use the session clip key, not necessarily the archive name:
+
+#+begin_src supercollider
+Bmc.playSessionClip(\motherEntrance);
+
+// Later, after the first playback has stopped:
+Bmc.playSessionClip(\ishidomaruReply);
+#+end_src
+
+The current implementation has one Bmc clip player. Consequently these calls
+play one configured clip at a time; they do not start several clips
+simultaneously. A future multi-player session layer can add simultaneous or
+scheduled ensemble playback without changing the stored session format.
+
+See [[file:Avatar_Port_Numbers.org][Avatar Port Numbers]] for the complete
+multi-avatar OSC routing pipeline and terminal commands.
 
 * Set clip and avatar name
 

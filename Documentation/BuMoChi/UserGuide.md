@@ -415,7 +415,16 @@ Posts clip names, frame counts, and durations in the SuperCollider post window. 
 
 #### `Bmc.showClips`
 
-Opens a simple clip-list window. Selecting a row selects that clip.
+Opens the clip window. Initially it shows clips currently loaded in memory.
+The buttons above the list provide two disk and playback operations:
+
+- `List saved` scans `BmcClipLibrary.defaultDirectory` for `.bmc` files and
+  displays their names without loading their contents into memory.
+- `Play selected` loads the selected saved clip if necessary, then begins
+  playback. A clip already in memory is played directly.
+
+Selecting a row for an in-memory clip also makes it the current clip. Saved
+clips shown by `List saved` remain unloaded until `Play selected` is pressed.
 
 #### `Bmc.renameClip(oldName, newName)`
 

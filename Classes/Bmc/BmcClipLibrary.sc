@@ -54,6 +54,15 @@ BmcClipLibrary {
 	}
 
 	names { ^clips.keys.asArray.sort }
+	savedNames {
+		var directory = PathName(this.class.defaultDirectory);
+		if(directory.isFolder.not) { ^[] };
+		^directory.files.select { |file|
+			file.extension.asString.toLower == "bmc"
+		}.collect { |file|
+			file.fileNameWithoutExtension.asSymbol
+		}.sort
+	}
 	size { ^clips.size }
 
 	remove { |name|
@@ -143,16 +152,60 @@ BmcClipLibrary {
 	show {
 		{
 			var window = Window("Bmc Clips", Rect(200, 200, 520, 300));
-			var view = ListView(window, window.view.bounds.insetBy(10, 10));
-			var names = this.names;
-			view.items = names.collect { |name|
-				var clip = clips[name];
-				"% — % frames — % s".format(name, clip.size, clip.duration.round(0.001))
+			var view = ListView();
+			var listSavedButton = Button().states_([["List saved"]]);
+			var playButton = Button().states_([["Play selected"]]);
+			var displayedNames, selectedName, showingSaved = false, refresh;
+
+			refresh = {
+				displayedNames = if(showingSaved) { this.savedNames } { this.names };
+				view.items = displayedNames.collect { |name|
+					var clip = clips[name];
+					if(clip.isNil) {
+						"% — saved on disk".format(name)
+					} {
+						"% — % frames — % s".format(
+							name, clip.size, clip.duration.round(0.001)
+						)
+					}
+				};
+				selectedName = if(displayedNames.includes(currentName)) {
+					currentName
+				} {
+					displayedNames.first
+				};
+				if(selectedName.notNil) {
+					view.value = displayedNames.indexOfEqual(selectedName);
+				};
 			};
-			view.value = names.indexOfEqual(currentName) ?? { 0 };
+
 			view.action = { |list|
-				if(names.notEmpty) { this.select(names[list.value]) };
+				if(displayedNames.notEmpty) {
+					selectedName = displayedNames[list.value];
+					if(clips.includesKey(selectedName)) { this.select(selectedName) };
+				};
 			};
+			listSavedButton.action = {
+				showingSaved = true;
+				refresh.value;
+			};
+			playButton.action = {
+				if(selectedName.isNil) {
+					"Bmc: select a clip to play".warn;
+				} {
+					if(clips.includesKey(selectedName).not) {
+						this.load(this.defaultPathFor(selectedName), selectedName);
+					};
+					Bmc.play(selectedName);
+					refresh.value;
+				};
+			};
+
+			window.view.layout = VLayout(
+				HLayout(listSavedButton, playButton, nil),
+				view
+			);
+			refresh.value;
 			window.front;
 		}.defer;
 		^this

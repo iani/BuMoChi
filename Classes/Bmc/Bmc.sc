@@ -9,6 +9,7 @@ Bmc {
 	classvar <boneNames;
 	classvar <dispatcher, <recorder, <player, <library, <avatars, <wires;
 	classvar <defaultAvatar, recordingName, recorderPublisher;
+	classvar <sessions, <currentSession;
 
 	*initClass {
 		boneNames = #[
@@ -31,6 +32,8 @@ Bmc {
 		avatars[\default] = defaultAvatar;
 		dispatcher.registerAvatar(defaultAvatar);
 		player = BmcClipPlayer(nil, defaultAvatar);
+		sessions = IdentityDictionary.new;
+		currentSession = nil;
 	}
 
 	// This utility class returns the merged data directly; it has no instance.
@@ -154,6 +157,62 @@ Bmc {
 	*seek { |seconds| player.seek(seconds); ^this }
 	*rate { |value| player.rate_(value); ^this }
 	*loop { |flag = true| player.loop_(flag); ^this }
+
+	// ----- playback sessions -----
+	*saveSession { |name, clipSettings, avatarSettings, path|
+		var session = BmcSession(name, clipSettings, avatarSettings);
+		session.write(path);
+		sessions[session.name] = session;
+		currentSession = session;
+		^session
+	}
+
+	*loadSession { |nameOrPath|
+		var path = nameOrPath.asString;
+		var session;
+		if(File.exists(path).not) {
+			path = BmcSession.defaultDirectory +/+ (path ++ ".scd");
+		};
+		session = BmcSession.read(path);
+		sessions[session.name] = session;
+		currentSession = session;
+		^session
+	}
+
+	*applySession { |name|
+		var session = if(name.isNil) { currentSession } { sessions[name.asSymbol] };
+		if(session.isNil) { Error("Unknown Bmc session: %".format(name)).throw };
+		session.avatars.keysValuesDo { |avatarName, route|
+			var object = this.avatar(avatarName);
+			if(object.isNil) { object = this.addAvatar(avatarName, avatarName.asString) };
+			object.output_(NetAddr(route[\host].asString, route[\port].asInteger));
+		};
+		currentSession = session;
+		^session
+	}
+
+	*playSessionClip { |key, sessionName|
+		var session = if(sessionName.isNil) { currentSession } { sessions[sessionName.asSymbol] };
+		var settings, avatarObject, clip, clipPath;
+		if(session.isNil) { Error("No Bmc session selected").throw };
+		this.applySession(session.name);
+		settings = session.clipSettings(key);
+		if(settings.isNil) { Error("Unknown session clip: %".format(key)).throw };
+		avatarObject = this.avatar(settings[\avatar]);
+		clip = library.at(settings[\clip]);
+		if(clip.isNil) {
+			clipPath = settings[\path] ?? { library.defaultPathFor(settings[\clip]) };
+			clip = library.load(clipPath, settings[\clip]);
+		};
+		defaultAvatar = avatarObject;
+		player.output_(avatarObject);
+		player.clip_(clip);
+		player.rate_(settings[\rate]);
+		player.loop_(settings[\loop]);
+		player.seek(settings[\start]);
+		player.play;
+		^player
+	}
 
 	// ----- clip composition -----
 	*combineClips { |target, source, bones, result, startIndex = 0|

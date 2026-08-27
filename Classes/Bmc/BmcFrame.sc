@@ -29,5 +29,9 @@ BmcFrame {
 		^this.class.new(avatar, source, frameID, timestamp, newPose, protocolVersion)
 	}
 
+	withAvatar { |newAvatar|
+		^this.class.new(newAvatar, source, frameID, timestamp, pose.copy, protocolVersion)
+	}
+
 	copy { ^this.withPose(pose.copy) }
 }
