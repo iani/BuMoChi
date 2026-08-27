@@ -1,0 +1,105 @@
+#+title: Session Data Discussion
+
+Thu 27 Aug 2026 13:11
+
+Analysing the session data format, to propose improvements and clarify function.
+
+* Name: Session
+
+We will retain the name /Session/. A session describes the complete live-coding or rehearsal configuration currently loaded: its avatars, reusable motions, and figure-composition rules.
+
+A future /Scene/ may describe a dramaturgical unit within a session. In particular, a scene should contain an ordered sequence, timeline, or set of cues. The present data format does not yet describe that temporal structure, so /Session/ is the more accurate name at this stage.
+
+* Discussion of proposed Session data format
+
+The session data keeps four concepts separate:
+
+1. A /clip/ is a stored recording of time-indexed mocap frames.
+2. A /motion/ is a configured use of a clip, with playback settings such as rate, looping, and the position at which reading begins.
+3. A /figure/ is a complete logical body assembled from one or more ordered motion sources.
+4. An /avatar/ is the rendered destination and OSC route of a completed figure.
+
+#+begin_src supercollider
+(
+    name: \duet_rehearsal,
+
+    // Define the avatars that are the main actors in the session first.
+    // Dictionaries are order-insensitive, but this order makes the
+    // source file easier for a human reader to understand.
+
+    avatars: IdentityDictionary[
+        \Mother -> (host: "127.0.0.1", port: 39537),
+        \Ishidomaru -> (host: "127.0.0.1", port: 39541)
+    ],
+
+    // A motion is a configured use of a saved clip. The dictionary key,
+    // such as \walk, names the motion inside this session. The value of
+    // \clip identifies the underlying recording and remains independent
+    // of avatars and figures.
+
+    motions: IdentityDictionary[
+        \walk -> (
+            clip: \take1,
+            rate: 1.0,
+            loop: false,
+            in: 0.0
+        ),
+        \arms -> (
+            clip: \take2,
+            rate: 1.0,
+            loop: false,
+            in: 0.0
+        )
+    ],
+
+    figures: IdentityDictionary[
+        \motherFigure -> (
+            // Sources are applied from first to last. Later sources
+            // override earlier sources for overlapping selected bones.
+            // Here \walk supplies the base body, then \arms replaces
+            // only the arm bones for which it contains valid data.
+            sources: [
+                (motion: \walk, bones: \all),
+                (motion: \arms, bones: \arms)
+            ],
+            avatar: \Mother
+        ),
+        \ishidomaruFigure -> (
+            sources: [(motion: \walk, bones: \all)],
+            avatar: \Ishidomaru
+        )
+    ]
+
+)
+#+end_src
+
+* Motion
+
+A motion is not another copy of the recorded mocap data. It refers to a saved clip and adds settings for one reusable mode of playback within the session.
+
+In the example, =\walk= is the session-local motion name and =\take1= is the name of the saved clip:
+
+#+begin_src supercollider
+\walk -> (clip: \take1, rate: 1.0, loop: false, in: 0.0)
+#+end_src
+
+The =in= value is the position, in seconds, at which reading begins inside the clip. It replaces the less precise name =start=. A future scene timeline may use a separate =at= value to specify when a motion begins within a scene.
+
+* Figure source order
+
+The =sources= array is ordered and therefore defines a simple, deterministic layer order:
+
+1. Begin from the figure's reference pose or previous completed frame.
+2. Apply the first source to its selected bones.
+3. Continue through the array from first to last.
+4. When selections overlap, a later source replaces values supplied by an earlier source.
+5. A later source replaces only bone channels for which it contains valid data; missing data must not erase values inherited from an earlier layer.
+6. After all sources have been applied, fill any still-missing data from the figure's previous or reference pose.
+
+Thus, in the example, =\walk= supplies the general full-body motion and =\arms= supplies a more specific arm layer. Explicit numeric priorities are not needed initially because array order already expresses precedence clearly.
+
+The exact contents of named bone groups such as =\arms= and =\all= must be defined centrally by BuMoChi. Later versions may also allow a source to select channels such as rotation or position independently.
+
+* Open timing question
+
+When the same motion is referenced by more than one figure, each source entry should normally create an independent playback instance with its own cursor. This permits figures to start, seek, loop, or change rate independently. A later synchronization option can allow several source instances to share a clock when exact unison is desired.
