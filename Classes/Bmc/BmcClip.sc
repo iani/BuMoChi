@@ -49,8 +49,65 @@ BmcClip {
 		^path
 	}
 
+	// Read the human-readable OscRecorder-style format written by writeScd.
+	// The file is scanned one line at a time instead of interpreted as one
+	// enormous collection. Recorder timestamps are normalized so playback
+	// begins at zero even when the source file used absolute clock times.
+	*readScd { |path|
+		var file = File(path.standardizePath, "r");
+		var entries = List.new;
+		var line, closeBracket, timestamp, firstTimestamp, awaitingMessage = false;
+		var message;
+		if(file.isOpen.not) {
+			Error("Could not open % for reading".format(path)).throw;
+		};
+		protect {
+			while {
+				line = file.getLine(1048576);
+				line.notNil
+			} {
+				if(line.beginsWith("//:--[")) {
+					if(awaitingMessage) {
+						Error("Missing OSC message after timestamp in %".format(path)).throw;
+					};
+					closeBracket = line.find("]", 6);
+					if(closeBracket.isNil) {
+						Error("Malformed timestamp line in %: %".format(path, line)).throw;
+					};
+					timestamp = line.copyRange(6, closeBracket - 1).interpret;
+					if(timestamp.isNumber.not) {
+						Error("Non-numeric timestamp in %: %".format(path, line)).throw;
+					};
+					firstTimestamp = firstTimestamp ?? { timestamp };
+					awaitingMessage = true;
+				} {
+					if(awaitingMessage and: { line.notEmpty }) {
+						message = line.interpret;
+						Bmc.validateMessage(message, "SCD clip frame");
+						entries.add([timestamp - firstTimestamp, message]);
+						awaitingMessage = false;
+					};
+				};
+			};
+			if(awaitingMessage) {
+				Error("Missing OSC message at end of %".format(path)).throw;
+			};
+		} {
+			file.close;
+		};
+		^BmcMocapClip(entries.asArray, (
+			storageFormat: \scd,
+			originalStartTime: firstTimestamp,
+			sourcePath: path.standardizePath
+		))
+	}
+
 	*read { |path|
-		var clip = Object.readArchive(path);
+		var clip;
+		if(PathName(path).extension.asString.toLower == "scd") {
+			^this.readScd(path)
+		};
+		clip = Object.readArchive(path);
 		if(clip.isKindOf(BmcClip).not) {
 			Error("% does not contain a BmcClip".format(path)).throw;
 		};

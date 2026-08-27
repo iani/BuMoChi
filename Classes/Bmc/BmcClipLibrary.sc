@@ -58,10 +58,18 @@ BmcClipLibrary {
 		var directory = PathName(this.class.defaultDirectory);
 		if(directory.isFolder.not) { ^[] };
 		^directory.files.select { |file|
-			file.extension.asString.toLower == "bmc"
+			["bmc", "scd"].includes(file.extension.asString.toLower)
 		}.collect { |file|
 			file.fileNameWithoutExtension.asSymbol
-		}.sort
+		}.as(Set).asArray.sort
+	}
+
+	savedPathFor { |name|
+		var bmcPath = this.defaultPathFor(name);
+		var scdPath = this.defaultScdPathFor(name);
+		if(File.exists(bmcPath)) { ^bmcPath };
+		if(File.exists(scdPath)) { ^scdPath };
+		^nil
 	}
 	size { ^clips.size }
 
@@ -94,11 +102,23 @@ BmcClipLibrary {
 		^this.add(name ?? { PathName(path).fileNameWithoutExtension.asSymbol }, clip, path)
 	}
 
+	loadScd { |path, name|
+		var clip = BmcClip.readScd(path);
+		^this.add(name ?? { PathName(path).fileNameWithoutExtension.asSymbol }, clip, path)
+	}
+
 	defaultPathFor { |name|
 		if(File.exists(this.class.defaultDirectory).not) {
 			File.mkdir(this.class.defaultDirectory);
 		};
 		^this.class.defaultDirectory +/+ (name.asString ++ ".bmc")
+	}
+
+	defaultScdPathFor { |name|
+		if(File.exists(this.class.defaultDirectory).not) {
+			File.mkdir(this.class.defaultDirectory);
+		};
+		^this.class.defaultDirectory +/+ (name.asString ++ ".scd")
 	}
 
 	save { |name, path|
@@ -107,6 +127,16 @@ BmcClipLibrary {
 		name = name ?? { currentName };
 		path = path ?? { this.defaultPathFor(name) };
 		clip.write(path);
+		paths[name.asSymbol] = path.standardizePath;
+		^path
+	}
+
+	saveScd { |name, path|
+		var clip = this.at(name);
+		if(clip.isNil) { Error("No Bmc clip selected").throw };
+		name = name ?? { currentName };
+		path = path ?? { this.defaultScdPathFor(name) };
+		clip.writeScd(path);
 		paths[name.asSymbol] = path.standardizePath;
 		^path
 	}
@@ -194,7 +224,7 @@ BmcClipLibrary {
 					"Bmc: select a clip to play".warn;
 				} {
 					if(clips.includesKey(selectedName).not) {
-						this.load(this.defaultPathFor(selectedName), selectedName);
+						this.load(this.savedPathFor(selectedName), selectedName);
 					};
 					Bmc.play(selectedName);
 					refresh.value;

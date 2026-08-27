@@ -231,7 +231,48 @@ or otherwise clearing the in-memory clip library.
    Bmc.currentClip.duration;
    #+end_src
 
-* Convert a clip to an SCD file
+* Save and load clips in readable SCD format
+
+BuMoChi supports two clip storage schemes:
+
+| Format | Save method | Load method | Character |
+|--------+-------------+-------------+-----------|
+| =.bmc= | =Bmc.saveClip= | =Bmc.loadClip= | compact SuperCollider object archive |
+| =.scd= | =Bmc.saveClipScd= | =Bmc.loadClipScd= | readable timestamp/message text |
+
+To save the selected in-memory clip under the default =BmcClips= directory:
+
+#+begin_src supercollider
+~path = Bmc.saveClipScd(\take1);
+~path.postln;
+#+end_src
+
+The default result is =BmcClips/take1.scd=. Supply an explicit path as the second argument when required:
+
+#+begin_src supercollider
+Bmc.saveClipScd(\take1, "/path/to/take1.scd");
+#+end_src
+
+Load it again with either the format-specific method or the ordinary loader:
+
+#+begin_src supercollider
+Bmc.loadClipScd("/path/to/take1.scd", \take1);
+
+// Bmc.loadClip recognizes the .scd extension automatically:
+Bmc.loadClip("/path/to/take1.scd", \take1);
+#+end_src
+
+The loader scans the file incrementally rather than interpreting the complete file as one enormous collection. If an older recorder file begins at an absolute timestamp such as =266.811183875=, the loader subtracts its first timestamp so that clip playback begins at time zero. Frame spacing is preserved.
+
+The readable loader uses SuperCollider's =interpret= operation for each message line. Load only =.scd= clip files that you created yourself or received from a trusted collaborator; an arbitrary =.scd= file may contain executable SuperCollider code.
+
+** Capacity compared with BMC archives
+
+The =.scd= scheme is expected to tolerate substantially more frames when the limiting failure is =Object.writeArchive= or =Object.readArchive= processing one very large object graph. Both writing and parsing the readable file proceed frame by frame.
+
+It is not intrinsically more compact. An =.scd= file is normally considerably larger and slower to load because every number is stored as text. After loading, the complete =BmcClip= still resides in SuperCollider memory. Therefore there is no fixed promise that an =.scd= clip can be a particular multiple longer than a =.bmc= clip. For recordings lasting many hours, a future streaming recorder/player would be safer than either whole-clip representation.
+
+** Convert an existing BMC archive to SCD
 
 Use =Bmc.clipToScd= when you need a complete, human-readable SuperCollider
 version of a recorded clip:
@@ -266,6 +307,8 @@ comment is the frame's clip-relative time in seconds:
 #+end_src
 
 The message is produced with sclang's =asCompileString= representation. All frames are written to one file, even when the clip contains more than 1,000 messages. The converter does not create numbered parts. Running it again for the same clip replaces the existing =.scd= export.
+
+The resulting file is now a fully loadable clip, not only a display/export format. Use =Bmc.loadClip= or =Bmc.loadClipScd= to restore it.
 
 To confirm the destination before opening the file:
 

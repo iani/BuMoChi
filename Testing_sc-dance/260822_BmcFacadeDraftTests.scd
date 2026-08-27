@@ -1,7 +1,7 @@
 // End-to-end draft tests for the public Bmc facade.
 // Recompile the class library before evaluating.
 (
-var check, makeFrame, take1, take2, combined, typed, savedPath, wire, composite;
+var check, makeFrame, take1, take2, combined, typed, savedPath, scdPath, wire, composite;
 
 check = { |condition, failureMessage|
 	if(condition.not) { Error("FAIL: " ++ failureMessage).throw };
@@ -56,6 +56,18 @@ check.(Bmc.clip(\loadedTake).size == 2, "saved clip did not load");
 Bmc.removeClip(\loadedTake);
 check.(Bmc.clip(\loadedTake).isNil, "clip removal failed");
 File.delete(savedPath);
+
+// Human-readable SCD storage round trip.
+scdPath = "/private/tmp/bmc_facade_draft_test.scd";
+Bmc.saveClipScd(\firstTake, scdPath);
+Bmc.loadClip(scdPath, \loadedScdTake);
+check.(Bmc.clip(\loadedScdTake).size == 2, "SCD clip did not load");
+check.(Bmc.clip(\loadedScdTake).timeAt(0) == 0.0,
+	"SCD clip did not begin at relative time zero");
+check.(Bmc.clip(\loadedScdTake).frameAt(1) == take1.frameAt(1),
+	"SCD round trip changed a frame");
+Bmc.removeClip(\loadedScdTake);
+File.delete(scdPath);
 
 // Live source wiring into a composite avatar.
 composite = Bmc.addAvatar(\composite, "composite");

@@ -536,8 +536,21 @@ directory inside =Platform.userAppSupportDir= and the =.bmc= extension.
 :PROPERTIES:
 :CUSTOM_ID: bmcloadclippath-name--bmcloadpath-name
 :END:
-Loads a saved Bmc clip. If =name= is omitted, the filename becomes the clip
-name.
+Loads a saved =.bmc= or =.scd= clip; the extension selects the reader. If
+=name= is omitted, the filename becomes the clip name.
+
+**** =Bmc.saveClipScd(name, path)=
+
+Saves a clip directly in the complete, human-readable timestamp/message
+format. When =path= is omitted, the file is saved as =name.scd= in the default
+=BmcClips= directory.
+
+**** =Bmc.loadClipScd(path, name)=
+
+Loads a readable =.scd= clip explicitly. The first stored timestamp is
+normalized to zero while all frame intervals are preserved. Load only trusted
+=.scd= files because their message lines are interpreted as SuperCollider
+code.
 
 **** =Bmc.clipToScd(name)= / =Bmc.convertClipToScd(name)=
 :PROPERTIES:
@@ -567,7 +580,8 @@ timestamp followed by the message's sclang representation:
 
 The entire clip is stored in one =.scd= file; it is not divided into groups
 of 1,000 messages. Exporting again replaces an existing =.scd= file of the
-same name.
+same name. The exported file can be restored with =Bmc.loadClip= or
+=Bmc.loadClipScd=.
 
 *** Playback
 :PROPERTIES:

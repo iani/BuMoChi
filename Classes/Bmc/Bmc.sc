@@ -136,8 +136,10 @@ Bmc {
 	*renameClip { |oldName, newName| ^library.rename(oldName, newName) }
 	*loadClip { |path, name| ^library.load(path, name) }
 	*load { |path, name| ^this.loadClip(path, name) }
+	*loadClipScd { |path, name| ^library.loadScd(path, name) }
 	*saveClip { |name, path| ^library.save(name, path) }
 	*save { |name, path| ^this.saveClip(name, path) }
+	*saveClipScd { |name, path| ^library.saveScd(name, path) }
 	*clipToScd { |name| ^library.exportScd(name) }
 	*convertClipToScd { |name| ^this.clipToScd(name) }
 
