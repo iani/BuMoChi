@@ -1,119 +1,80 @@
-# BuMoChi Terminology Glossary
+---
+title: BuMoChi Terminology Glossary
+---
 
-This document defines the principal terms used when recording, generating,
-composing, and rendering motion with BuMoChi. The detailed design discussion is
-in [Session Data Objects and Terminology](SessionDataObjectsAndTerminology.org).
+This document defines the principal terms used when recording, generating, composing, and rendering motion with BuMoChi. The detailed design discussion is in [Session Data Objects and Terminology](SessionDataObjectsAndTerminology.org).
 
-## Session
+# Session
 
-A session creates the motion of one or more avatars during live coding,
-rehearsal, or performance. It does this by replaying recorded motion, receiving
-live motion, generating synthetic motion, and combining these sources into
-completed motion frames for its figures. When the session is activated and
-performed, it routes each resulting figure stream to the corresponding avatar
-in Godot. A session can therefore create an animation containing several
-avatars, each moving independently according to its assigned motion data.
+A session creates the motion of one or more avatars during live coding, rehearsal, or performance. It does this by replaying recorded motion, receiving live motion, generating synthetic motion, and combining these sources into completed motion frames for its figures. When the session is activated and performed, it routes each resulting figure stream to the corresponding avatar in Godot. A session can therefore create an animation containing several avatars, each moving independently according to its assigned motion data.
 
-A session definition defines motion sources, motions, figures, avatars, and
-their routes. A clip is immutable recorded motion data. A motion configures a
-clip, live stream, function, or Synth-controlled generator for use in a
-session. A figure evaluates and layers ordered motions to produce complete
-frames. An avatar assigns external identity and a VMC destination to a
-completed figure. Routing information is added only at this final boundary and
-is not stored in clips.
+A session definition defines motion sources, motions, figures, avatars, and their routes. A clip is immutable recorded motion data. A motion configures a clip, live stream, function, or Synth-controlled generator for use in a session. A figure evaluates and layers ordered motions to produce complete frames. An avatar assigns external identity and a VMC destination to a completed figure. Routing information is added only at this final boundary and is not stored in clips.
 
-Each session is saved as a separate named `.scd` file. Loaded sessions are
-registered by name in the in-memory `Bmc.sessions` dictionary.
+Each session is saved as a separate named `.scd` file. Loaded sessions are registered by name in the in-memory `Bmc.sessions` dictionary.
 
-## Clip
+# Clip
 
-A clip is immutable, time-indexed recorded motion data: an ordered collection
-of mocap frames and their relative playback times.
+A clip is immutable, time-indexed recorded motion data: an ordered collection of mocap frames and their relative playback times.
 
-A clip is not owned by or permanently associated with an avatar. Avatar and
-source names recorded in its frames are provenance metadata: they describe
-where the motion came from, not where it must be sent during future playback.
-Output routes are never stored in a clip.
+A clip is not owned by or permanently associated with an avatar. Avatar and source names recorded in its frames are provenance metadata: they describe where the motion came from, not where it must be sent during future playback. Output routes are never stored in a clip.
 
-The same clip may animate different avatars, supply selected bones, be
-transformed, or be combined with other recorded, live, or generated sources.
+The same clip may animate different avatars, supply selected bones, be transformed, or be combined with other recorded, live, or generated sources.
 
-## Source
+# Source
 
-A source is anything capable of supplying motion values to a motion. Source is
-a role or interface, not necessarily a separate top-level session dictionary.
+A source is anything capable of supplying motion values to a motion. Source is a role or interface, not necessarily a separate top-level session dictionary.
 
-A source may be a recorded clip, live XR-Animator or VMC stream, another
-networked performer or composed figure stream, a language-side Function, or a
-Synth-controlled generator exposed through a bus or adapter. It may provide a
-complete pose or only selected bones or channels.
+A source may be:
 
-## Motion
+- a recorded clip;
+- a live XR-Animator or VMC stream;
+- another networked performer or composed figure stream;
+- a language-side Function;
+- a Synth-controlled generator exposed through a bus or adapter.
 
-A motion is a configured use of a source within a session. It may specify
-playback rate, looping, the position at which clip reading begins,
-transformations, or processing rules.
+A source may provide a complete pose or only selected bones or channels.
 
-For example, `walk` is a session-local motion name that uses saved clip
-`take1`:
+# Motion
 
-```supercollider
+A motion is a configured use of a source within a session. It may specify playback rate, looping, the position at which clip reading begins, transformations, or processing rules.
+
+For example, `\walk` is a session-local motion name that uses the saved clip `\take1`:
+
+``` supercollider
 \walk -> (clip: \take1, rate: 1.0, loop: false, in: 0.0)
 ```
 
-The `clip` field is shorthand for `source: (type: \clip, name: \take1)`. The
-`in` value is the position in seconds at which reading begins inside the clip.
-A future scene timeline may use a separate `at` value for the time at which a
-motion begins in a scene.
+The `clip` field is convenient shorthand for `source: (type: \clip, name: \take1)`. The `in` value is the position in seconds at which reading begins inside the clip. A future scene timeline may use a separate `at` value for the time at which a motion begins in a scene.
 
-## Figure
+# Figure
 
-A figure is a logical full-body motion state assembled from one or more ordered
-motions. It exists between raw motion sources and the rendered avatar.
+A figure is a logical full-body motion state assembled from one or more ordered motions. It exists between raw motion sources and the rendered avatar.
 
-A figure selects bones or channels, applies source layers from first to last,
-preserves valid underlying data when a later layer lacks a value, and fills any
-still-missing values according to an explicit policy such as `reference` or
-`hold`. It produces one complete frame before passing that frame to an avatar.
+A figure selects bones or channels, applies source layers from first to last, preserves valid underlying data when a later layer lacks a value, and fills any still-missing values according to an explicit policy such as `\reference` or `\hold`. It produces one complete frame before passing that frame to an avatar.
 
-A figure is not necessarily identical to a visible avatar. The same figure may
-be routed to different avatars, and several figures may reuse the same source
-or motion definition.
+A figure is not necessarily identical to a visible avatar. The same figure may be routed to different avatars, and several figures may reuse the same source or motion definition.
 
-## Avatar
+# Avatar
 
-An avatar is the rendered destination of a completed figure. At the final
-Figure → Avatar boundary it supplies external identity and a VMC destination.
-This assignment may rewrite the outgoing avatar name and attach routing
-information, but it never modifies the source clip.
+An avatar is the rendered destination of a completed figure. At the final Figure -\> Avatar boundary it supplies external identity and a VMC destination. This assignment may rewrite the outgoing avatar name and attach routing information, but it never modifies the source clip.
 
-Under the routed-frame protocol, every Bmc avatar sends to one shared decoder
-input, while its `vmcPort` identifies the final Godot VMC destination port. A
-legacy version-1 frame instead receives its destination through the decoder's
-`--target-port` fallback.
+Under the routed-frame protocol, every Bmc avatar sends to one shared decoder input, while its `vmcPort` identifies the final Godot VMC destination port. A legacy version-1 frame instead receives its destination through the decoder's `--target-port` fallback.
 
-## Recorded avatar name
+# Recorded avatar name
 
-The avatar name stored inside a recorded clip is provenance metadata. It may
-identify or filter the original source but does not determine the clip's future
-playback target.
+The avatar name stored inside a recorded clip is provenance metadata. It may identify or filter the original source but does not determine the clip's future playback target.
 
-## Motion name
+# Motion name
 
-A motion name is a session-local key for a configured source, such as `walk` or
-`motherEntrance`. It may differ from the saved clip name. For example, motion
-`motherEntrance` may use clip `take1` without renaming or modifying that
-recording.
+A motion name is a session-local key for a configured source, such as `\walk` or `\motherEntrance`. It may differ from the saved clip name. For example, motion `\motherEntrance` may use clip `\take1` without renaming or modifying that recording.
 
-## Scene
+# Scene
 
-A scene is a possible future dramaturgical unit within a session. It should add
-an ordered sequence, timeline, or set of cues. The present session format
-configures motion and routing but does not yet define this temporal structure.
+A scene is a possible future dramaturgical unit within a session. It should add an ordered sequence, timeline, or set of cues. The present session format configures motion and routing but does not yet define this temporal structure.
 
-## Conceptual pipeline
+# Conceptual pipeline
 
-```mermaid
+``` mermaid
 flowchart TD
     C[Recorded clips] --> M[Configured motions]
     L[Live sources] --> M
@@ -124,9 +85,9 @@ flowchart TD
     D --> V[Godot avatar]
 ```
 
-## Proposed session data
+# Proposed session data
 
-```supercollider
+``` supercollider
 (
     name: \duet_rehearsal,
     decoder: (host: "127.0.0.1", port: 39538),
@@ -159,6 +120,4 @@ flowchart TD
 )
 ```
 
-Routed avatar settings and the shared decoder setting are implemented. The
-fuller `motions` and `figures` composition model remains the next session-format
-stage.
+Routed avatar settings and the shared decoder setting are implemented. The fuller `motions` and `figures` composition model remains the next session-format stage.

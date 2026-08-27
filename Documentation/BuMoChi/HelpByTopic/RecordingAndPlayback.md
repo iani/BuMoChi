@@ -1,0 +1,558 @@
+---
+title: Recording And Playback
+---
+
+This guide tests recording and playback with XR-Animator, the Bunraku OSC encoder, SuperCollider/BuMoChi, the Bunraku OSC decoder, and Godot on the same computer. A recording is stored and managed as a *clip*. The examples below use clip methods such as `Bmc.record`, `Bmc.listClips`, and `Bmc.playClip`.
+
+Use this port map throughout the test:
+
+| From           | To             | UDP port |
+|----------------|----------------|----------|
+| XR-Animator    | Python encoder | 39538    |
+| Python encoder | BuMoChi        | 57130    |
+| BuMoChi        | Python decoder | 39537    |
+| Python decoder | Godot          | 39539    |
+
+Only one application can listen on a particular UDP port. Stop any older encoder or decoder processes before starting this test.
+
+# Connect XR-Animator to SuperCollider via OscEncoder
+
+1.  In XR-Animator, open the VMC/OSC output settings and set the destination to:
+
+    ``` example
+    Host: 127.0.0.1
+    Port: 39537
+    ```
+
+    Enable VMC output. XR-Animator may remain running while the other parts of the pipeline are started.
+
+2.  Open Terminal and change to BuMoChi's testing directory:
+
+    ``` bash
+    cd /Users/iani/Obsidian/Iani/Projects/260715_ICLC27/AppsAndCode/BuMoChi/Testing_BuMoChi
+    ```
+
+3.  Start the Python encoder in that terminal:
+
+    ``` bash
+    python3 BunrakuOSCEncoder.py \
+      --no-oscgroups \
+      --avatar "BunrakuTestAvatar" \
+      --source "xr-animator" \
+      --verbose
+    ```
+
+    Alternatively, if you have installed a globally accessible copy of BurakuOSCEncoder, try:
+
+    ``` bash
+    BunrakuOSCEncoder \
+      --no-oscgroups \
+      --avatar "BunrakuTestAvatar" \
+      --source "xr-animator" \
+      --verbose
+    ```
+
+    Keep this terminal open. When XR-Animator is sending data, the encoder's received/sent counters should increase.
+
+4.  In SuperCollider, evaluate the following block. Evaluate the entire block by placing the cursor inside it and pressing `Command-Return`.
+
+    ``` supercollider
+    (
+    Bmc.reset;
+
+    // This identifier must match the encoder's --avatar value.
+    Bmc.addAvatar(\BunrakuTestAvatar, "BunrakuTestAvatar");
+    Bmc.selectAvatar(\BunrakuTestAvatar);
+
+    // Playback and live frames will be sent to the decoder on this port.
+    Bmc.output(NetAddr("127.0.0.1", 39537));
+
+    // Receive encoded XR-Animator frames here.
+    Bmc.start(57130);
+    )
+    ```
+
+5.  Confirm that SuperCollider is receiving frames:
+
+    ``` supercollider
+    Bmc.status;
+    ```
+
+    In the Post window, `running` should be `true`, `port` should be `57130`, and `received` should increase while you move in front of XR-Animator.
+
+6.  Optional but recommended: make the live and replayed motion visible in Godot. Run a Godot project whose VMC tracker listens on port `39539`, such as the Mother input of `Seed_4_Mother_Ishidomaru_C`. Then open a second terminal in `Testing_BuMoChi` and start the decoder:
+
+    ``` bash
+    python3 BunrakuOSCDecoder.py \
+      --listen-port 39537 \
+      --target-port 39539 \
+      --accept-avatar "BunrakuTestAvatar" \
+      --verbose
+    ```
+
+    The avatar in Godot should now follow the live XR-Animator motion. This confirms the complete path before recording.
+
+# Record
+
+1.  Make sure XR-Animator is sending, the encoder is running, and `Bmc.status` shows an increasing `received` count.
+
+2.  Choose a name for the take and begin recording:
+
+    ``` supercollider
+    Bmc.record(\take1, "BunrakuTestAvatar", "xr-animator");
+    ```
+
+    The second and third arguments are filters. They must match the encoder's `--avatar` and `--source` values exactly. To record all incoming frames without these filters, use `Bmc.record(\take1)`.
+
+3.  Perform a short, recognisable movement in front of the camera for five to ten seconds.
+
+4.  Stop recording and retain the resulting clip in a SuperCollider variable:
+
+    ``` supercollider
+    ~take1 = Bmc.stopRecording;
+    ```
+
+5.  Inspect the result:
+
+    ``` supercollider
+    ~take1.size;       // number of recorded frames
+    ~take1.duration;   // duration in seconds
+    Bmc.status;
+    ```
+
+    A successful recording has a frame count and duration greater than zero, and `Bmc.status` reports `recording: false`.
+
+6.  If you started a take accidentally, discard it instead of storing it:
+
+    ``` supercollider
+    Bmc.cancelRecording;
+    ```
+
+7.  Save the recording to disk so that it can be loaded after a restart:
+
+    ``` supercollider
+    ~take1Path = Bmc.saveClip(\take1);
+    ~take1Path.postln;
+    ```
+
+    With no explicit path, BuMoChi saves `take1.bmc` in the `BmcClips` directory inside `Platform.userAppSupportDir`. Display that directory at any time with:
+
+    ``` supercollider
+    BmcClipLibrary.defaultDirectory.postln;
+    ```
+
+# List clips
+
+List all clips currently held in memory:
+
+``` supercollider
+Bmc.listClips;
+```
+
+The Post window shows the clip name, number of frames, and duration. The current clip is marked with an asterisk. To inspect the names as an array:
+
+``` supercollider
+Bmc.library.names;
+```
+
+To open a small selection window:
+
+``` supercollider
+Bmc.showClips;
+```
+
+The window initially lists clips in memory. Clicking an in-memory row makes that clip current. After recompiling the SuperCollider class library or calling `Bmc.reset`, this initial list can therefore be empty.
+
+Use the buttons above the list as follows:
+
+- `List saved` scans the default `BmcClips` directory and lists the names of its `.bmc` files. It does not load their frame data into memory.
+- Select a row and press `Play selected`. If the clip is only on disk, Bmc loads it first and then starts playback. If it is already in memory, Bmc plays the existing in-memory clip directly.
+
+The saved-file scan is limited to `BmcClipLibrary.defaultDirectory`. Files stored in other directories must first be loaded explicitly with `Bmc.loadClip`.
+
+# Load a clip
+
+Loading is necessary after restarting SuperCollider, evaluating `Bmc.reset`, or otherwise clearing the in-memory clip library.
+
+1.  Find the default clip directory:
+
+    ``` supercollider
+    ~clipDirectory = BmcClipLibrary.defaultDirectory;
+    ~clipDirectory.postln;
+    ```
+
+2.  Construct the path and load the saved clip:
+
+    ``` supercollider
+    ~take1Path = ~clipDirectory +/+ "take1.bmc";
+    Bmc.loadClip(~take1Path, \take1);
+    ```
+
+    The second argument is the name the clip will have in the current library. It may be omitted; in that case, the filename becomes the clip name:
+
+    ``` supercollider
+    Bmc.loadClip(~take1Path);
+    ```
+
+3.  Verify that loading succeeded:
+
+    ``` supercollider
+    Bmc.listClips;
+    Bmc.currentClip.size;
+    Bmc.currentClip.duration;
+    ```
+
+# Save and load clips in readable SCD format
+
+BuMoChi supports two clip storage schemes:
+
+| Format | Save method | Load method | Character |
+|----|----|----|----|
+| `.bmc` | `Bmc.saveClip` | `Bmc.loadClip` | compact SuperCollider object archive |
+| `.scd` | `Bmc.saveClipScd` | `Bmc.loadClipScd` | readable timestamp/message text |
+
+To save the selected in-memory clip under the default `BmcClips` directory:
+
+``` supercollider
+Bmc.record(\take1);
+// perform the motion
+Bmc.stopRecording;
+~path = Bmc.saveClipScd(\take1);
+~path.postln;
+```
+
+`Bmc.record` itself remains an in-memory recorder. `Bmc.saveClipScd` writes the completed clip after `Bmc.stopRecording`; selecting `.scd` does not change how frames are accumulated during capture.
+
+The default result is `BmcClips/take1.scd`. Supply an explicit path as the second argument when required:
+
+``` supercollider
+Bmc.saveClipScd(\take1, "/path/to/take1.scd");
+```
+
+Load it again with either the format-specific method or the ordinary loader:
+
+``` supercollider
+Bmc.loadClipScd("/path/to/take1.scd", \take1);
+
+// Bmc.loadClip recognizes the .scd extension automatically:
+Bmc.loadClip("/path/to/take1.scd", \take1);
+```
+
+The loader scans the file incrementally rather than interpreting the complete file as one enormous collection. If an older recorder file begins at an absolute timestamp such as `266.811183875`, the loader subtracts its first timestamp so that clip playback begins at time zero. Frame spacing is preserved.
+
+The readable loader uses SuperCollider's `interpret` operation for each message line. Load only `.scd` clip files that you created yourself or received from a trusted collaborator; an arbitrary `.scd` file may contain executable SuperCollider code.
+
+## Capacity compared with BMC archives
+
+The `.scd` scheme is expected to tolerate substantially more frames when the limiting failure is `Object.writeArchive` or `Object.readArchive` processing one very large object graph. Both writing and parsing the readable file proceed frame by frame.
+
+It is not intrinsically more compact. An `.scd` file is normally considerably larger and slower to load because every number is stored as text. After loading, the complete `BmcClip` still resides in SuperCollider memory. Therefore there is no fixed promise that an `.scd` clip can be a particular multiple longer than a `.bmc` clip. For recordings lasting many hours, `OscRecorder` already provides chunked disk capture; dynamic/streaming Bmc playback would be a separate future development.
+
+## Relationship to OscRecorder
+
+The existing `OscRecorder` class provides the proven long-duration recording strategy used in earlier work. It writes incoming OSC messages directly to readable `.scd` files and starts a new file after `maxItems` messages; the default is `1,000`. Because completed chunks are already on disk, recording duration is not limited by the size that one archive file can serialize. `OscRecorder.sessionData` may still retain the complete session in memory for later use.
+
+This is different from `Bmc.record`:
+
+| Recorder | Disk behavior during capture | In-memory behavior |
+|----|----|----|
+| `Bmc.record` | does not write until `Bmc.saveClip` or `Bmc.saveClipScd` | retains the complete clip |
+| `OscRecorder` | writes successive limited-size `.scd` files while recording | may retain the complete session in `sessionData` |
+
+The relevant implementation is [Classes/Animation/OscRecorder.sc](../../../Classes/Animation/OscRecorder.sc). Its companion `SessionData` and `OscFile` classes read the sequence of recorder files. By contrast, `Bmc.loadClipScd(path)` loads one complete `.scd` clip file. Loading an entire directory of numbered `OscRecorder` chunks as one Bmc clip is not currently part of `Bmc.loadClipScd`.
+
+This division is useful: use `OscRecorder` when uninterrupted, effectively unlimited capture to chunked files is the priority; use the Bmc clip methods when the recording must immediately participate in Bmc selection, composition, session assignment, and playback.
+
+## Convert an existing BMC archive to SCD
+
+Use `Bmc.clipToScd` when you need a complete, human-readable SuperCollider version of a recorded clip:
+
+``` supercollider
+~scdPath = Bmc.clipToScd(\take1);
+~scdPath.postln;
+```
+
+This writes `take1.scd` in the same directory as `take1.bmc` and returns its full path. `Bmc.convertClipToScd(\take1)` is an equivalent, more explicit name for the same operation.
+
+It is not necessary to call `Bmc.loadClip` first when the archive is in the default clip directory. If `take1` is absent from memory, `Bmc.clipToScd(\take1)` automatically looks for:
+
+``` supercollider
+BmcClipLibrary.defaultDirectory +/+ "take1.bmc"
+```
+
+When a clip was loaded from, or saved to, a custom path during the current SuperCollider session, the converter remembers that path and puts the `.scd` beside that `.bmc` file.
+
+The output repeats the following pair for every frame. The number in the comment is the frame's clip-relative time in seconds:
+
+``` supercollider
+//:--[0.125]
+[ '/bunraku/vmc/frame', 1, 'Avatar', 'source', 2 ]
+```
+
+The message is produced with sclang's `asCompileString` representation. All frames are written to one file, even when the clip contains more than 1,000 messages. The converter does not create numbered parts. Running it again for the same clip replaces the existing `.scd` export.
+
+The resulting file is now a fully loadable clip, not only a display/export format. Use `Bmc.loadClip` or `Bmc.loadClipScd` to restore it.
+
+To confirm the destination before opening the file:
+
+``` supercollider
+~scdPath.postln;
+PathName(~scdPath).pathOnly.postln;
+```
+
+# Play a clip
+
+1.  Make sure the Python decoder and Godot are running as described in the first section. The selected Bmc avatar must still output to decoder port `39537`:
+
+    ``` supercollider
+    Bmc.selectAvatar(\BunrakuTestAvatar);
+    Bmc.output(NetAddr("127.0.0.1", 39537));
+    ```
+
+2.  Disable VMC output in XR-Animator before playback. Otherwise live frames and replayed frames will both reach the same Godot tracker and compete with one another. The encoder may remain running while XR-Animator output is disabled.
+
+3.  Select and play the clip:
+
+    ``` supercollider
+    Bmc.selectClip(\take1);
+    Bmc.playClip;             // plays the current clip
+    ```
+
+    A named clip can also be played directly:
+
+    ``` supercollider
+    Bmc.playClip(\take1);
+    ```
+
+4.  Test the transport controls:
+
+    ``` supercollider
+    Bmc.pause;
+    Bmc.resume;
+    Bmc.stopPlayback;
+    ```
+
+5.  Test speed, seeking, and looping:
+
+    ``` supercollider
+    Bmc.rate(0.5);       // half speed
+    Bmc.loop(true);
+    Bmc.playClip(\take1);
+
+    Bmc.seek(2.0);       // move to approximately two seconds
+    Bmc.loop(false);
+    Bmc.rate(1.0);       // restore normal speed
+    Bmc.stopPlayback;
+    ```
+
+6.  When testing is complete, stop BuMoChi and the external processes:
+
+    ``` supercollider
+    Bmc.stop;
+    ```
+
+    Disable XR-Animator VMC output, press `Control-C` in the encoder and decoder terminals, and stop the running Godot project.
+
+# Clip Playback Settings
+
+A clip archive contains recorded frame data and frame timing. It does not by itself specify which staged avatar should receive the replay or which OSC port should carry it. Replaying a clip therefore requires the following settings:
+
+1.  A *clip key*: the name used inside a session, such as `\motherEntrance`.
+2.  A *clip name*: the saved `.bmc` archive, such as `\mother_take_01`.
+3.  An *avatar name*: the Bmc avatar destination, such as `\Mother`.
+4.  A *route*: the host and UDP port to which Bmc sends encoded frames for that avatar. Normally the host is `127.0.0.1` and the port is the corresponding Bunraku decoder's listening port.
+5.  Optional transport values: playback `rate`, `loop` state, and starting time in seconds.
+
+The minimum useful clip setting contains the clip and avatar names:
+
+``` supercollider
+(clip: \mother_take_01, avatar: \Mother)
+```
+
+Bmc supplies these defaults when the optional settings are absent:
+
+``` supercollider
+(
+clip: \mother_take_01,
+avatar: \Mother,
+rate: 1.0,
+loop: false,
+start: 0.0
+)
+```
+
+An optional `path` may identify a `.bmc` file outside the default BmcClips directory:
+
+``` supercollider
+(
+clip: \mother_take_01,
+avatar: \Mother,
+path: "/absolute/path/to/mother_take_01.bmc"
+)
+```
+
+The loading and replay sequence is:
+
+1.  Find the settings by their clip key.
+2.  Register the named avatar if it is not already registered.
+3.  Set that avatar's output to its configured host and port.
+4.  Use the in-memory clip when available; otherwise load its `.bmc` archive.
+5.  Select the configured avatar as the player's output.
+6.  Rewrite the outgoing frame's avatar field to the selected avatar name.
+7.  Apply `rate`, `loop`, and `start`.
+8.  Start playback.
+
+This sequence is performed automatically by `Bmc.playSessionClip`.
+
+# Sessions
+
+A Bmc playback session is a named collection of clip playback settings and avatar OSC routes. It is configuration data, not recorded motion data: the `.bmc` clip archives remain separate files.
+
+The proposed two-dictionary design is correct. Bmc stores both dictionaries inside one top-level session data object:
+
+``` supercollider
+(
+name: \duet_rehearsal,
+clips: IdentityDictionary[
+    \motherEntrance -> (
+        clip: \mother_take_01,
+        avatar: \Mother,
+        rate: 1.0,
+        loop: false,
+        start: 0.0
+    ),
+    \ishidomaruReply -> (
+        clip: \ishidomaru_take_03,
+        avatar: \Ishidomaru,
+        rate: 0.75,
+        loop: false,
+        start: 1.2
+    )
+],
+avatars: IdentityDictionary[
+    \Mother -> (host: "127.0.0.1", port: 39537),
+    \Ishidomaru -> (host: "127.0.0.1", port: 39541)
+]
+)
+```
+
+Although the clip name can equal the clip key, storing it explicitly is useful: a dramaturgical cue such as `\motherEntrance` can refer to an archive named `\mother_take_01`. The avatar name is required. The host is stored as well as the port so that the same session format also works across computers. A bare port number is accepted as shorthand for localhost:
+
+``` supercollider
+\Mother -> 39537
+```
+
+## Save a session
+
+Construct the dictionaries and save them:
+
+``` supercollider
+(
+~clipSettings = IdentityDictionary[
+    \motherEntrance -> (clip: \mother_take_01, avatar: \Mother),
+    \ishidomaruReply -> (
+        clip: \ishidomaru_take_03,
+        avatar: \Ishidomaru,
+        rate: 0.75
+    )
+];
+
+~avatarSettings = IdentityDictionary[
+    \Mother -> 39537,
+    \Ishidomaru -> 39541
+];
+
+~session = Bmc.saveSession(
+    \duet_rehearsal,
+    ~clipSettings,
+    ~avatarSettings
+);
+~session.path.postln;
+)
+```
+
+By default this creates:
+
+``` example
+Platform.userAppSupportDir/BmcSessions/duet_rehearsal.scd
+```
+
+The session name becomes the filename. The `.scd` file contains readable sclang data and may be inspected or edited as text. A custom destination may be supplied as the fourth argument to `Bmc.saveSession`. Because loading an `.scd` file asks sclang to interpret its contents, load session files only from sources you trust.
+
+## Load and apply a session
+
+After recompiling or restarting SuperCollider, load by session name:
+
+``` supercollider
+Bmc.loadSession(\duet_rehearsal);
+Bmc.applySession;
+```
+
+`Bmc.loadSession` also accepts an absolute `.scd` path. `Bmc.applySession` registers the configured avatars when needed and restores their OSC output routes. It does not load all clips; clips are loaded on demand.
+
+## Play a configured clip
+
+Use the session clip key, not necessarily the archive name:
+
+``` supercollider
+Bmc.playSessionClip(\motherEntrance);
+
+// Later, after the first playback has stopped:
+Bmc.playSessionClip(\ishidomaruReply);
+```
+
+The current implementation has one Bmc clip player. Consequently these calls play one configured clip at a time; they do not start several clips simultaneously. A future multi-player session layer can add simultaneous or scheduled ensemble playback without changing the stored session format.
+
+See [Avatar Port Numbers](Avatar_Port_Numbers.org) for the complete multi-avatar OSC routing pipeline and terminal commands.
+
+# Set clip and avatar name
+
+There are three related but distinct names:
+
+- The *clip name* (for example `\take1`) identifies a recording in BuMoChi's library.
+- The *avatar name* (for example `BunrakuTestAvatar`) identifies the intended avatar stream.
+- The *source name* (for example `xr-animator`) identifies where that stream came from.
+
+Set the avatar and source names when starting the encoder:
+
+``` bash
+python3 BunrakuOSCEncoder.py \
+  --no-oscgroups \
+  --avatar "Ishidomaru" \
+  --source "xr-animator-camera-1" \
+  --verbose
+```
+
+Register and select the same avatar identifier in SuperCollider:
+
+``` supercollider
+Bmc.addAvatar(\Ishidomaru, "Ishidomaru");
+Bmc.selectAvatar(\Ishidomaru);
+Bmc.output(NetAddr("127.0.0.1", 39537));
+```
+
+Give each take its own clip name and use matching avatar/source filters:
+
+``` supercollider
+Bmc.record(\ishidomaru_take_01, "Ishidomaru", "xr-animator-camera-1");
+// Perform the movement, then:
+Bmc.stopRecording;
+```
+
+If the decoder uses `--accept-avatar`, restart it with the matching name:
+
+``` bash
+python3 BunrakuOSCDecoder.py \
+  --listen-port 39537 \
+  --target-port 39539 \
+  --accept-avatar "Ishidomaru" \
+  --verbose
+```
+
+To rename only an existing in-memory clip, without changing the avatar or source stored in its frames, use:
+
+``` supercollider
+Bmc.renameClip(\ishidomaru_take_01, \ishidomaru_take_01_good);
+```
+
+Choose the avatar and source identifiers before recording whenever possible. Renaming a clip changes its library key, but it does not rewrite the avatar or source metadata embedded in the recorded frames.

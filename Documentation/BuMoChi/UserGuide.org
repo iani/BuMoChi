@@ -11,12 +11,9 @@ Draft user guide for the current Bmc interface.
 :PROPERTIES:
 :CUSTOM_ID: 1-what-bumochi-is
 :END:
-BuMoChi is a SuperCollider library for performing with motion-capture data and animated characters. It lets a live coder treat movement as material: receive it from a camera, record it, replay it, change its timing, combine selected body parts, and send the result to an animated character.
+BuMoChi is a SuperCollider library for performing with motion-capture data and animated characters. It lets a live coder treat movement as material: receive it from a camera, record it, replay it, change its timing, combine selected body parts, and send the result to an animated character. BuMoChi also supports live collaboration among separate performance workstations, each with its own motion-capture tracking, computer, sound-generation, and animation systems. By sharing motion-capture data as OSC through OSCGroups, it makes it possible to rehearse and perform together from different locations over the network.
 
-The library is intended for networked dance, theatre, music, animation, and
-other performance situations in which movement should remain open to live
-intervention. A performer can be captured in one place while collaborators
-process the movement or render the avatar somewhere else.
+The library is intended for networked dance, theatre, music, animation, and other performance situations in which movement should remain open to live intervention. A performer can be captured in one place while collaborators process the movement or render the avatar somewhere else.
 
 The main user interface is the =Bmc= class. Common actions are deliberately
 short enough for live coding:
@@ -29,9 +26,7 @@ Bmc.rate(0.5);
 Bmc.loop(true);
 #+end_src
 
-You do not need to understand the internal classes before using these commands.
-The supporting classes described later in this guide are available when you
-need more detailed control.
+You do not need to understand the internal classes before using these commands. The supporting classes described later in this guide are available when you need more detailed control.
 
 *** What can an end user do?
 :PROPERTIES:
@@ -49,10 +44,7 @@ With the current Bmc interface you can:
 - build a live composite avatar from different motion sources;
 - inspect whether frames are arriving or being rejected.
 
-BuMoChi operates inside SuperCollider, but using the movement features does not
-require booting SuperCollider's audio server. The audio server becomes relevant
-when a performance also synthesizes sound or uses synth control buses to change
-movement.
+BuMoChi operates inside SuperCollider, but using the movement features does not require booting SuperCollider's audio server. The audio server becomes relevant when a performance also synthesizes sound or uses synth control buses to change movement.
 
 ** 2. The software connected by BuMoChi
 :PROPERTIES:
@@ -75,10 +67,7 @@ On a single computer, OSCGroups can initially be omitted:
 XR Animator → encoder → BuMoChi → decoder → Godot
 #+end_src
 
-The components have different jobs. XR Animator observes a person, the encoder
-packages one complete skeleton frame, OSCGroups carries frames between
-computers, BuMoChi records or transforms them, the decoder restores standard
-VMC messages, and Godot displays the animated character.
+The components have different jobs. XR Animator observes a person, the encoder packages one complete skeleton frame, OSCGroups carries frames between computers, BuMoChi records or transforms them, the decoder restores standard VMC messages, and Godot displays the animated character.
 
 *** SuperCollider and BuMoChi
 :PROPERTIES:
@@ -97,8 +86,7 @@ that directory, evaluate:
 Platform.userExtensionDir;
 #+end_src
 
-After installing or updating BuMoChi, recompile the SuperCollider class
-library. In the SuperCollider IDE, use *Language → Recompile Class Library*.
+After installing or updating BuMoChi, recompile the SuperCollider class library. In the SuperCollider IDE, use *Language → Recompile Class Library*.
 
 The current source files for the public interface are under:
 
@@ -110,41 +98,30 @@ Classes/Bmc/
 :PROPERTIES:
 :CUSTOM_ID: xr-animator
 :END:
-XR Animator uses a webcam to track a performer and animate a humanoid model. In
-this pipeline it is the source of standard VMC motion messages.
+XR Animator uses a webcam to track a performer and animate a humanoid model. In this pipeline it is the source of standard VMC motion messages.
 
 - Project and documentation: [[https://github.com/ButzYung/SystemAnimatorOnline]]
 - Native application releases: [[https://github.com/ButzYung/SystemAnimatorOnline/releases]]
 - Online version: [[https://sao.animetheme.com/XR_Animator.html]]
 
-Use the native Electron application for this pipeline because VMC output is a
-native-application feature. Configure its VMC destination host and port to
-match the encoder; the local hello-world example below uses
-=127.0.0.1:39537=.
+Use the native Electron application for this pipeline because VMC output is a native-application feature. Configure its VMC destination host and port to match the encoder; the local hello-world example below uses =127.0.0.1:39537=.
 
 *** Python encoder and decoder
 :PROPERTIES:
 :CUSTOM_ID: python-encoder-and-decoder
 :END:
-The required Python command-line scripts are included in the BuMoChi
-distribution:
+The required Python command-line scripts are included in the BuMoChi distribution:
 
 #+begin_src text
 Testing_BuMoChi/BunrakuOSCEncoder.py
 Testing_BuMoChi/BunrakuOSCDecoder.py
 #+end_src
 
-Their supporting Python modules are in the same directory. Keep those files
-together. The scripts use Python 3 and do not require third-party Python
-packages.
+Their supporting Python modules are in the same directory. Keep those files together. The scripts use Python 3 and do not require third-party Python packages.
 
-=BunrakuOSCEncoder.py= receives VMC from XR Animator. It collects the 21
-required humanoid bones and sends one =/bunraku/vmc/frame= message per complete
-pose to Bmc on port =57130= and, by default, a second copy to =OscGroupClient=
-on port =22244=.
+=BunrakuOSCEncoder.py= receives VMC from XR Animator. It collects the 21 required humanoid bones and sends one =/bunraku/vmc/frame= message per complete pose to Bmc on port =57130= and, by default, a second copy to =OscGroupClient= on port =22244=.
 
-=BunrakuOSCDecoder.py= performs the reverse conversion. It receives Bunraku
-frames from SuperCollider and emits standard VMC messages for Godot.
+=BunrakuOSCDecoder.py= performs the reverse conversion. It receives Bunraku frames from SuperCollider and emits standard VMC messages for Godot.
 
 An additional, more general VMC packet-preserving bridge is included under:
 
@@ -189,20 +166,15 @@ A VMC-compatible reference project is included at:
 Testing_BuMoChi/GodotVMCReference/project.godot
 #+end_src
 
-Import that file from the Godot Project Manager and run the project. The
-reference test configuration listens for reconstructed VMC on UDP port
-=39539=.
+Import that file from the Godot Project Manager and run the project. The reference test configuration listens for reconstructed VMC on UDP port =39539=.
 
-You may later replace the reference character or project. As long as the new
-Godot project accepts standard VMC and has a correctly mapped humanoid
-skeleton, the encoder, BuMoChi, and decoder do not need to change.
+You may later replace the reference character or project. As long as the new Godot project accepts standard VMC and has a correctly mapped humanoid skeleton, the encoder, BuMoChi, and decoder do not need to change.
 
 ** 3. Hello world: capture, record, and replay movement
 :PROPERTIES:
 :CUSTOM_ID: 3-hello-world-capture-record-and-replay-movement
 :END:
-This first example runs everything on one computer and deliberately omits
-OSCGroups. It demonstrates the smallest useful BuMoChi session.
+This first example runs everything on one computer and deliberately omits OSCGroups. It demonstrates the smallest useful BuMoChi session.
 
 *** Port map
 :PROPERTIES:
@@ -215,8 +187,7 @@ OSCGroups. It demonstrates the smallest useful BuMoChi session.
 | BuMoChi        | Python decoder | =39537=  |
 | Python decoder | Godot          | =39539=  |
 
-Only one program can listen on a given UDP port. Stop older test processes
-before starting this example.
+Only one program can listen on a given UDP port. Stop older test processes before starting this example.
 
 *** Step 1: start Godot
 :PROPERTIES:
@@ -369,15 +340,13 @@ Then disable XR Animator output, press *Control-C* in the encoder and decoder te
 :PROPERTIES:
 :CUSTOM_ID: bmcstartport-57130
 :END:
-Starts the Bunraku Frame OSC receiver. The port must match the output of the
-encoder or the local OSCGroups receiving client.
+Starts the Bunraku Frame OSC receiver. The port must match the output of the encoder or the local OSCGroups receiving client.
 
 **** =Bmc.stop=
 :PROPERTIES:
 :CUSTOM_ID: bmcstop
 :END:
-Stops clip playback, cancels an unfinished recording, and closes the BuMoChi
-OSC receiver. It does not stop XR Animator, Python, OSCGroups, or Godot.
+Stops clip playback, cancels an unfinished recording, and closes the BuMoChi OSC receiver. It does not stop XR Animator, Python, OSCGroups, or Godot.
 
 **** =Bmc.status=
 :PROPERTIES:
@@ -405,15 +374,13 @@ Creates an avatar destination. Its name should match the avatar name carried by 
 :PROPERTIES:
 :CUSTOM_ID: bmcavatarname
 :END:
-Returns a registered =BmcAvatar=. With no argument it returns the default
-avatar.
+Returns a registered =BmcAvatar=. With no argument it returns the default avatar.
 
 **** =Bmc.selectAvatar(name)=
 :PROPERTIES:
 :CUSTOM_ID: bmcselectavatarname
 :END:
-Makes an avatar the destination for subsequent playback and completed-frame
-recording.
+Makes an avatar the destination for subsequent playback and completed-frame recording.
 
 **** =Bmc.output(destination)=
 :PROPERTIES:
@@ -449,8 +416,7 @@ Bmc.record(\take1, "actor", "camA");
 :PROPERTIES:
 :CUSTOM_ID: bmcstoprecording
 :END:
-Stops recording, returns a =BmcMocapClip=, adds it to the clip library, and
-makes it the current clip.
+Stops recording, returns a =BmcMocapClip=, adds it to the clip library, and makes it the current clip.
 
 **** =Bmc.cancelRecording=
 :PROPERTIES:
@@ -502,16 +468,12 @@ Posts clip names, frame counts, and durations in the SuperCollider post window. 
 :PROPERTIES:
 :CUSTOM_ID: bmcshowclips
 :END:
-Opens the clip window. Initially it shows clips currently loaded in memory.
-The buttons above the list provide two disk and playback operations:
+Opens the clip window. Initially it shows clips currently loaded in memory. The buttons above the list provide two disk and playback operations:
 
-- =List saved= scans =BmcClipLibrary.defaultDirectory= for =.bmc= files and
-  displays their names without loading their contents into memory.
-- =Play selected= loads the selected saved clip if necessary, then begins
-  playback. A clip already in memory is played directly.
+- =List saved= scans =BmcClipLibrary.defaultDirectory= for =.bmc= files and displays their names without loading their contents into memory.
+- =Play selected= loads the selected saved clip if necessary, then begins playback. A clip already in memory is played directly.
 
-Selecting a row for an in-memory clip also makes it the current clip. Saved
-clips shown by =List saved= remain unloaded until =Play selected= is pressed.
+Selecting a row for an in-memory clip also makes it the current clip. Saved clips shown by =List saved= remain unloaded until =Play selected= is pressed.
 
 **** =Bmc.renameClip(oldName, newName)=
 :PROPERTIES:
@@ -529,23 +491,17 @@ Removes a clip from memory. This does not delete a separately saved file.
 :PROPERTIES:
 :CUSTOM_ID: bmcsaveclipname-path--bmcsavename-path
 :END:
-Writes a clip archive. If the path is omitted, BuMoChi uses a =BmcClips=
-directory inside =Platform.userAppSupportDir= and the =.bmc= extension.
+Writes a clip archive. If the path is omitted, BuMoChi uses a =BmcClips= directory inside =Platform.userAppSupportDir= and the =.bmc= extension.
 
 **** =Bmc.loadClip(path, name)= / =Bmc.load(path, name)=
 :PROPERTIES:
 :CUSTOM_ID: bmcloadclippath-name--bmcloadpath-name
 :END:
-Loads a saved =.bmc= or =.scd= clip; the extension selects the reader. If
-=name= is omitted, the filename becomes the clip name.
+Loads a saved =.bmc= or =.scd= clip; the extension selects the reader. If =name= is omitted, the filename becomes the clip name.
 
 **** =Bmc.saveClipScd(name, path)=
 
-Saves a clip directly in the complete, human-readable timestamp/message
-format. When =path= is omitted, the file is saved as =name.scd= in the default
-=BmcClips= directory. This method is called after =Bmc.stopRecording=; Bmc
-retains the complete recording in memory during capture and then writes it
-frame by frame to the =.scd= file.
+Saves a clip directly in the complete, human-readable timestamp/message format. When =path= is omitted, the file is saved as =name.scd= in the default =BmcClips= directory. This method is called after =Bmc.stopRecording=; Bmc retains the complete recording in memory during capture and then writes it frame by frame to the =.scd= file.
 
 #+begin_src supercollider
 Bmc.record(\take1);
@@ -556,10 +512,7 @@ Bmc.saveClipScd(\take1);
 
 **** =Bmc.loadClipScd(path, name)=
 
-Loads a readable =.scd= clip explicitly. The first stored timestamp is
-normalized to zero while all frame intervals are preserved. Load only trusted
-=.scd= files because their message lines are interpreted as SuperCollider
-code.
+Loads a readable =.scd= clip explicitly. The first stored timestamp is normalized to zero while all frame intervals are preserved. Load only trusted =.scd= files because their message lines are interpreted as SuperCollider code.
 
 #+begin_src supercollider
 Bmc.loadClipScd(
@@ -572,32 +525,23 @@ Bmc.loadClipScd(
 :PROPERTIES:
 :CUSTOM_ID: bmccliptoscdname--bmcconvertcliptoscdname
 :END:
-Exports a recorded clip as a human-readable SuperCollider =.scd= file. The
-file is placed beside the clip's =.bmc= archive and uses the same base name;
-for example, =take1.bmc= becomes =take1.scd=. The returned value is the full
-path of the exported file.
+Exports a recorded clip as a human-readable SuperCollider =.scd= file. The file is placed beside the clip's =.bmc= archive and uses the same base name; for example, =take1.bmc= becomes =take1.scd=. The returned value is the full path of the exported file.
 
 #+begin_src supercollider
 ~scdPath = Bmc.clipToScd(\take1);
 ~scdPath.postln;
 #+end_src
 
-If the named clip is not currently loaded, this method automatically looks
-for its =.bmc= file in =BmcClipLibrary.defaultDirectory= and loads it. Clips
-loaded or saved at a custom path are exported beside that remembered path.
+If the named clip is not currently loaded, this method automatically looks for its =.bmc= file in =BmcClipLibrary.defaultDirectory= and loads it. Clips loaded or saved at a custom path are exported beside that remembered path.
 
-Each frame is written as an OscRecorder-style commented clip-relative
-timestamp followed by the message's sclang representation:
+Each frame is written as an OscRecorder-style commented clip-relative timestamp followed by the message's sclang representation:
 
 #+begin_src supercollider
 //:--[0.125]
 [ '/bunraku/vmc/frame', 1, 'Avatar', 'source', 2 ]
 #+end_src
 
-The entire clip is stored in one =.scd= file; it is not divided into groups
-of 1,000 messages. Exporting again replaces an existing =.scd= file of the
-same name. The exported file can be restored with =Bmc.loadClip= or
-=Bmc.loadClipScd=.
+The entire clip is stored in one =.scd= file; it is not divided into groups of 1,000 messages. Exporting again replaces an existing =.scd= file of the same name. The exported file can be restored with =Bmc.loadClip= or =Bmc.loadClipScd=.
 
 *** Playback
 :PROPERTIES:
@@ -625,15 +569,13 @@ Stops playback without shutting down the receiver or other Bmc services.
 :PROPERTIES:
 :CUSTOM_ID: bmcseekseconds
 :END:
-Moves the player's next frame position to the closest frame at or before the
-requested time.
+Moves the player's next frame position to the closest frame at or before the requested time.
 
 **** =Bmc.rate(value)=
 :PROPERTIES:
 :CUSTOM_ID: bmcratevalue
 :END:
-Sets playback speed. =1.0= is original timing, =0.5= is half speed, and =2.0=
-is double speed. The value must be greater than zero.
+Sets playback speed. =1.0= is original timing, =0.5= is half speed, and =2.0= is double speed. The value must be greater than zero.
 
 **** =Bmc.loop(flag)=
 :PROPERTIES:
@@ -649,8 +591,7 @@ Turns repeated playback on or off.
 :PROPERTIES:
 :CUSTOM_ID: bmccombineclipstarget-source-bones-result-startindex
 :END:
-Copies selected bones from one clip into another and stores the result as a new
-=BmcAnimationClip=.
+Copies selected bones from one clip into another and stores the result as a new =BmcAnimationClip=.
 
 #+begin_src supercollider
 Bmc.combineClips(
@@ -661,23 +602,19 @@ Bmc.combineClips(
 );
 #+end_src
 
-Built-in body groups include =\leftArm=, =\rightArm=, =\arms=, =\leftLeg=,
-=\rightLeg=, =\legs=, =\torso=, =\upperBody=, and =\all=. An array of exact
-bone names can also be supplied.
+Built-in body groups include =\leftArm=, =\rightArm=, =\arms=, =\leftLeg=, =\rightLeg=, =\legs=, =\torso=, =\upperBody=, and =\all=. An array of exact bone names can also be supplied.
 
 **** =Bmc.combine(targetFrame, sourceFrame, bones)=
 :PROPERTIES:
 :CUSTOM_ID: bmccombinetargetframe-sourceframe-bones
 :END:
-Lower-level operation that copies selected bones between two individual
-Bunraku frames.
+Lower-level operation that copies selected bones between two individual Bunraku frames.
 
 **** =Bmc.rseq(targetSequence, sourceSequence, bones, startIndex)=
 :PROPERTIES:
 :CUSTOM_ID: bmcrseqtargetsequence-sourcesequence-bones-startindex
 :END:
-Lower-level sequence operation that replaces selected bones over a range of
-frames.
+Lower-level sequence operation that replaces selected bones over a range of frames.
 
 **** =Bmc.bone(frame, boneName)=
 :PROPERTIES:
@@ -704,8 +641,7 @@ Creates a persistent live routing rule. For example:
 );
 #+end_src
 
-Matching left-arm transforms are copied into the =\composite= avatar. Other
-bones retain the avatar's current or reference pose.
+Matching left-arm transforms are copied into the =\composite= avatar. Other bones retain the avatar's current or reference pose.
 
 **** =Bmc.unwire(wire)=
 :PROPERTIES:
@@ -729,9 +665,7 @@ Removes every live wire from every Bmc avatar.
 :PROPERTIES:
 :CUSTOM_ID: 5-bmc-class-overview
 :END:
-Most users can work entirely through =Bmc=. These supporting classes explain
-how responsibilities are divided and provide extension points for advanced
-work
+Most users can work entirely through =Bmc=. These supporting classes explain how responsibilities are divided and provide extension points for advanced work
 
 *** =Bmc=
 :PROPERTIES:
@@ -780,8 +714,7 @@ Named body regions used by clip combination and live wiring. It supplies groups 
 :PROPERTIES:
 :CUSTOM_ID: bmcclip
 :END:
-The base class for a timed sequence of frames. It provides frame access,
-relative times, duration, copying, and archive reading or writing.
+The base class for a timed sequence of frames. It provides frame access, relative times, duration, copying, and archive reading or writing.
 
 *** =BmcMocapClip=
 :PROPERTIES:
@@ -806,17 +739,13 @@ Collects validated frames, filters them by avatar and source, preserves relative
 :PROPERTIES:
 :CUSTOM_ID: bmcclipplayer
 :END:
-Schedules clip frames according to their recorded timing. It handles play,
-pause, resume, stop, seek, loop, and rate, and sends frames to an avatar,
-function, or =NetAddr=.
+Schedules clip frames according to their recorded timing. It handles play, pause, resume, stop, seek, loop, and rate, and sends frames to an avatar, function, or =NetAddr=.
 
 *** =BmcClipLibrary=
 :PROPERTIES:
 :CUSTOM_ID: bmccliplibrary
 :END:
-Maintains the named in-memory clip collection and current selection. It
-implements clip listing, the clip-list GUI, rename/remove operations, and
-archive save/load.
+Maintains the named in-memory clip collection and current selection. It implements clip listing, the clip-list GUI, rename/remove operations, and archive save/load.
 
 *** =BmcWire=
 :PROPERTIES:
@@ -847,6 +776,4 @@ They are located in:
 Testing_BuMoChi/Communication_Tests/
 #+end_example
 
-Each test includes its port map, startup order, pass criteria, and common
-failures. When the complete system fails, return to Test 1 and introduce one
-component at a time.
+Each test includes its port map, startup order, pass criteria, and common failures. When the complete system fails, return to Test 1 and introduce one component at a time.

@@ -57,6 +57,28 @@ one local BunrakuOSCDecoder
 
 Each workstation may render its own performer and any remote performers it chooses to instantiate in its local Godot scene. Its own stream reaches Bmc directly from the encoder, not through the client's receive path.
 
+* Complete workstation pipelines
+
+The following two diagrams show a concrete two-workstation example. =PerformerA= and =PerformerB= are stable avatar identities carried by the route-free frames; =workstation-a-xr-animator= and =workstation-b-xr-animator= are unique source identities. The avatar names shown inside the Godot boxes are the visual models driven by those streams on each workstation.
+
+** Workstation A
+
+Workstation A renders its local =PerformerA= stream as Ishidomaru on port =39539= and the remote =PerformerB= stream as Mother on port =39540=.
+
+#+CAPTION: Workstation A: local XR-Animator path, OSCGroups exchange, SuperCollider routing, decoding, and Godot destinations.
+#+ATTR_HTML: :width 100%
+#+ATTR_LATEX: :width 1.0\linewidth
+[[file:diagrams/workstation-a-pipeline.png]]
+
+** Workstation B
+
+Workstation B renders its local =PerformerB= stream as Mother on port =39539= and the remote =PerformerA= stream as Ishidomaru on port =39540=.
+
+#+CAPTION: Workstation B: local XR-Animator path, OSCGroups exchange, SuperCollider routing, decoding, and Godot destinations.
+#+ATTR_HTML: :width 100%
+#+ATTR_LATEX: :width 1.0\linewidth
+[[file:diagrams/workstation-b-pipeline.png]]
+
 * Shared and unique settings
 
 All collaborators must agree on:
@@ -241,12 +263,150 @@ For a minimal two-person test:
 
 * Avoid feedback and identity errors
 
-1. Give every transmitting encoder a unique =--avatar= and =--source=.
-2. Do not forward Bmc's routed version-2 output back to OSCGroups; it is intended for the local decoder.
-3. Send only the encoder's route-free frames to =OscGroupClient= port =22244=.
-4. Do not connect =OscGroupClient= local output =57130= back to its own input =22244=.
-5. Do not run two clients with the same username.
-6. The group does not return your own frames for local monitoring.
+** 1. Give every transmitting encoder a unique identity
+
+The encoder's =--avatar= identifies the motion stream that Bmc must select. Its =--source= identifies the particular performer/workstation/capture source. Use stable, unique values on every transmitting workstation.
+
+Correct examples:
+
+#+begin_src sh
+# Workstation A
+BunrakuOSCEncoder \
+  --avatar "PerformerA" \
+  --source "workstation-a-xr-animator"
+
+# Workstation B
+BunrakuOSCEncoder \
+  --avatar "PerformerB" \
+  --source "workstation-b-xr-animator"
+#+end_src
+
+Do /not/ launch both encoders with the same identity:
+
+#+begin_src sh
+# WRONG on Workstation A
+BunrakuOSCEncoder --avatar "Performer" --source "xr-animator"
+
+# WRONG on Workstation B: indistinguishable from A
+BunrakuOSCEncoder --avatar "Performer" --source "xr-animator"
+#+end_src
+
+With the wrong example, Bmc cannot reliably distinguish which person produced a frame. Both streams may drive the same registered Bmc avatar, and source-filtered recording cannot separate them.
+
+The Bmc avatar ID on a receiving workstation must match the remote encoder's =--avatar= value. For example:
+
+#+begin_src supercollider
+// Receives frames whose encoder used --avatar "PerformerA".
+Bmc.addAvatar(\PerformerA, "Ishidomaru");
+#+end_src
+
+** 2. Send Bmc output only to the local decoder
+
+Bmc adds the final local Godot VMC port to a protocol-version-2 frame. That routed frame belongs on the local decoder input, normally =39538=:
+
+#+begin_src supercollider
+// CORRECT
+~decoder = NetAddr("127.0.0.1", 39538);
+Bmc.avatar(\PerformerA).output_(~decoder);
+Bmc.avatar(\PerformerA).vmcPort_(39539);
+#+end_src
+
+Do /not/ point a Bmc avatar at =OscGroupClient='s transmission port:
+
+#+begin_src supercollider
+// WRONG: retransmits Bmc's locally routed result to the group.
+Bmc.avatar(\PerformerA).output_(NetAddr("127.0.0.1", 22244));
+#+end_src
+
+The embedded =39539= in that frame is meaningful only for this workstation's Godot scene. Another workstation may assign the same performer to a different avatar and port. Sending the routed result back through OSCGroups therefore distributes local routing information and can also create repeated circulation when another workstation makes the same mistake.
+
+** 3. Feed OSCGroups only from BunrakuOSCEncoder
+
+The encoder produces route-free protocol-version-1 frames. These are the portable motion-source messages intended for other workstations. Its default network output is already correct:
+
+#+begin_src sh
+# CORRECT: defaults to Bmc 57130 and OscGroupClient 22244.
+BunrakuOSCEncoder \
+  --avatar "PerformerA" \
+  --source "workstation-a-xr-animator"
+#+end_src
+
+Do not start another Python converter between Bmc and =OscGroupClient=. In particular, do not use =BunrakuOSCDecoder= as a network sender:
+
+#+begin_src sh
+# WRONG architecture: the decoder reconstructs VMC for Godot; it does not
+# create the portable Bunraku source frames that should enter OSCGroups.
+BunrakuOSCDecoder \
+  --listen-port 39538 \
+  --target-port 22244
+#+end_src
+
+For a route-free version-1 input, that wrong command sends reconstructed VMC—not a Bunraku frame—to =OscGroupClient=. For a routed version-2 input, the embedded destination overrides the fallback =--target-port=, so this command does not even redirect it to =22244=. In neither case is the decoder the correct network transmitter.
+
+Also do not change the encoder's OSCGroups destination to Bmc's port:
+
+#+begin_src sh
+# WRONG: both encoder outputs now lead to 57130, so nothing reaches OSCGroups.
+BunrakuOSCEncoder \
+  --oscgroups-port 57130 \
+  --avatar "PerformerA" \
+  --source "workstation-a-xr-animator"
+#+end_src
+
+Leave the encoder's =--oscgroups-port= at =22244= unless the client's =localTxPort= was deliberately changed to the same new value.
+
+** 4. Keep the OscGroupClient receive and transmit paths separate
+
+The client arguments must retain these two distinct roles:
+
+#+begin_example
+localTxPort = 22244   local encoder -> OSCGroups
+localRxPort = 57130   OSCGroups -> local Bmc
+#+end_example
+
+This is the correct positional fragment:
+
+#+begin_src sh
+OscGroupClient \
+  SERVER_ADDRESS 22242 LOCAL_TO_REMOTE_PORT \
+  22244 57130 \
+  USER_NAME USER_PASSWORD GROUP_NAME GROUP_PASSWORD
+#+end_src
+
+Do /not/ set =localRxPort= to the same port as =localTxPort=:
+
+#+begin_src sh
+# WRONG: received group traffic is delivered to the client's own transmit input.
+OscGroupClient \
+  SERVER_ADDRESS 22242 LOCAL_TO_REMOTE_PORT \
+  22244 22244 \
+  USER_NAME USER_PASSWORD GROUP_NAME GROUP_PASSWORD
+#+end_src
+
+Do not create a SuperCollider relay from Bmc's input back to the client either:
+
+#+begin_src supercollider
+// WRONG: every remote frame received on 57130 is transmitted to the group again.
+OSCdef(\badNetworkLoop, { |msg|
+	NetAddr("127.0.0.1", 22244).sendMsg(*msg)
+}, '/bunraku/vmc/frame', recvPort: 57130);
+#+end_src
+
+If this test code has ever been evaluated, remove it:
+
+#+begin_src supercollider
+OSCdef(\badNetworkLoop).free;
+#+end_src
+
+Such a return path can make workstations repeatedly retransmit one another's packets, producing duplicated motion, rising traffic, and unstable playback.
+
+** 5. Use one unique OscGroupClient username per client
+
+Do not run two clients with the same username. A username identifies one client to the OSCGroups server; duplicate use may replace or confuse the registered endpoint.
+
+** 6. Do not expect a server echo
+
+The group does not return a workstation's own frames for local monitoring. The encoder's direct copy to Bmc port =57130= provides the local path instead.
 
 * Diagnose ports
 
