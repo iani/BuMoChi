@@ -1,4 +1,4 @@
-// Records validated Bunraku Frame protocol-v1 messages into a BmcMocapClip.
+// Records validated Bunraku Frame messages into a route-free BmcMocapClip.
 //
 // A dispatcher or avatar may publish frames with changed(capturePoint, frame,
 // time). The default capture point is \rawFrame; use \completedFrame when the
@@ -37,14 +37,22 @@ BmcClipRecorder {
 	}
 
 	addFrame { |frame, time|
+		var recordedFrame;
 		if(isRecording.not) { ^false };
 		Bmc.validateMessage(frame, "recorded frame");
-		if(avatar.notNil and: { frame[2].asString != avatar.asString }) { ^false };
-		if(source.notNil and: { frame[3].asString != source.asString }) { ^false };
+		// Routes are transmission metadata, never clip data. Normalize even an
+		// accidentally routed input frame back to the route-free representation.
+		recordedFrame = BmcFrame.fromOSC(frame).withoutRoute.asOSCMessage;
+		if(avatar.notNil and: {
+			recordedFrame[Bmc.messageAvatarIndex(recordedFrame)].asString != avatar.asString
+		}) { ^false };
+		if(source.notNil and: {
+			recordedFrame[Bmc.messageSourceIndex(recordedFrame)].asString != source.asString
+		}) { ^false };
 
 		time = time ?? { SystemClock.seconds };
 		startedAt = startedAt ?? { time };
-		entries.add([time - startedAt, frame.copy]);
+		entries.add([time - startedAt, recordedFrame]);
 		^true
 	}
 

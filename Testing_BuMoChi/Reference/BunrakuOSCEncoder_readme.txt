@@ -21,15 +21,21 @@ accumulates skeletal updates received over multiple packets and transmits only
 after all 21 required bones have been collected. This prevents incomplete
 skeletal frames from being sent.
 
+Every completed frame is sent to two destinations by default:
 
-BASIC TEST-2 COMMAND
---------------------
+    local Bmc:        127.0.0.1:57130
+    OscGroupClient:   127.0.0.1:22244
 
-When XR Animator, the encoder, and both OSCGroups clients run on the same Mac:
+This gives the local SuperCollider process its own copy because OSCGroups sends
+traffic to other group members but does not echo it to the originating client.
+
+
+BASIC MULTIUSER COMMAND
+-----------------------
+
+The standard command uses all default ports and enables both outputs:
 
     python3 BunrakuOSCEncoder.py \
-      --listen-port 39537 \
-      --target-port 22244 \
       --avatar "BunrakuTestAvatar" \
       --source "xr-animator" \
       --verbose
@@ -38,7 +44,8 @@ Configure XR Animator to send VMC to:
 
     127.0.0.1:39537
 
-The OSCGroups sending client listens locally on port 22244.
+Bmc listens locally on port 57130 and OscGroupClient listens locally on port
+22244. For a single-user session without OscGroupClient, add --no-oscgroups.
 
 
 COMMAND-LINE OPTIONS
@@ -59,26 +66,31 @@ COMMAND-LINE OPTIONS
 --listen-port PORT
     UDP port on which the encoder receives VMC packets.
 
-    Default: 39538
+    Default: 39537
 
-    For the single-Mac Test 2 configuration, use 39537 because the decoder uses
-    39538 on the same computer. Two programs cannot listen on the same local UDP
-    port simultaneously.
+--bmc-ip ADDRESS
+    Destination address of local Bmc. Default: 127.0.0.1.
 
---target-ip ADDRESS
-    Destination address for encoded Bunraku frames.
+--bmc-port PORT
+    Destination port of local Bmc. Default: 57130.
 
-    Default: 127.0.0.1
+--oscgroups-ip ADDRESS
+    Destination address of the local OscGroupClient. Default: 127.0.0.1.
 
-    Normally this remains 127.0.0.1 because the local OSCGroups client receives
-    the encoded frames.
+--oscgroups-port PORT
+    Destination port of the local OscGroupClient. Default: 22244. This must
+    equal the client's localtxport argument.
 
---target-port PORT
-    Destination UDP port for encoded Bunraku frames.
+--no-bmc
+    Disable the direct local Bmc copy.
 
-    Default: 22244
+--no-oscgroups
+    Disable the OSCGroups copy. Use this for the canonical single-user setup.
 
-    This must equal the OSCGroups client's localtxport argument.
+    At least one of the two outputs must remain enabled. The former encoder
+    options --target-ip and --target-port remain compatibility aliases for
+    --oscgroups-ip and --oscgroups-port. New commands should use the explicit
+    names.
 
 --avatar NAME
     Avatar identity included in every Bunraku frame.
@@ -135,7 +147,13 @@ received
     facial, status, timing, and other VMC packets.
 
 sent
-    Complete Bunraku skeletal frames sent to the target port.
+    Complete Bunraku skeletal frames delivered to at least one enabled output.
+
+bmc_sent
+    Frame copies sent to the Bmc destination.
+
+oscgroups_sent
+    Frame copies sent to the OscGroupClient destination.
 
 dropped
     Packets or completed frames rejected because of malformed OSC, socket
@@ -147,7 +165,8 @@ non_skeleton
 
 A healthy run resembles:
 
-    received=3000, sent=900, dropped=0, non_skeleton=1200
+    received=3000, sent=900, bmc_sent=900, oscgroups_sent=900, dropped=0,
+    non_skeleton=1200
 
 The counts do not have to be equal. The important conditions are that sent
 continues to rise while the performer moves and dropped remains zero.

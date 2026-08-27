@@ -44,7 +44,7 @@ BmcDispatcher {
 	removeDestination { |object| destinations.remove(object); ^object }
 
 	receive { |message, time, addr|
-		var streamKey, previous, avatar;
+		var streamKey, previous, avatar, avatarIndex, sourceIndex, frameIDIndex;
 		try { Bmc.validateMessage(message, "incoming frame") } { |error|
 			rejected = rejected + 1;
 			this.changed(\rejected, message, error);
@@ -52,17 +52,20 @@ BmcDispatcher {
 		};
 
 		received = received + 1;
-		streamKey = (message[3].asString ++ "|" ++ message[2].asString).asSymbol;
+		avatarIndex = Bmc.messageAvatarIndex(message);
+		sourceIndex = Bmc.messageSourceIndex(message);
+		frameIDIndex = Bmc.messageFrameIDIndex(message);
+		streamKey = (message[sourceIndex].asString ++ "|" ++ message[avatarIndex].asString).asSymbol;
 		previous = lastFrameIDs[streamKey];
-		if(previous.notNil and: { message[4] != (previous + 1) }) { dropped = dropped + 1 };
-		lastFrameIDs[streamKey] = message[4];
+		if(previous.notNil and: { message[frameIDIndex] != (previous + 1) }) { dropped = dropped + 1 };
+		lastFrameIDs[streamKey] = message[frameIDIndex];
 
 		time = time ?? { SystemClock.seconds };
 		this.changed(\rawFrame, message, time, addr);
 		destinations.do { |destination|
 			if(destination.respondsTo(\receiveFrame)) { destination.receiveFrame(message, time) };
 		};
-		avatar = avatars[message[2].asSymbol];
+		avatar = avatars[message[avatarIndex].asSymbol];
 		if(avatar.notNil) { avatar.receiveFrame(message, time) };
 		avatars.values.asSet.do { |targetAvatar|
 			targetAvatar.receiveSourceFrame(message, time);

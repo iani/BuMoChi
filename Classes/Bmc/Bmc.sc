@@ -159,8 +159,8 @@ Bmc {
 	*loop { |flag = true| player.loop_(flag); ^this }
 
 	// ----- playback sessions -----
-	*saveSession { |name, clipSettings, avatarSettings, path|
-		var session = BmcSession(name, clipSettings, avatarSettings);
+	*saveSession { |name, clipSettings, avatarSettings, path, decoderSettings|
+		var session = BmcSession(name, clipSettings, avatarSettings, decoderSettings);
 		session.write(path);
 		sessions[session.name] = session;
 		currentSession = session;
@@ -181,11 +181,27 @@ Bmc {
 
 	*applySession { |name|
 		var session = if(name.isNil) { currentSession } { sessions[name.asSymbol] };
+		var decoderOutput;
 		if(session.isNil) { Error("Unknown Bmc session: %".format(name)).throw };
+		decoderOutput = if(session.decoder.isNil) { nil } {
+			NetAddr(session.decoder[\host].asString, session.decoder[\port].asInteger)
+		};
 		session.avatars.keysValuesDo { |avatarName, route|
 			var object = this.avatar(avatarName);
 			if(object.isNil) { object = this.addAvatar(avatarName, avatarName.asString) };
-			object.output_(NetAddr(route[\host].asString, route[\port].asInteger));
+			if(decoderOutput.isNil) {
+				// Legacy session: each avatar points at its dedicated decoder.
+				object.vmcPort_(nil);
+				object.output_(NetAddr(route[\host].asString, route[\port].asInteger));
+			} {
+				var vmcPort = route[\vmcPort] ?? { route[\port] };
+				if(vmcPort.isNil) {
+					Error("Session avatar % requires vmcPort for routed decoding"
+						.format(avatarName)).throw;
+				};
+				object.output_(decoderOutput);
+				object.vmcPort_(vmcPort);
+			};
 		};
 		currentSession = session;
 		^session
@@ -272,9 +288,10 @@ Bmc {
 		result = targetMessage.copy;
 
 		bones.do { |bone|
-			var start = this.boneStart(bone);
+			var targetStart = this.boneStart(bone, targetMessage);
+			var sourceStart = this.boneStart(bone, sourceMessage);
 			7.do { |offset|
-				result[start + offset] = sourceMessage[start + offset];
+				result[targetStart + offset] = sourceMessage[sourceStart + offset];
 			};
 		};
 
@@ -320,19 +337,28 @@ Bmc {
 		var message = if(this.isSessionEntry(frame)) { frame[1] } { frame };
 		var start;
 		this.validateMessage(message, "frame");
-		start = this.boneStart(boneName);
+		start = this.boneStart(boneName, message);
 		^message.copyRange(start, start + 6)
 	}
 
-	*boneStart { |boneName|
+	*boneStart { |boneName, message|
 		var normalized = boneName.asSymbol;
 		var index = boneNames.indexOfEqual(normalized);
 		if(index.isNil) {
 			Error("Bmc: unknown bone %, expected one of %"
 				.format(boneName, boneNames)).throw;
 		};
-		^6 + (index * 7)
+		^(if(message.isNil) { 6 } { this.messageHeaderSize(message) }) + (index * 7)
 	}
+
+	*messageHeaderSize { |message|
+		^if(message[1].asInteger == 2) { 7 } { 6 }
+	}
+
+	*messageAvatarIndex { |message| ^if(message[1].asInteger == 2) { 3 } { 2 } }
+	*messageSourceIndex { |message| ^if(message[1].asInteger == 2) { 4 } { 3 } }
+	*messageFrameIDIndex { |message| ^if(message[1].asInteger == 2) { 5 } { 4 } }
+	*messageTimestampIndex { |message| ^if(message[1].asInteger == 2) { 6 } { 5 } }
 
 	*normalizeBones { |bones|
 		if(bones.isNil) { Error("Bmc: bones cannot be nil").throw };
@@ -360,17 +386,27 @@ Bmc {
 		if(message.isSequenceableCollection.not) {
 			Error("Bmc: % is not a Bunraku message array".format(role)).throw;
 		};
-		if(message.size != 153) {
-			Error("Bmc: % message has % elements; expected 153"
-				.format(role, message.size)).throw;
-		};
 		if(message[0].asString != "/bunraku/vmc/frame") {
 			Error("Bmc: % has OSC address %, expected /bunraku/vmc/frame"
 				.format(role, message[0])).throw;
 		};
-		if(message[1].asInteger != 1) {
+		if([1, 2].includes(message[1].asInteger).not) {
 			Error("Bmc: % uses unsupported protocol version %"
 				.format(role, message[1])).throw;
+		};
+		if(message[1].asInteger == 1 and: { message.size != 153 }) {
+			Error("Bmc: % version-1 message has % elements; expected 153"
+				.format(role, message.size)).throw;
+		};
+		if(message[1].asInteger == 2) {
+			if(message.size != 154) {
+				Error("Bmc: % version-2 message has % elements; expected 154"
+					.format(role, message.size)).throw;
+			};
+			if((message[2].asInteger < 1) or: { message[2].asInteger > 65535 }) {
+				Error("Bmc: % has invalid routed target port %"
+					.format(role, message[2])).throw;
+			};
 		};
 	}
 

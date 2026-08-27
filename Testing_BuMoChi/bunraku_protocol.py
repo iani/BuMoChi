@@ -9,6 +9,7 @@ from typing import Dict, Iterator, List, Sequence, Tuple
 
 BUNRAKU_ADDRESS = "/bunraku/vmc/frame"
 BUNRAKU_VERSION = 1
+BUNRAKU_ROUTED_VERSION = 2
 AVATAR_ADDRESS = "/bunraku/avatar/name"
 MAX_UDP_PAYLOAD = 65_507
 OSC_BUNDLE_PREFIX = b"#bundle\x00"
@@ -34,7 +35,10 @@ BONES: Sequence[Tuple[str, Sequence[str]]] = (
 )
 BONE_NAMES = tuple(item[0] for item in BONES)
 VALUE_COUNT = len(BONES) * 7
-EXPECTED_TAGS = ",issif" + ("f" * VALUE_COUNT)
+EXPECTED_TAGS_V1 = ",issif" + ("f" * VALUE_COUNT)
+EXPECTED_TAGS_V2 = ",iissif" + ("f" * VALUE_COUNT)
+# Retained for clients that import the version-1 signature.
+EXPECTED_TAGS = EXPECTED_TAGS_V1
 
 
 class ProtocolError(ValueError):
@@ -48,6 +52,7 @@ class BunrakuFrame:
     frame_id: int
     timestamp: float
     transforms: Tuple[Tuple[float, ...], ...]
+    target_port: int | None = None
 
 
 def pad4(data: bytes) -> bytes:
@@ -108,9 +113,20 @@ def build_frame(frame: BunrakuFrame) -> bytes:
     if len(frame.transforms) != len(BONES) or any(len(item) != 7 for item in frame.transforms):
         raise ProtocolError("wrong number of Bunraku bone transforms")
     values = tuple(value for transform in frame.transforms for value in transform)
-    return b"".join((
-        osc_string(BUNRAKU_ADDRESS), osc_string(EXPECTED_TAGS),
-        struct.pack(">i", BUNRAKU_VERSION), osc_string(frame.avatar),
+    if frame.target_port is None:
+        header = (
+            osc_string(BUNRAKU_ADDRESS), osc_string(EXPECTED_TAGS_V1),
+            struct.pack(">i", BUNRAKU_VERSION), osc_string(frame.avatar),
+        )
+    else:
+        if not 1 <= frame.target_port <= 65535:
+            raise ProtocolError(f"invalid routed target port {frame.target_port}")
+        header = (
+            osc_string(BUNRAKU_ADDRESS), osc_string(EXPECTED_TAGS_V2),
+            struct.pack(">ii", BUNRAKU_ROUTED_VERSION, frame.target_port),
+            osc_string(frame.avatar),
+        )
+    return b"".join(header + (
         osc_string(frame.source), struct.pack(">if", frame.frame_id, frame.timestamp),
         struct.pack(f">{len(values)}f", *values),
     ))
@@ -134,17 +150,29 @@ def frame_from_vmc(packet: bytes, avatar: str, source: str, frame_id: int, times
 def parse_frame(packet: bytes) -> BunrakuFrame:
     address, offset = read_string(packet, 0)
     tags, offset = read_string(packet, offset)
-    if address != BUNRAKU_ADDRESS or tags != EXPECTED_TAGS:
+    if address != BUNRAKU_ADDRESS or tags not in (EXPECTED_TAGS_V1, EXPECTED_TAGS_V2):
         raise ProtocolError(
-            "not a Bunraku Frame protocol-v1 message "
+            "not a supported Bunraku Frame message "
             f"(address={address!r}, tags={tags!r})"
         )
     if offset + 4 > len(packet):
         raise ProtocolError("truncated version")
     version = struct.unpack_from(">i", packet, offset)[0]
     offset += 4
-    if version != BUNRAKU_VERSION:
+    if version not in (BUNRAKU_VERSION, BUNRAKU_ROUTED_VERSION):
         raise ProtocolError(f"unsupported Bunraku Frame version {version}")
+    if version == BUNRAKU_VERSION and tags != EXPECTED_TAGS_V1:
+        raise ProtocolError("protocol-version-1 frame has the wrong OSC signature")
+    if version == BUNRAKU_ROUTED_VERSION and tags != EXPECTED_TAGS_V2:
+        raise ProtocolError("protocol-version-2 frame has the wrong OSC signature")
+    target_port = None
+    if version == BUNRAKU_ROUTED_VERSION:
+        if offset + 4 > len(packet):
+            raise ProtocolError("truncated routed target port")
+        target_port = struct.unpack_from(">i", packet, offset)[0]
+        offset += 4
+        if not 1 <= target_port <= 65535:
+            raise ProtocolError(f"invalid routed target port {target_port}")
     avatar, offset = read_string(packet, offset)
     source, offset = read_string(packet, offset)
     if offset + 8 + VALUE_COUNT * 4 != len(packet):
@@ -153,7 +181,7 @@ def parse_frame(packet: bytes) -> BunrakuFrame:
     offset += 8
     values = struct.unpack_from(f">{VALUE_COUNT}f", packet, offset)
     transforms = tuple(tuple(values[i:i + 7]) for i in range(0, VALUE_COUNT, 7))
-    return BunrakuFrame(avatar, source, frame_id, timestamp, transforms)
+    return BunrakuFrame(avatar, source, frame_id, timestamp, transforms, target_port)
 
 
 def _vmc_bone_message(name: str, transform: Sequence[float]) -> bytes:

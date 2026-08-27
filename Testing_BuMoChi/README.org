@@ -29,7 +29,8 @@ shutdown procedure for each path.
 - =BunrakuOSCEncoder.py= receives standard VMC from XR Animator and
   emits one =/bunraku/vmc/frame= OSC message per animation frame.
 - =BunrakuOSCDecoder.py= receives Bunraku frames and recreates standard
-  VMC for an unmodified Godot VMC project.
+  VMC for an unmodified Godot VMC project. Protocol-version-2 frames carry
+  their VMC target port, so one decoder can dispatch several avatar streams.
 - =GodotVMCReference/= is the canonical Godot XR VMC Tracker demo. It
   listens for standard VMC on UDP port =39539=.
 - =BunrakuPipelineTests.scd= contains the SuperCollider receiver,

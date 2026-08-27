@@ -17,14 +17,30 @@ from bunraku_protocol import (
 class Stats:
     received: int = 0
     sent: int = 0
+    bmc_sent: int = 0
+    oscgroups_sent: int = 0
     dropped: int = 0
     non_skeleton: int = 0
 
 def status(stats: Stats) -> str:
     return (
-        f"received={stats.received}, sent={stats.sent}, dropped={stats.dropped}, "
+        f"received={stats.received}, sent={stats.sent}, "
+        f"bmc_sent={stats.bmc_sent}, oscgroups_sent={stats.oscgroups_sent}, "
+        f"dropped={stats.dropped}, "
         f"non_skeleton={stats.non_skeleton}"
     )
+
+
+def destinations(args: argparse.Namespace) -> tuple[tuple[str, str, int], ...]:
+    """Return the enabled named fan-out destinations."""
+    result = []
+    endpoints = set()
+    if not args.no_bmc:
+        result.append(("Bmc", args.bmc_ip, args.bmc_port))
+        endpoints.add((args.bmc_ip, args.bmc_port))
+    if not args.no_oscgroups and (args.oscgroups_ip, args.oscgroups_port) not in endpoints:
+        result.append(("OSCGroups", args.oscgroups_ip, args.oscgroups_port))
+    return tuple(result)
 
 
 def complete_transforms(cache: dict[str, tuple[float, ...]]):
@@ -41,6 +57,7 @@ def complete_transforms(cache: dict[str, tuple[float, ...]]):
 def run(args: argparse.Namespace) -> int:
     receive, send = socket.socket(socket.AF_INET, socket.SOCK_DGRAM), socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     stats, source = Stats(), args.source or uuid.uuid4().hex[:16]
+    outputs = destinations(args)
     try:
         receive.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 4 * 1024 * 1024)
         receive.bind((args.listen_ip, args.listen_port)); receive.settimeout(0.5)
@@ -48,7 +65,9 @@ def run(args: argparse.Namespace) -> int:
         receive.close(); send.close()
         print(f"ERROR: cannot listen on {args.listen_ip}:{args.listen_port}: {exc}", file=sys.stderr); return 1
     print("VMC -> Bunraku Frame adapter")
-    print(f"  input={args.listen_ip}:{args.listen_port} output={args.target_ip}:{args.target_port}")
+    print(f"  input={args.listen_ip}:{args.listen_port}")
+    for name, host, port in outputs:
+        print(f"  {name.lower()}_output={host}:{port}")
     print(f"  avatar={args.avatar!r} source={source!r} maximum={args.max_packet_size} bytes")
     frame_id, started, last_status = 0, time.monotonic(), time.monotonic()
     bone_cache: dict[str, tuple[float, ...]] = {}
@@ -87,7 +106,25 @@ def run(args: argparse.Namespace) -> int:
                     output = build_frame(frame)
                     if len(output) > args.max_packet_size:
                         raise ProtocolError(f"output is {len(output)} bytes (limit {args.max_packet_size})")
-                    send.sendto(output, (args.target_ip, args.target_port)); stats.sent += 1
+                    successful = 0
+                    for name, host, port in outputs:
+                        try:
+                            send.sendto(output, (host, port))
+                            successful += 1
+                            if name == "Bmc":
+                                stats.bmc_sent += 1
+                            else:
+                                stats.oscgroups_sent += 1
+                        except OSError as exc:
+                            if args.verbose:
+                                print(
+                                    f"WARNING: frame {frame_id} could not be sent "
+                                    f"to {name} at {host}:{port}: {exc}",
+                                    file=sys.stderr,
+                                )
+                    if successful == 0:
+                        raise OSError("frame could not be sent to any destination")
+                    stats.sent += 1
                     updated_bones.clear()
                 except (ProtocolError, OSError) as exc:
                     stats.dropped += 1
@@ -104,8 +141,13 @@ def run(args: argparse.Namespace) -> int:
 
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--listen-ip", default="127.0.0.1"); p.add_argument("--listen-port", type=int, default=39538)
-    p.add_argument("--target-ip", default="127.0.0.1"); p.add_argument("--target-port", type=int, default=22244)
+    p.add_argument("--listen-ip", default="127.0.0.1"); p.add_argument("--listen-port", type=int, default=39537)
+    p.add_argument("--bmc-ip", default="127.0.0.1", help="local Bmc destination address")
+    p.add_argument("--bmc-port", type=int, default=57130, help="local Bmc destination port")
+    p.add_argument("--oscgroups-ip", "--target-ip", dest="oscgroups_ip", default="127.0.0.1", help="local OscGroupClient destination address")
+    p.add_argument("--oscgroups-port", "--target-port", dest="oscgroups_port", type=int, default=22244, help="local OscGroupClient transmission port")
+    p.add_argument("--no-bmc", action="store_true", help="disable the local Bmc copy")
+    p.add_argument("--no-oscgroups", action="store_true", help="disable the OSCGroups copy")
     p.add_argument("--avatar", default="XRAnimator", help="avatar name included in every frame")
     p.add_argument("--source", help="stable sender ID; default is random per run")
     p.add_argument("--max-packet-size", type=int, default=1200); p.add_argument("--stats-interval", type=float, default=5.0)
@@ -120,7 +162,9 @@ def main() -> int:
     p = parser()
     args = p.parse_args()
     if not args.avatar: p.error("--avatar cannot be empty")
-    if not 1 <= args.listen_port <= 65535 or not 1 <= args.target_port <= 65535: p.error("invalid port")
+    ports = (args.listen_port, args.bmc_port, args.oscgroups_port)
+    if any(not 1 <= port <= 65535 for port in ports): p.error("invalid port")
+    if args.no_bmc and args.no_oscgroups: p.error("at least one output must be enabled")
     if not 256 <= args.max_packet_size <= MAX_UDP_PAYLOAD: p.error("invalid maximum packet size")
     if args.stats_interval < 0: p.error("statistics interval cannot be negative")
     return run(args)

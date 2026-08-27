@@ -24,7 +24,7 @@ encoder or decoder processes before starting this test.
 
    #+begin_example
    Host: 127.0.0.1
-   Port: 39538
+   Port: 39537
    #+end_example
 
    Enable VMC output.  XR-Animator may remain running while the other parts of
@@ -40,8 +40,7 @@ encoder or decoder processes before starting this test.
 
    #+begin_src sh
    python3 BunrakuOSCEncoder.py \
-     --listen-port 39538 \
-     --target-port 57130 \
+     --no-oscgroups \
      --avatar "BunrakuTestAvatar" \
      --source "xr-animator" \
      --verbose
@@ -51,8 +50,7 @@ encoder or decoder processes before starting this test.
 
    #+begin_src sh
 BunrakuOSCEncoder \
-  --listen-port 39538 \
-  --target-port 57130 \
+  --no-oscgroups \
   --avatar "BunrakuTestAvatar" \
   --source "xr-animator" \
   --verbose
@@ -522,8 +520,7 @@ Set the avatar and source names when starting the encoder:
 
 #+begin_src sh
 python3 BunrakuOSCEncoder.py \
-  --listen-port 39538 \
-  --target-port 57130 \
+  --no-oscgroups \
   --avatar "Ishidomaru" \
   --source "xr-animator-camera-1" \
   --verbose

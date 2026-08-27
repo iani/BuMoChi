@@ -1,6 +1,6 @@
 BmcAvatar {
 	var <avatarID, <avatarName, <referencePose, <currentPose, <currentFrame;
-	var <output, <wires;
+	var <output, <vmcPort, <wires;
 
 	*new { |avatarID, avatarName| ^super.new.init(avatarID, avatarName) }
 
@@ -15,6 +15,15 @@ BmcAvatar {
 
 	referencePose_ { |pose| referencePose = pose.copy; ^this }
 	output_ { |destination| output = destination; ^this }
+	vmcPort_ { |port|
+		if(port.isNil) { vmcPort = nil; ^this };
+		port = port.asInteger;
+		if((port < 1) or: { port > 65535 }) {
+			Error("Invalid avatar VMC destination port: %".format(port)).throw;
+		};
+		vmcPort = port;
+		^this
+	}
 	addWire { |wire| wires.add(wire); ^wire }
 	removeWire { |wire| wires.remove(wire); ^wire }
 	clearWires { wires.clear; ^this }
@@ -29,9 +38,11 @@ BmcAvatar {
 		// The destination avatar controls both routing and the avatar name
 		// embedded in the outgoing frame. This permits a saved clip to be
 		// assigned to another staged avatar during playback.
-		currentFrame = typed.withPose(completedPose).withAvatar(avatarName);
+		// Keep the completed frame route-free so recordings remain portable.
+		// Routing is attached only by send, at the final avatar boundary.
+		currentFrame = typed.withoutRoute.withPose(completedPose).withAvatar(avatarName);
 		this.changed(\completedFrame, currentFrame.asOSCMessage, time ?? { SystemClock.seconds });
-		this.send(currentFrame.asOSCMessage);
+		this.send(currentFrame);
 		^currentFrame
 	}
 
@@ -45,11 +56,16 @@ BmcAvatar {
 			BmcFrame.new(avatarName, "bmc-reference", 0, 0.0, referencePose).asOSCMessage
 		};
 		matching.do { |wire| result = wire.apply(result, sourceFrame) };
-		result[2] = avatarName.asString;
+		result[Bmc.messageAvatarIndex(result)] = avatarName.asString;
 		^this.receiveFrame(result, time)
 	}
 
-	send { |message|
+	send { |frame|
+		var message = if(frame.isKindOf(BmcFrame)) {
+			if(vmcPort.isNil) { frame.asOSCMessage } { frame.withTargetPort(vmcPort).asOSCMessage }
+		} {
+			if(vmcPort.isNil) { frame } { BmcFrame.fromOSC(frame).withoutRoute.withTargetPort(vmcPort).asOSCMessage }
+		};
 		if(output.isNil) { ^this };
 		if(output.isKindOf(Function)) { output.value(message); ^this };
 		if(output.isKindOf(NetAddr)) { output.sendMsg(*message); ^this };

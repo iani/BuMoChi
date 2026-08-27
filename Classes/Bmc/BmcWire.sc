@@ -19,8 +19,8 @@ BmcWire {
 	matches { |frame|
 		frame = if(frame.isKindOf(BmcFrame)) { frame.asOSCMessage } { frame };
 		^enabled
-		and: { source.isNil or: { frame[3].asString == source.asString } }
-		and: { sourceAvatar.isNil or: { frame[2].asString == sourceAvatar.asString } }
+		and: { source.isNil or: { frame[Bmc.messageSourceIndex(frame)].asString == source.asString } }
+		and: { sourceAvatar.isNil or: { frame[Bmc.messageAvatarIndex(frame)].asString == sourceAvatar.asString } }
 	}
 
 	apply { |targetFrame, sourceFrame|

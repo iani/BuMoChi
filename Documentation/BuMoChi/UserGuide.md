@@ -105,7 +105,7 @@ this pipeline it is the source of standard VMC motion messages.
 Use the native Electron application for this pipeline because VMC output is a
 native-application feature. Configure its VMC destination host and port to
 match the encoder; the local hello-world example below uses
-`127.0.0.1:39538`.
+`127.0.0.1:39537`.
 
 ### Python encoder and decoder
 
@@ -123,7 +123,8 @@ packages.
 
 `BunrakuOSCEncoder.py` receives VMC from XR Animator. It collects the 21
 required humanoid bones and sends one `/bunraku/vmc/frame` message per complete
-pose.
+pose to Bmc on port `57130` and, by default, a second copy to `OscGroupClient`
+on port `22244`.
 
 `BunrakuOSCDecoder.py` performs the reverse conversion. It receives Bunraku
 frames from SuperCollider and emits standard VMC messages for Godot.
@@ -246,8 +247,7 @@ In a second terminal, also opened in `Testing_BuMoChi`, run:
 
 ```bash
 python3 BunrakuOSCEncoder.py \
-  --listen-port 39538 \
-  --target-port 57130 \
+  --no-oscgroups \
   --avatar "BunrakuTestAvatar" \
   --source "xr-animator" \
   --verbose
@@ -259,7 +259,7 @@ In XR Animator, set the VMC destination to:
 
 ```text
 Host: 127.0.0.1
-Port: 39538
+Port: 39537
 ```
 
 Enable VMC output and move in front of the camera. The Godot character should follow the motion. Evaluate `Bmc.status` again; the `received` count should be increasing.
