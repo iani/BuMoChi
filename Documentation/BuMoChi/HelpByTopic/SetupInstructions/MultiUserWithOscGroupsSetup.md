@@ -6,22 +6,30 @@ This is the canonical collaborative setup. It follows BuMoChi's **distributed so
 
 # Operational model
 
+## Animation data input
+
 Every workstation's Bmc receives two kinds of input on port `57130`:
 
-1.  its own encoder's local source-frame copy;
-2.  remote source frames delivered by its `OscGroupClient`.
+1.  Its own encoder's local source-frame copy. This is animation data from a local mocap system, such as XR-Animator with a webcam.
+2.  Remote source frames delivered by its `OscGroupClient`. These are animation data from remote mocap systems on computers connected through OSCGroups.
 
-The local encoder also sends an identical route-free copy to `OscGroupClient` transmit port `22244`. Bmc never sends processed output to OSCGroups. After combining, filtering, layering, and assigning motions to figures and avatars, Bmc sends routed version-2 frames only to its local decoder on `39538`. The decoder reconstructs VMC for local Godot.
+## Animation data output
+
+The local encoder also sends an identical route-free copy of every local motion-source frame to `OscGroupClient` input port `22244`, which shares it with the remote workstations.
+
+After combining, filtering, layering, and assigning motions to figures and avatars in SuperCollider, Bmc sends the completed animation frames to its local decoder on `39538`. Each frame is an OSC message containing the VMC destination port assigned to its avatar. The decoder reconstructs a VMC bundle, forwards it to the specified local Godot receiver, and Godot renders the avatar.
+
+SuperCollider/Bmc never sends processed output to OSCGroups. The final animation is synthesized and rendered locally. Because every workstation receives the shared source frames and uses the same session/composition and Godot scene, each workstation independently constructs and renders the same intended animation.
 
 This is analogous to networked sound synthesis in sc-hacks-redux: collaborators share source material, while every workstation performs the full synthesis locally.
 
 # One client per workstation
 
-One full-duplex `OscGroupClient` handles both network directions:
+One full-duplex (input/output) `OscGroupClient` handles both network directions:
 
 ``` example
-local encoder -> client localTxPort -> OSCGroups network
-OSCGroups network -> client localRxPort -> local Bmc
+local encoder -> client input port 22244 -> OSCGroups network
+OSCGroups network -> client output port 57130 -> local Bmc
 ```
 
 Do not start separate sending and receiving clients on an ordinary workstation.
@@ -81,7 +89,7 @@ The diagrams show two workstations. Both synthesize the same scene: Ishidomaru l
 
 # Shared and unique settings
 
-All collaborators must agree on the OSCGroups server, group credentials, stable source identities, Bmc session/composition, Godot scene, and avatar-to-port map. Every workstation needs a unique OSCGroups username and normally a unique `localToRemotePort`. Local application ports may use the same numbers on different computers.
+All collaborators must agree on the OSCGroups server, group credentials, stable source identities, Bmc session/composition, Godot scene, and avatar-to-port map. Every workstation needs a unique OSCGroups username. Local application ports, including client input port `22244`, may use the same numbers on different computers because each port belongs to a different host.
 
 # Port map on each workstation
 
@@ -139,7 +147,7 @@ AppsAndCode/OSCGroups/bin/macos/OscGroupClient \
   USER_NAME USER_PASSWORD GROUP_NAME GROUP_PASSWORD
 ```
 
-`22244` is `localTxPort` and `57130` is `localRxPort`. Remote route-free frames enter the same Bmc input as local frames.
+`22244` is the client's input port (`localTxPort` in the command-line interface), and `57130` is its output port (`localRxPort`). Remote route-free frames enter the same Bmc input as local frames.
 
 ## 5. Start the local encoder
 
