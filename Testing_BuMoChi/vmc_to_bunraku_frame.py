@@ -17,30 +17,20 @@ from bunraku_protocol import (
 class Stats:
     received: int = 0
     sent: int = 0
-    bmc_sent: int = 0
-    oscgroups_sent: int = 0
     dropped: int = 0
     non_skeleton: int = 0
 
 def status(stats: Stats) -> str:
     return (
         f"received={stats.received}, sent={stats.sent}, "
-        f"bmc_sent={stats.bmc_sent}, oscgroups_sent={stats.oscgroups_sent}, "
         f"dropped={stats.dropped}, "
         f"non_skeleton={stats.non_skeleton}"
     )
 
 
 def destinations(args: argparse.Namespace) -> tuple[tuple[str, str, int], ...]:
-    """Return the enabled named fan-out destinations."""
-    result = []
-    endpoints = set()
-    if not args.no_bmc:
-        result.append(("Bmc", args.bmc_ip, args.bmc_port))
-        endpoints.add((args.bmc_ip, args.bmc_port))
-    if not args.no_oscgroups and (args.oscgroups_ip, args.oscgroups_port) not in endpoints:
-        result.append(("OSCGroups", args.oscgroups_ip, args.oscgroups_port))
-    return tuple(result)
+    """Return the single route-free destination: local Bmc."""
+    return (("Bmc", args.bmc_ip, args.bmc_port),)
 
 
 def complete_transforms(cache: dict[str, tuple[float, ...]]):
@@ -111,10 +101,6 @@ def run(args: argparse.Namespace) -> int:
                         try:
                             send.sendto(output, (host, port))
                             successful += 1
-                            if name == "Bmc":
-                                stats.bmc_sent += 1
-                            else:
-                                stats.oscgroups_sent += 1
                         except OSError as exc:
                             if args.verbose:
                                 print(
@@ -144,10 +130,12 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--listen-ip", default="127.0.0.1"); p.add_argument("--listen-port", type=int, default=39537)
     p.add_argument("--bmc-ip", default="127.0.0.1", help="local Bmc destination address")
     p.add_argument("--bmc-port", type=int, default=57130, help="local Bmc destination port")
-    p.add_argument("--oscgroups-ip", "--target-ip", dest="oscgroups_ip", default="127.0.0.1", help="local OscGroupClient destination address")
-    p.add_argument("--oscgroups-port", "--target-port", dest="oscgroups_port", type=int, default=22244, help="local OscGroupClient transmission port")
-    p.add_argument("--no-bmc", action="store_true", help="disable the local Bmc copy")
-    p.add_argument("--no-oscgroups", action="store_true", help="disable the OSCGroups copy")
+    # Retained as hidden compatibility options. The encoder no longer sends to
+    # OSCGroups; Bmc distributes its routed version-2 output instead.
+    p.add_argument("--oscgroups-ip", "--target-ip", dest="oscgroups_ip", default="127.0.0.1", help=argparse.SUPPRESS)
+    p.add_argument("--oscgroups-port", "--target-port", dest="oscgroups_port", type=int, default=22244, help=argparse.SUPPRESS)
+    p.add_argument("--no-bmc", action="store_true", help=argparse.SUPPRESS)
+    p.add_argument("--no-oscgroups", action="store_true", help=argparse.SUPPRESS)
     p.add_argument("--avatar", default="XRAnimator", help="avatar name included in every frame")
     p.add_argument("--source", help="stable sender ID; default is random per run")
     p.add_argument("--max-packet-size", type=int, default=1200); p.add_argument("--stats-interval", type=float, default=5.0)
@@ -162,9 +150,9 @@ def main() -> int:
     p = parser()
     args = p.parse_args()
     if not args.avatar: p.error("--avatar cannot be empty")
-    ports = (args.listen_port, args.bmc_port, args.oscgroups_port)
+    ports = (args.listen_port, args.bmc_port)
     if any(not 1 <= port <= 65535 for port in ports): p.error("invalid port")
-    if args.no_bmc and args.no_oscgroups: p.error("at least one output must be enabled")
+    if args.no_bmc: p.error("the encoder must send route-free frames to Bmc")
     if not 256 <= args.max_packet_size <= MAX_UDP_PAYLOAD: p.error("invalid maximum packet size")
     if args.stats_interval < 0: p.error("statistics interval cannot be negative")
     return run(args)

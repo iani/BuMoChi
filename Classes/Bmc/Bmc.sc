@@ -10,6 +10,7 @@ Bmc {
 	classvar <dispatcher, <recorder, <player, <library, <avatars, <wires;
 	classvar <defaultAvatar, recordingName, recorderPublisher;
 	classvar <sessions, <currentSession;
+	classvar <decoderPort, <oscGroupsPort, <forwardDecoder, <forwardOscGroups;
 
 	*initClass {
 		boneNames = #[
@@ -28,7 +29,12 @@ Bmc {
 		recorder = BmcClipRecorder.new;
 		avatars = IdentityDictionary.new;
 		wires = List.new;
+		decoderPort = 39538;
+		oscGroupsPort = 22244;
+		forwardDecoder = true;
+		forwardOscGroups = true;
 		defaultAvatar = BmcAvatar(\default, "default");
+		defaultAvatar.output_({ |message| this.fanOut(message) });
 		avatars[\default] = defaultAvatar;
 		dispatcher.registerAvatar(defaultAvatar);
 		player = BmcClipPlayer(nil, defaultAvatar);
@@ -76,6 +82,7 @@ Bmc {
 	*avatar { |name = \default| ^avatars[name.asSymbol] }
 	*addAvatar { |name, displayName|
 		var object = BmcAvatar(name, displayName);
+		object.output_({ |message| this.fanOut(message) });
 		avatars[name.asSymbol] = object;
 		dispatcher.registerAvatar(object);
 		^object
@@ -92,6 +99,25 @@ Bmc {
 		defaultAvatar.output_(destination);
 		player.output_(defaultAvatar);
 		^destination
+	}
+
+	*decoderPort_ { |port| decoderPort = this.validPort(port); ^decoderPort }
+	*oscGroupsPort_ { |port| oscGroupsPort = this.validPort(port); ^oscGroupsPort }
+	*forwardDecoder_ { |flag = true| forwardDecoder = flag == true; ^forwardDecoder }
+	*forwardOscGroups_ { |flag = true| forwardOscGroups = flag == true; ^forwardOscGroups }
+
+	*fanOut { |message|
+		if(forwardDecoder) { NetAddr("127.0.0.1", decoderPort).sendMsg(*message) };
+		if(forwardOscGroups) { NetAddr("127.0.0.1", oscGroupsPort).sendMsg(*message) };
+		^message
+	}
+
+	*validPort { |port|
+		port = port.asInteger;
+		if((port < 1) or: { port > 65535 }) {
+			Error("Invalid Bmc output port: %".format(port)).throw
+		};
+		^port
 	}
 
 	// ----- recording -----
@@ -183,15 +209,12 @@ Bmc {
 
 	*applySession { |name|
 		var session = if(name.isNil) { currentSession } { sessions[name.asSymbol] };
-		var decoderOutput;
 		if(session.isNil) { Error("Unknown Bmc session: %".format(name)).throw };
-		decoderOutput = if(session.decoder.isNil) { nil } {
-			NetAddr(session.decoder[\host].asString, session.decoder[\port].asInteger)
-		};
+		if(session.decoder.notNil) { this.decoderPort_(session.decoder[\port]) };
 		session.avatars.keysValuesDo { |avatarName, route|
 			var object = this.avatar(avatarName);
 			if(object.isNil) { object = this.addAvatar(avatarName, avatarName.asString) };
-			if(decoderOutput.isNil) {
+			if(session.decoder.isNil) {
 				// Legacy session: each avatar points at its dedicated decoder.
 				object.vmcPort_(nil);
 				object.output_(NetAddr(route[\host].asString, route[\port].asInteger));
@@ -201,7 +224,7 @@ Bmc {
 					Error("Session avatar % requires vmcPort for routed decoding"
 						.format(avatarName)).throw;
 				};
-				object.output_(decoderOutput);
+				object.output_({ |message| this.fanOut(message) });
 				object.vmcPort_(vmcPort);
 			};
 		};

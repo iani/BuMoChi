@@ -43,9 +43,9 @@ The complete networked pipeline is:
 ``` text
 XR Animator
     → BunrakuOSCEncoder.py
-    → OSCGroups
     → SuperCollider + BuMoChi
-    → BunrakuOSCDecoder.py
+    → local BunrakuOSCDecoder.py and OSCGroups
+    → remote BunrakuOSCDecoder.py
     → Godot
 ```
 
@@ -55,7 +55,7 @@ On a single computer, OSCGroups can initially be omitted:
 XR Animator → encoder → BuMoChi → decoder → Godot
 ```
 
-The components have different jobs. XR Animator observes a person, the encoder packages one complete skeleton frame, OSCGroups carries frames between computers, BuMoChi records or transforms them, the decoder restores standard VMC messages, and Godot displays the animated character.
+The components have different jobs. XR Animator observes a person, the encoder packages one complete route-free skeleton frame, and BuMoChi records or transforms it. BuMoChi then sends the same routed result to the local decoder and through OSCGroups to remote decoders. Each decoder restores standard VMC messages, and matching Godot scenes display the same animated characters.
 
 ### SuperCollider and BuMoChi
 
@@ -98,7 +98,7 @@ Testing_BuMoChi/BunrakuOSCDecoder.py
 
 Their supporting Python modules are in the same directory. Keep those files together. The scripts use Python 3 and do not require third-party Python packages.
 
-`BunrakuOSCEncoder.py` receives VMC from XR Animator. It collects the 21 required humanoid bones and sends one `/bunraku/vmc/frame` message per complete pose to Bmc on port `57130` and, by default, a second copy to `OscGroupClient` on port `22244`.
+`BunrakuOSCEncoder.py` receives VMC from XR Animator. It collects the 21 required humanoid bones and sends one route-free `/bunraku/vmc/frame` message per complete pose to Bmc on port `57130`. Bmc adds the final avatar and VMC route, then sends the identical routed frame to the local decoder on `39538` and `OscGroupClient` on `22244`.
 
 `BunrakuOSCDecoder.py` performs the reverse conversion. It receives Bunraku frames from SuperCollider and emits standard VMC messages for Godot.
 
@@ -152,9 +152,9 @@ This first example runs everything on one computer and deliberately omits OSCGro
 
 | From           | To             | UDP port |
 |----------------|----------------|----------|
-| XR Animator    | Python encoder | `39538`  |
+| XR Animator    | Python encoder | `39537`  |
 | Python encoder | BuMoChi        | `57130`  |
-| BuMoChi        | Python decoder | `39537`  |
+| BuMoChi        | Python decoder | `39538`  |
 | Python decoder | Godot          | `39539`  |
 
 Only one program can listen on a given UDP port. Stop older test processes before starting this example.
@@ -173,8 +173,7 @@ Open a terminal in `Testing_BuMoChi` and run:
 
 ``` bash
 python3 BunrakuOSCDecoder.py \
-  --listen-port 39537 \
-  --target-port 39539 \
+  --listen-port 39538 \
   --accept-avatar "BunrakuTestAvatar" \
   --verbose
 ```
@@ -191,8 +190,9 @@ Bmc.reset;
 Bmc.addAvatar(\BunrakuTestAvatar, "BunrakuTestAvatar");
 Bmc.selectAvatar(\BunrakuTestAvatar);
 
-// Send processed or replayed frames to the Python decoder.
-Bmc.output(NetAddr("127.0.0.1", 39537));
+// Route this avatar to Godot and disable the unused network branch.
+Bmc.avatar(\BunrakuTestAvatar).vmcPort_(39539);
+Bmc.forwardOscGroups_(false);
 
 // Receive Bunraku frames from the Python encoder.
 Bmc.start(57130);
@@ -213,7 +213,6 @@ In a second terminal, also opened in `Testing_BuMoChi`, run:
 
 ``` bash
 python3 BunrakuOSCEncoder.py \
-  --no-oscgroups \
   --avatar "BunrakuTestAvatar" \
   --source "xr-animator" \
   --verbose
@@ -288,7 +287,7 @@ Then disable XR Animator output, press **Control-C** in the encoder and decoder 
 
 1.  `Bmc.start(port: 57130)`
 
-    Starts the Bunraku Frame OSC receiver. The port must match the output of the encoder or the local OSCGroups receiving client.
+    Starts the Bunraku Frame OSC receiver. The port must match the local encoder output. Remote OSCGroups frames go directly to the decoder rather than through this receiver.
 
 2.  `Bmc.stop`
 
@@ -318,13 +317,29 @@ Then disable XR Animator output, press **Control-C** in the encoder and decoder 
 
 4.  `Bmc.output(destination)`
 
-    Sets the selected avatar's output. A typical decoder destination is:
+    Replaces the selected avatar's default fan-out function with a custom destination. This is an advanced escape hatch; ordinary use should retain the class-wide fan-out settings.
 
     ``` supercollider
-    Bmc.output(NetAddr("127.0.0.1", 39537));
+    Bmc.output(NetAddr("127.0.0.1", 39538));
     ```
 
     A function may also be used as an output for inspection or custom processing.
+
+5.  `Bmc.decoderPort_(port)`
+
+    Sets the local decoder destination for all avatars using the default fan-out. Default: `39538`.
+
+6.  `Bmc.oscGroupsPort_(port)`
+
+    Sets the local `OscGroupClient` transmit destination for the default fan-out. Default: `22244`.
+
+7.  `Bmc.forwardDecoder_(flag)`
+
+    Enables or disables forwarding to the local decoder. Default: `true`.
+
+8.  `Bmc.forwardOscGroups_(flag)`
+
+    Enables or disables forwarding to OSCGroups. Default: `true`. Use `false` for a deliberately network-free local session.
 
 ### Recording
 

@@ -6,14 +6,13 @@ Two Python applications convert between standard VMC bundles and the compact Bun
 
 # OSCEncoder
 
-`BunrakuOSCEncoder` receives VMC packets emitted by XR-Animator or another source such as Waidayo. It collects a complete 21-bone pose and encodes it as one `/bunraku/vmc/frame` OSC message. By default, it sends an identical copy of every completed frame to both local Bmc and the local `OscGroupClient`:
+`BunrakuOSCEncoder` receives VMC packets emitted by XR-Animator or another source such as Waidayo. It collects a complete 21-bone pose and encodes it as one route-free `/bunraku/vmc/frame` OSC message. It sends every completed frame to local Bmc:
 
-| Output           | Default destination |
-|------------------|---------------------|
-| local Bmc        | `127.0.0.1:57130`   |
-| `OscGroupClient` | `127.0.0.1:22244`   |
+| Output    | Default destination |
+|-----------|---------------------|
+| local Bmc | `127.0.0.1:57130`   |
 
-This fan-out is intentional. OSCGroups forwards a local stream to other group members but does not return it to its originator. The direct Bmc copy therefore makes the local stream available for recording, processing, and local Godot rendering, while the second copy supplies the collaborators.
+The encoder does not send directly to OSCGroups. Bmc first processes the frame, assigns the final avatar and VMC target port, and then fans the identical routed version-2 frame out to the local decoder and `OscGroupClient`.
 
 You need the encoder when a local mocap source produces VMC and Bmc or OSCGroups must receive Bunraku frames.
 
@@ -31,9 +30,9 @@ Routing is added only when a completed figure is assigned to a Bmc avatar. It is
 
 The commands below use the terminal aliases installed in `~/.local/bin`. Those aliases link to the scripts in this repository and may be run from any working directory. If the aliases are unavailable, replace `BunrakuOSCEncoder` or `BunrakuOSCDecoder` with the corresponding `python3` script path.
 
-## Encoder: standard dual-output launch
+## Encoder: standard launch
 
-XR-Animator sends VMC to the encoder on `39537`. The encoder sends every completed frame to Bmc on `57130` and to `OscGroupClient` on `22244`. All three ports are defaults:
+XR-Animator sends VMC to the encoder on `39537`. The encoder sends every completed frame to Bmc on `57130`. Both ports are defaults:
 
 ``` bash
 BunrakuOSCEncoder \
@@ -49,50 +48,48 @@ Host: 127.0.0.1
 Port: 39537
 ```
 
-In SuperCollider, Bmc listens for both the direct local copy and remote frames delivered by `OscGroupClient`:
+In SuperCollider, Bmc listens for the local encoder:
 
 ``` supercollider
 Bmc.start(57130);
 ```
 
-Start `OscGroupClient` only for a multiuser session. The encoder can start before the client; UDP packets sent while the client is absent are simply not retained.
+Start `OscGroupClient` only for a multiuser session. Bmc, rather than the encoder, supplies its network input.
 
-## Encoder: single-user launch without OSCGroups
+## Single-user output control
 
-When no OSCGroups collaboration is required, disable only that output:
+The encoder command is unchanged for single-user work. Disable Bmc's network fan-out in SuperCollider:
 
-``` bash
-BunrakuOSCEncoder \
-  --no-oscgroups \
-  --avatar "XRAnimator" \
-  --source "xr-animator" \
-  --verbose
+``` supercollider
+Bmc.forwardOscGroups_(false);
 ```
 
-The local Bmc copy continues on `57130`. Conversely, `--no-bmc` creates a network-only encoder, although this is not the canonical setup.
+Local decoder forwarding remains enabled. `Bmc.reset` restores both fan-out destinations to enabled.
 
 ## Encoder output overrides
 
-Override either default destination when the corresponding listener uses a different address or port:
+Override the encoder-to-Bmc port when Bmc uses a different input:
 
 ``` bash
 BunrakuOSCEncoder \
   --bmc-ip 127.0.0.1 \
   --bmc-port 57131 \
-  --oscgroups-ip 127.0.0.1 \
-  --oscgroups-port 22245 \
   --avatar "XRAnimator" \
   --source "xr-animator"
 ```
 
-The available encoder routing switches are:
+The encoder routing switches are `--bmc-ip` and `--bmc-port`. Former OSCGroups-related encoder options remain accepted only as compatibility no-ops; do not use them in new commands.
 
-- `--bmc-ip` and `--bmc-port`;
-- `--oscgroups-ip` and `--oscgroups-port`;
-- `--no-bmc`;
-- `--no-oscgroups`.
+## Bmc fan-out options
 
-At least one output must remain enabled. The former encoder options `--target-ip` and `--target-port` remain accepted as compatibility aliases for `--oscgroups-ip` and `--oscgroups-port`, but new commands should use the explicit names. Decoder options with similar names are unchanged.
+``` supercollider
+Bmc.decoderPort_(39538);       // default decoder input
+Bmc.oscGroupsPort_(22244);     // default OscGroupClient transmit input
+Bmc.forwardDecoder_(true);     // enable or disable local rendering output
+Bmc.forwardOscGroups_(true);   // enable or disable network output
+```
+
+These are class-wide settings. Each Bmc avatar sends the same routed message to every enabled destination.
 
 ## Decoder: one routed decoder for several local avatars
 
@@ -120,14 +117,10 @@ Configure the Bmc avatar outputs:
 
 ``` supercollider
 (
-~decoder = NetAddr("127.0.0.1", 39538);
-
 Bmc.addAvatar(\Mother, "Mother");
-Bmc.avatar(\Mother).output_(~decoder);
 Bmc.avatar(\Mother).vmcPort_(39539);
 
 Bmc.addAvatar(\Ishidomaru, "Ishidomaru");
-Bmc.avatar(\Ishidomaru).output_(~decoder);
 Bmc.avatar(\Ishidomaru).vmcPort_(39540);
 )
 ```

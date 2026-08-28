@@ -2,57 +2,64 @@
 title: OscGroupClient Use and Configuration
 ---
 
-`OscGroupClient` is an application that acts as a bridge between a local performance workstation and remote performance workstations. It sends OSC messages to `OscGroupServer`, which relays those messages to the other clients registered in the same authenticated group.
+`OscGroupClient` bridges a local performance workstation and remote workstations. It sends OSC messages to `OscGroupServer`, which relays them to the other clients registered in the same authenticated group.
 
-`OscGroupClient` is a compiled executable, not a Python script. One client normally handles both directions on a workstation: local applications send to its local transmission port, and it forwards messages received from remote group members to its local reception port.
+One client normally handles both directions. Local Bmc output enters its transmission port, while routed frames received from collaborators leave through its local reception port and go directly to `BunrakuOSCDecoder`.
 
-# Receiving animation data from a remote workstation via OSCGroups
-
-To receive remote Bunraku frames in Bmc, set the client's `localrxport` to the port on which Bmc listens. The recommended local Bmc input is `57130`:
-
-``` supercollider
-Bmc.start(57130);
-```
-
-The client forwards messages received from other group members to `127.0.0.1:57130`. It does not decode or modify the Bunraku frames.
-
-# Sending animation data to remote workstations via OSCGroups
-
-To send frames to remote group members, direct the local producing application to the client's `localtxport`. The recommended local transmission port is `22244`.
-
-The current `BunrakuOSCEncoder` does this automatically. By default, it sends each frame both to `OscGroupClient` on `22244` and directly to local Bmc on `57130`. The direct copy is necessary because OSCGroups sends the network copy to the other group members and does not echo it to the originating client.
-
-For example, send the output of `BunrakuOSCEncoder` to:
+# Canonical shared-scene flow
 
 ``` example
-127.0.0.1:22244
+local Bmc routed frame -> 127.0.0.1:22244 -> OscGroupClient -> network
+network -> OscGroupClient -> 127.0.0.1:39538 -> BunrakuOSCDecoder -> Godot
 ```
 
-The client receives those local packets and relays them through the OSCGroups server to the other members of the group.
+Bmc sends the same routed version-2 frame to its local decoder on `39538` and to the client on `22244`. Therefore local and remote Godot scenes receive the same avatar identity and embedded VMC target port.
+
+The encoder does not send to OSCGroups, and remote frames do not return to Bmc.
+
+# Bmc fan-out configuration
+
+The defaults require no setup:
+
+``` supercollider
+Bmc.decoderPort;       // 39538
+Bmc.oscGroupsPort;     // 22244
+Bmc.forwardDecoder;    // true
+Bmc.forwardOscGroups;  // true
+```
+
+Override or disable a destination when necessary:
+
+``` supercollider
+Bmc.decoderPort_(39548);
+Bmc.oscGroupsPort_(22245);
+Bmc.forwardDecoder_(false);
+Bmc.forwardOscGroups_(false);
+```
+
+Changes are class-wide and immediately affect every avatar using Bmc's default output function. `Bmc.reset` restores ports `39538` and `22244` and enables both destinations.
 
 # OscGroupClient arguments
 
-The client requires nine positional arguments in this exact order:
+The client requires nine positional arguments:
 
 ``` example
 OscGroupClient serverAddress serverPort localToRemotePort localTxPort localRxPort userName userPassword groupName groupPassword
 ```
 
 - `serverAddress`: IP address or DNS name of the OSCGroups server.
-- `serverPort`: server registration port; commonly `22242`.
-- `localToRemotePort`: local network port used to communicate with the server and peers. It must be free and may need to differ between clients behind the same NAT.
-- `localTxPort`: local input to OSCGroups. Send local OSC here to transmit it to the group; recommended `22244`.
-- `localRxPort`: local output from OSCGroups. Remote group traffic is forwarded here; recommended `57130` for Bmc.
+- `serverPort`: server registration port, commonly `22242`.
+- `localToRemotePort`: free local network port used with the server and peers.
+- `localTxPort`: local input to OSCGroups; default BuMoChi choice `22244`.
+- `localRxPort`: local output from OSCGroups to the decoder; default `39538`.
 - `userName` and `userPassword`: credentials unique to this client.
-- `groupName` and `groupPassword`: credentials shared by all members of the performance group.
+- `groupName` and `groupPassword`: credentials shared by the performance group.
 
-Do not commit real user or group passwords to the repository. All local port numbers supplied to one client must be distinct and must not already be owned by another process.
+Do not commit real passwords. `localTxPort` and `localRxPort` must remain distinct.
 
 # Launch OscGroupClient
 
-## Launch from the ICLC27 project directory on macOS
-
-Open Terminal and change to the top-level `260715_ICLC27` directory. Replace every uppercase placeholder with the current rehearsal credentials:
+From the top-level `260715_ICLC27` directory:
 
 ``` bash
 AppsAndCode/OSCGroups/bin/macos/OscGroupClient \
@@ -60,49 +67,35 @@ AppsAndCode/OSCGroups/bin/macos/OscGroupClient \
   22242 \
   LOCAL_TO_REMOTE_PORT \
   22244 \
-  57130 \
+  39538 \
   USER_NAME \
   USER_PASSWORD \
   GROUP_NAME \
   GROUP_PASSWORD
 ```
 
-This one process both receives and sends:
-
-``` example
-local application -> 127.0.0.1:22244 -> OSCGroups network
-OSCGroups network -> client -> 127.0.0.1:57130 -> Bmc
-```
-
-## Launch from the OSCGroups directory
+From the OSCGroups directory:
 
 ``` bash
-cd /Users/iani/Obsidian/Iani/Projects/260715_ICLC27/AppsAndCode/OSCGroups
-
 ./bin/macos/OscGroupClient \
-  SERVER_ADDRESS 22242 LOCAL_TO_REMOTE_PORT 22244 57130 \
+  SERVER_ADDRESS 22242 LOCAL_TO_REMOTE_PORT 22244 39538 \
   USER_NAME USER_PASSWORD GROUP_NAME GROUP_PASSWORD
 ```
 
-## Launch from anywhere after installing the executable
+If the executable is on the shell `PATH`, use the same arguments after `OscGroupClient`. Keep the Terminal open and press `Control-C` to stop it.
 
-If `OscGroupClient` has been copied or linked into a directory on your shell `PATH`:
+# Avoid network loops
 
-``` bash
-OscGroupClient \
-  SERVER_ADDRESS 22242 LOCAL_TO_REMOTE_PORT 22244 57130 \
-  USER_NAME USER_PASSWORD GROUP_NAME GROUP_PASSWORD
-```
-
-The client should report successful registration with the server and group. Keep its Terminal window open during the session. Press `Control-C` to stop it.
+- Do not set `localRxPort` to `22244`; received messages would re-enter the transmit input.
+- Do not set `localRxPort` to `57130`; remote routed frames should go to the decoder, not through Bmc again.
+- Do not relay decoder output back to `22244`.
+- Use one unique OSCGroups username per running client.
 
 # Verify the local ports
 
-On macOS, check that the client owns its local transmission port and that Bmc owns its receiving port:
-
 ``` bash
 lsof -nP -iUDP:22244
-lsof -nP -iUDP:57130
+lsof -nP -iUDP:39538
 ```
 
-If either launch reports `Address already in use`, stop the older listener or choose another free port and update both ends of that connection.
+The client should own `22244`. The decoder should own `39538`. Bmc and the client both send to `39538`, but neither listens there.

@@ -102,27 +102,24 @@ class BunrakuProtocolTests(unittest.TestCase):
         with self.assertRaises(ProtocolError):
             parse_frame(b"not OSC")
 
-    def test_encoder_defaults_to_local_bmc_and_oscgroups(self):
+    def test_encoder_defaults_to_local_bmc_only(self):
         args = encoder_parser().parse_args([])
         self.assertEqual(args.listen_port, 39537)
         self.assertEqual(
             destinations(args),
-            (
-                ("Bmc", "127.0.0.1", 57130),
-                ("OSCGroups", "127.0.0.1", 22244),
-            ),
+            (("Bmc", "127.0.0.1", 57130),),
         )
 
-    def test_encoder_output_can_be_disabled(self):
+    def test_legacy_no_oscgroups_option_is_a_noop(self):
         args = encoder_parser().parse_args(["--no-oscgroups"])
         self.assertEqual(destinations(args), (("Bmc", "127.0.0.1", 57130),))
 
-    def test_legacy_target_alias_does_not_duplicate_bmc_endpoint(self):
+    def test_legacy_target_alias_does_not_change_bmc_endpoint(self):
         args = encoder_parser().parse_args(["--target-port", "57130"])
         self.assertEqual(destinations(args), (("Bmc", "127.0.0.1", 57130),))
 
-    def test_encoder_fans_one_frame_out_to_both_destinations(self):
-        receivers = [socket.socket(socket.AF_INET, socket.SOCK_DGRAM) for _ in range(2)]
+    def test_encoder_sends_one_frame_to_bmc(self):
+        receivers = [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]
         ingress_probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sender = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         process = None
@@ -141,7 +138,6 @@ class BunrakuProtocolTests(unittest.TestCase):
                     sys.executable, str(encoder),
                     "--listen-port", str(ingress_port),
                     "--bmc-port", str(target_ports[0]),
-                    "--oscgroups-port", str(target_ports[1]),
                     "--stats-interval", "0",
                 ],
                 stdout=subprocess.DEVNULL,
@@ -155,8 +151,6 @@ class BunrakuProtocolTests(unittest.TestCase):
 
             received = [parse_frame(receiver.recvfrom(65507)[0]) for receiver in receivers]
             self.assertEqual(received[0].avatar, "XRAnimator")
-            self.assertEqual(received[1].avatar, "XRAnimator")
-            self.assert_transforms_almost_equal(received[0].transforms, received[1].transforms)
         finally:
             if process is not None:
                 process.terminate()

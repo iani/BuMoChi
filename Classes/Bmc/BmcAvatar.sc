@@ -66,9 +66,18 @@ BmcAvatar {
 		} {
 			if(vmcPort.isNil) { frame } { BmcFrame.fromOSC(frame).withoutRoute.withTargetPort(vmcPort).asOSCMessage }
 		};
-		if(output.isNil) { ^this };
-		if(output.isKindOf(Function)) { output.value(message); ^this };
-		if(output.isKindOf(NetAddr)) { output.sendMsg(*message); ^this };
-		Error("Unsupported BmcAvatar output: %".format(output)).throw;
+		this.sendTo(output, message);
+		^this
+	}
+
+	sendTo { |destination, message|
+		if(destination.isNil) { ^this };
+		if(destination.isKindOf(Function)) { destination.value(message); ^this };
+		if(destination.isKindOf(NetAddr)) { destination.sendMsg(*message); ^this };
+		if(destination.isKindOf(Collection)) {
+			destination.do { |item| this.sendTo(item, message) };
+			^this
+		};
+		Error("Unsupported BmcAvatar output: %".format(destination)).throw;
 	}
 }

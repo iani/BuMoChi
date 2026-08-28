@@ -9,9 +9,9 @@ XR-Animator
     -> VMC 127.0.0.1:39537
 BunrakuOSCEncoder
     -> local Bunraku frames 127.0.0.1:57130
-    -> OSCGroups copy disabled for this setup
 Bmc in SuperCollider
     -> routed Bunraku frames 127.0.0.1:39538
+    -> OSCGroups forwarding disabled for this setup
 one BunrakuOSCDecoder
     -> VMC 127.0.0.1:39539 (Mother)
     -> VMC 127.0.0.1:39540 (Ishidomaru, when used)
@@ -95,18 +95,18 @@ In SuperCollider, evaluate:
 (
 Bmc.reset;
 
-~decoder = NetAddr("127.0.0.1", 39538);
-
 // The encoder below labels the incoming live stream "Mother".
 Bmc.addAvatar(\Mother, "Mother");
-Bmc.avatar(\Mother).output_(~decoder);
 Bmc.avatar(\Mother).vmcPort_(39539);
 Bmc.selectAvatar(\Mother);
 
 // Add this only when the Godot project has an independent second receiver.
 Bmc.addAvatar(\Ishidomaru, "Ishidomaru");
-Bmc.avatar(\Ishidomaru).output_(~decoder);
 Bmc.avatar(\Ishidomaru).vmcPort_(39540);
+
+// Keep local rendering; suppress only the unused network copy.
+Bmc.forwardDecoder_(true);
+Bmc.forwardOscGroups_(false);
 
 Bmc.start(57130);
 Bmc.status;
@@ -121,13 +121,12 @@ Open a second Terminal window:
 
 #+begin_src sh
 BunrakuOSCEncoder \
-  --no-oscgroups \
   --avatar "Mother" \
   --source "xr-animator" \
   --verbose
 #+end_src
 
-The default encoder input is =39537= and its default Bmc output is =57130=, so neither port needs to be supplied. =--no-oscgroups= disables the otherwise automatic second copy to port =22244=. Keep this Terminal open. The encoded avatar name is =Mother= so the registered Bmc avatar receives the live stream and routes it to Godot port =39539=.
+The default encoder input is =39537= and its default Bmc output is =57130=, so neither port needs to be supplied. The encoder never sends directly to OSCGroups; =Bmc.forwardOscGroups_(false)= disables the network branch for this setup. Keep this Terminal open.
 
 ** 5. Start XR-Animator output
 

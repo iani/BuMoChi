@@ -8,9 +8,9 @@ Use this port map throughout the test:
 
 | From           | To             | UDP port |
 |----------------|----------------|----------|
-| XR-Animator    | Python encoder | 39538    |
+| XR-Animator    | Python encoder | 39537    |
 | Python encoder | BuMoChi        | 57130    |
-| BuMoChi        | Python decoder | 39537    |
+| BuMoChi        | Python decoder | 39538    |
 | Python decoder | Godot          | 39539    |
 
 Only one application can listen on a particular UDP port. Stop any older encoder or decoder processes before starting this test.
@@ -36,7 +36,6 @@ Only one application can listen on a particular UDP port. Stop any older encoder
 
     ``` bash
     python3 BunrakuOSCEncoder.py \
-      --no-oscgroups \
       --avatar "BunrakuTestAvatar" \
       --source "xr-animator" \
       --verbose
@@ -46,7 +45,6 @@ Only one application can listen on a particular UDP port. Stop any older encoder
 
     ``` bash
     BunrakuOSCEncoder \
-      --no-oscgroups \
       --avatar "BunrakuTestAvatar" \
       --source "xr-animator" \
       --verbose
@@ -65,7 +63,8 @@ Only one application can listen on a particular UDP port. Stop any older encoder
     Bmc.selectAvatar(\BunrakuTestAvatar);
 
     // Playback and live frames will be sent to the decoder on this port.
-    Bmc.output(NetAddr("127.0.0.1", 39537));
+    Bmc.avatar(\BunrakuTestAvatar).vmcPort_(39539);
+    Bmc.forwardOscGroups_(false); // local recording test only
 
     // Receive encoded XR-Animator frames here.
     Bmc.start(57130);
@@ -84,8 +83,7 @@ Only one application can listen on a particular UDP port. Stop any older encoder
 
     ``` bash
     python3 BunrakuOSCDecoder.py \
-      --listen-port 39537 \
-      --target-port 39539 \
+      --listen-port 39538 \
       --accept-avatar "BunrakuTestAvatar" \
       --verbose
     ```
@@ -302,11 +300,11 @@ PathName(~scdPath).pathOnly.postln;
 
 # Play a clip
 
-1.  Make sure the Python decoder and Godot are running as described in the first section. The selected Bmc avatar must still output to decoder port `39537`:
+1.  Make sure the Python decoder and Godot are running as described in the first section. The selected Bmc avatar must still target Godot port `39539`; Bmc forwards it to decoder port `39538` automatically:
 
     ``` supercollider
     Bmc.selectAvatar(\BunrakuTestAvatar);
-    Bmc.output(NetAddr("127.0.0.1", 39537));
+    Bmc.avatar(\BunrakuTestAvatar).vmcPort_(39539);
     ```
 
 2.  Disable VMC output in XR-Animator before playback. Otherwise live frames and replayed frames will both reach the same Godot tracker and compete with one another. The encoder may remain running while XR-Animator output is disabled.
@@ -517,7 +515,6 @@ Set the avatar and source names when starting the encoder:
 
 ``` bash
 python3 BunrakuOSCEncoder.py \
-  --no-oscgroups \
   --avatar "Ishidomaru" \
   --source "xr-animator-camera-1" \
   --verbose
@@ -528,7 +525,7 @@ Register and select the same avatar identifier in SuperCollider:
 ``` supercollider
 Bmc.addAvatar(\Ishidomaru, "Ishidomaru");
 Bmc.selectAvatar(\Ishidomaru);
-Bmc.output(NetAddr("127.0.0.1", 39537));
+Bmc.avatar(\Ishidomaru).vmcPort_(39539);
 ```
 
 Give each take its own clip name and use matching avatar/source filters:
@@ -543,8 +540,7 @@ If the decoder uses `--accept-avatar`, restart it with the matching name:
 
 ``` bash
 python3 BunrakuOSCDecoder.py \
-  --listen-port 39537 \
-  --target-port 39539 \
+  --listen-port 39538 \
   --accept-avatar "Ishidomaru" \
   --verbose
 ```
