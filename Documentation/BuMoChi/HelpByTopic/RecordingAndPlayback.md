@@ -92,6 +92,8 @@ Only one application can listen on a particular UDP port. Stop any older encoder
 
 # Record
 
+After class-library compilation, Bmc is already listening on `57130` with `Ishidomaru` selected as the default avatar, Godot VMC destination `39539`, local decoder destination `39538`, and decoder forwarding enabled. If the encoder uses `--avatar "Ishidomaru"` and the Godot tracker listens on `39539`, you may begin recording immediately while monitoring the same live frames in Godot.
+
 1.  Make sure XR-Animator is sending, the encoder is running, and `Bmc.status` shows an increasing `received` count.
 
 2.  Choose a name for the take and begin recording:

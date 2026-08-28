@@ -293,9 +293,11 @@ Then disable XR Animator output, press **Control-C** in the encoder and decoder 
 
 ### System control
 
+After the SuperCollider class library compiles, Bmc automatically listens for route-free Bunraku frames on input port `57130`. Its selected default avatar is `Ishidomaru`; completed frames for that identity are rewritten as `Ishidomaru`, assigned Godot VMC destination port `39539`, and forwarded to the local Bunraku decoder on port `39538`. Decoder forwarding is enabled. This ready state supports immediate live monitoring and `Bmc.record` without a separate initialization block when the encoder uses `--avatar "Ishidomaru"` and Godot listens on `39539`.
+
 1.  `Bmc.start(port: 57130)`
 
-    Starts the Bunraku Frame OSC receiver. The port must match both the local encoder output and `OscGroupClient.localRxPort`. Bmc receives local and remote route-free source frames here.
+    Starts or restarts the Bunraku Frame OSC receiver. The receiver starts automatically on `57130` after class-library compilation; call this method to restart it after `Bmc.stop` or to select another input port. The port must match both the local encoder output and `OscGroupClient.localRxPort`.
 
 2.  `Bmc.stop`
 
@@ -307,7 +309,7 @@ Then disable XR Animator output, press **Control-C** in the encoder and decoder 
 
 4.  `Bmc.reset`
 
-    Stops the current session and replaces the working clip library, avatars, recorder, player, dispatcher, and wires with fresh objects. Unsaved in-memory clips are lost, so use it deliberately.
+    Stops the current session, replaces the working clip library, avatars, recorder, player, dispatcher, and wires with fresh objects, restores the Ishidomaru/`39539` default route, and restarts the receiver on `57130`. Unsaved in-memory clips are lost, so use it deliberately.
 
 ### Avatars and output
 
@@ -317,7 +319,7 @@ Then disable XR Animator output, press **Control-C** in the encoder and decoder 
 
 2.  `Bmc.avatar(name)`
 
-    Returns a registered `BmcAvatar`. With no argument it returns the default avatar.
+    Returns a registered `BmcAvatar`. With no argument it returns the default avatar, `Ishidomaru`.
 
 3.  `Bmc.selectAvatar(name)`
 

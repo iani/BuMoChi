@@ -3,6 +3,7 @@
 (
 var check, makeFrame, take1, take2, combined, typed, savedPath, scdPath, wire, composite;
 var recordedTake1Path, recordedTake2Path;
+var defaultOutputMessage, defaultOutputFrame;
 
 check = { |condition, failureMessage|
 	if(condition.not) { Error("FAIL: " ++ failureMessage).throw };
@@ -14,8 +15,23 @@ makeFrame = { |avatar, source, frameID, time, fill|
 };
 
 Bmc.reset;
+check.(Bmc.dispatcher.isRunning, "Bmc.reset did not start the default receiver");
+check.(Bmc.dispatcher.port == 57130, "Bmc default input port is not 57130");
+check.(Bmc.defaultAvatar.avatarID == \Ishidomaru, "Bmc default avatar ID is not Ishidomaru");
+check.(Bmc.defaultAvatar.avatarName == "Ishidomaru", "Bmc default avatar name is not Ishidomaru");
+check.(Bmc.defaultAvatar.vmcPort == 39539, "Bmc default Ishidomaru VMC port is not 39539");
+check.(Bmc.avatar === Bmc.defaultAvatar, "Bmc.avatar did not return the default Ishidomaru avatar");
+check.(Bmc.decoderPort == 39538, "Bmc default decoder port is not 39538");
+check.(Bmc.forwardDecoder, "Bmc decoder forwarding is not enabled by default");
+Bmc.output({ |message| defaultOutputMessage = message });
+Bmc.dispatcher.receive(makeFrame.("Ishidomaru", "default-test", 1, 0.0, 0.0), 9.0);
+defaultOutputFrame = BmcFrame.fromOSC(defaultOutputMessage);
+check.(defaultOutputFrame.avatar == "Ishidomaru", "default output did not retain the Ishidomaru avatar name");
+check.(defaultOutputFrame.targetPort == 39539, "default output did not embed Ishidomaru port 39539");
+Bmc.defaultAvatar.output_({ |message| Bmc.sendOutput(message) });
 Bmc.start(57131);
 check.(Bmc.status[\running], "Bmc.start did not start the dispatcher");
+check.(Bmc.dispatcher.port == 57131, "Bmc.start did not switch the running dispatcher port");
 Bmc.stop;
 
 // Typed representation round trip.

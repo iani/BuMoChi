@@ -9,6 +9,8 @@ Bmc {
 	classvar <boneNames;
 	classvar <dispatcher, <recorder, <player, <library, <avatars, <wires;
 	classvar <defaultAvatar, recordingName, recordingFormat, recorderPublisher;
+	classvar <defaultInputPort, <defaultDecoderPort;
+	classvar <defaultAvatarID, <defaultAvatarName, <defaultAvatarVmcPort;
 	classvar <sessions, <currentSession;
 	classvar <decoderPort, <forwardDecoder;
 
@@ -20,19 +22,27 @@ Bmc {
 			\LeftUpperLeg, \LeftLowerLeg, \LeftFoot, \LeftToes,
 			\RightUpperLeg, \RightLowerLeg, \RightFoot, \RightToes
 		];
+		defaultInputPort = 57130;
+		defaultDecoderPort = 39538;
+		defaultAvatarID = \Ishidomaru;
+		defaultAvatarName = "Ishidomaru";
+		defaultAvatarVmcPort = 39539;
 		this.initializeEnvironment;
+		StartUp.add({ this.start(defaultInputPort) });
 	}
 
 	*initializeEnvironment {
 		library = BmcClipLibrary.new;
-		dispatcher = BmcDispatcher.new;
+		dispatcher = BmcDispatcher.new(defaultInputPort);
 		recorder = BmcClipRecorder.new;
 		avatars = IdentityDictionary.new;
 		wires = List.new;
-		decoderPort = 39538;
+		decoderPort = defaultDecoderPort;
 		forwardDecoder = true;
-		defaultAvatar = BmcAvatar(\default, "default");
+		defaultAvatar = BmcAvatar(defaultAvatarID, defaultAvatarName);
+		defaultAvatar.vmcPort_(defaultAvatarVmcPort);
 		defaultAvatar.output_({ |message| this.sendOutput(message) });
+		avatars[defaultAvatarID] = defaultAvatar;
 		avatars[\default] = defaultAvatar;
 		dispatcher.registerAvatar(defaultAvatar);
 		player = BmcClipPlayer(nil, defaultAvatar);
@@ -73,11 +83,15 @@ Bmc {
 	*reset {
 		this.stop;
 		this.initializeEnvironment;
+		this.start(defaultInputPort);
 		^this
 	}
 
 	// ----- avatars and outputs -----
-	*avatar { |name = \default| ^avatars[name.asSymbol] }
+	*avatar { |name|
+		if(name.isNil) { ^defaultAvatar };
+		^avatars[name.asSymbol]
+	}
 	*addAvatar { |name, displayName|
 		var object = BmcAvatar(name, displayName);
 		object.output_({ |message| this.sendOutput(message) });

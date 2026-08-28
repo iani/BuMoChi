@@ -343,11 +343,13 @@ Then disable XR Animator output, press *Control-C* in the encoder and decoder te
 :PROPERTIES:
 :CUSTOM_ID: system-control
 :END:
+After the SuperCollider class library compiles, Bmc automatically listens for route-free Bunraku frames on input port =57130=. Its selected default avatar is =Ishidomaru=; completed frames for that identity are rewritten as =Ishidomaru=, assigned Godot VMC destination port =39539=, and forwarded to the local Bunraku decoder on port =39538=. Decoder forwarding is enabled. This ready state supports immediate live monitoring and =Bmc.record= without a separate initialization block when the encoder uses =--avatar "Ishidomaru"= and Godot listens on =39539=.
+
 **** =Bmc.start(port: 57130)=
 :PROPERTIES:
 :CUSTOM_ID: bmcstartport-57130
 :END:
-Starts the Bunraku Frame OSC receiver. The port must match both the local encoder output and =OscGroupClient.localRxPort=. Bmc receives local and remote route-free source frames here.
+Starts or restarts the Bunraku Frame OSC receiver. The receiver starts automatically on =57130= after class-library compilation; call this method to restart it after =Bmc.stop= or to select another input port. The port must match both the local encoder output and =OscGroupClient.localRxPort=.
 
 **** =Bmc.stop=
 :PROPERTIES:
@@ -365,7 +367,7 @@ Posts and returns an event containing receiver, recording, playback, clip, and w
 :PROPERTIES:
 :CUSTOM_ID: bmcreset
 :END:
-Stops the current session and replaces the working clip library, avatars, recorder, player, dispatcher, and wires with fresh objects. Unsaved in-memory clips are lost, so use it deliberately.
+Stops the current session, replaces the working clip library, avatars, recorder, player, dispatcher, and wires with fresh objects, restores the Ishidomaru/=39539= default route, and restarts the receiver on =57130=. Unsaved in-memory clips are lost, so use it deliberately.
 
 *** Avatars and output
 :PROPERTIES:
@@ -381,7 +383,7 @@ Creates an avatar destination. Its name should match the avatar name carried by 
 :PROPERTIES:
 :CUSTOM_ID: bmcavatarname
 :END:
-Returns a registered =BmcAvatar=. With no argument it returns the default avatar.
+Returns a registered =BmcAvatar=. With no argument it returns the default avatar, =Ishidomaru=.
 
 **** =Bmc.selectAvatar(name)=
 :PROPERTIES:

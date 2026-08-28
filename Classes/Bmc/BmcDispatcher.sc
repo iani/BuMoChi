@@ -14,7 +14,10 @@ BmcDispatcher {
 	}
 
 	start { |argPort|
-		if(isRunning) { ^this };
+		if(isRunning) {
+			if(argPort.isNil or: { argPort == port }) { ^this };
+			this.stop;
+		};
 		port = argPort ?? { port };
 		OSCdef(oscKey, { |msg, time, addr|
 			this.receive(msg, time, addr);
