@@ -1,99 +1,72 @@
-#+title: OscGroupClient Use and Configuration
+#+title: OSCGroups Use and Configuration
 
-=OscGroupClient= bridges a local performance workstation and remote workstations. It sends OSC messages to =OscGroupServer=, which relays them to the other clients registered in the same authenticated group.
+OSCGroups distributes route-free motion-source frames between workstations. It does not distribute completed figures, routed avatar frames, decoder output, or Godot VMC output.
 
-One client normally handles both directions. Local Bmc output enters its transmission port, while routed frames received from collaborators leave through its local reception port and go directly to =BunrakuOSCDecoder=.
-
-* Canonical shared-scene flow
+* Local data flow
 
 #+begin_example
-local Bmc routed frame -> 127.0.0.1:22244 -> OscGroupClient -> network
-network -> OscGroupClient -> 127.0.0.1:39538 -> BunrakuOSCDecoder -> Godot
+local encoder -> 127.0.0.1:57130 -> local Bmc
+local encoder -> 127.0.0.1:22244 -> OscGroupClient -> network
+network -> OscGroupClient -> 127.0.0.1:57130 -> local Bmc
+local Bmc -> 127.0.0.1:39538 -> decoder -> local Godot
 #+end_example
 
-Bmc sends the same routed version-2 frame to its local decoder on =39538= and to the client on =22244=. Therefore local and remote Godot scenes receive the same avatar identity and embedded VMC target port.
+This realizes distributed sources with local synthesis: each Bmc receives local and remote sources, constructs the complete animation scene locally, and sends only to its local renderer pipeline.
 
-The encoder does not send to OSCGroups, and remote frames do not return to Bmc.
+* Encoder distribution controls
 
-* Bmc fan-out configuration
+The encoder supplies both source-frame copies by default:
 
-The defaults require no setup:
-
-#+begin_src supercollider
-Bmc.decoderPort;       // 39538
-Bmc.oscGroupsPort;     // 22244
-Bmc.forwardDecoder;    // true
-Bmc.forwardOscGroups;  // true
+#+begin_src sh
+BunrakuOSCEncoder \
+  --bmc-ip 127.0.0.1 --bmc-port 57130 \
+  --oscgroups-ip 127.0.0.1 --oscgroups-port 22244 \
+  --avatar "PerformerA" \
+  --source "workstation-a-xr-animator"
 #+end_src
 
-Override or disable a destination when necessary:
+Use =--no-oscgroups= for local-only operation or =--no-bmc= for a deliberate network-only diagnostic. At least one output must remain enabled.
 
-#+begin_src supercollider
-Bmc.decoderPort_(39548);
-Bmc.oscGroupsPort_(22245);
-Bmc.forwardDecoder_(false);
-Bmc.forwardOscGroups_(false);
-#+end_src
+* One client per workstation
 
-Changes are class-wide and immediately affect every avatar using Bmc's default output function. =Bmc.reset= restores ports =39538= and =22244= and enables both destinations.
-
-* OscGroupClient arguments
-
-The client requires nine positional arguments:
+The argument order is:
 
 #+begin_example
-OscGroupClient serverAddress serverPort localToRemotePort localTxPort localRxPort userName userPassword groupName groupPassword
+OscGroupClient SERVER SERVER_PORT LOCAL_TO_REMOTE_PORT LOCAL_TX_PORT LOCAL_RX_PORT USER USER_PASSWORD GROUP GROUP_PASSWORD
 #+end_example
 
-- =serverAddress=: IP address or DNS name of the OSCGroups server.
-- =serverPort=: server registration port, commonly =22242=.
-- =localToRemotePort=: free local network port used with the server and peers.
-- =localTxPort=: local input to OSCGroups; default BuMoChi choice =22244=.
-- =localRxPort=: local output from OSCGroups to the decoder; default =39538=.
-- =userName= and =userPassword=: credentials unique to this client.
-- =groupName= and =groupPassword=: credentials shared by the performance group.
-
-Do not commit real passwords. =localTxPort= and =localRxPort= must remain distinct.
-
-* Launch OscGroupClient
-
-From the top-level =260715_ICLC27= directory:
+Canonical BuMoChi launch:
 
 #+begin_src sh
 AppsAndCode/OSCGroups/bin/macos/OscGroupClient \
-  SERVER_ADDRESS \
-  22242 \
-  LOCAL_TO_REMOTE_PORT \
-  22244 \
-  39538 \
-  USER_NAME \
-  USER_PASSWORD \
-  GROUP_NAME \
-  GROUP_PASSWORD
-#+end_src
-
-From the OSCGroups directory:
-
-#+begin_src sh
-./bin/macos/OscGroupClient \
-  SERVER_ADDRESS 22242 LOCAL_TO_REMOTE_PORT 22244 39538 \
+  SERVER_ADDRESS 22242 LOCAL_TO_REMOTE_PORT 22244 57130 \
   USER_NAME USER_PASSWORD GROUP_NAME GROUP_PASSWORD
 #+end_src
 
-If the executable is on the shell =PATH=, use the same arguments after =OscGroupClient=. Keep the Terminal open and press =Control-C= to stop it.
+- =localTxPort= =22244=: receives route-free frames from the local encoder for network transmission.
+- =localRxPort= =57130=: delivers remote route-free frames to local Bmc.
+- =localToRemotePort=: the client's network-facing local port; choose a free value as required by the setup.
 
-* Avoid network loops
+One full-duplex client is enough for normal collaboration. Use unique usernames on different workstations.
 
-- Do not set =localRxPort= to =22244=; received messages would re-enter the transmit input.
-- Do not set =localRxPort= to =57130=; remote routed frames should go to the decoder, not through Bmc again.
-- Do not relay decoder output back to =22244=.
-- Use one unique OSCGroups username per running client.
+* Server echo behavior
 
-* Verify the local ports
+The server normally does not return a client's own frames to that client. Local monitoring still works because the encoder sends a separate identical copy directly to local Bmc.
+
+* Prevent loops and bypasses
+
+- Do not set =localRxPort= to =22244=: received frames would re-enter the transmit input.
+- Do not set =localRxPort= to =39538=: remote source frames would bypass Bmc synthesis and incorrectly enter the decoder.
+- Do not send Bmc output to =22244=.
+- Do not send decoder or Godot VMC output to =22244=.
+- Do not run an additional relay from Bmc or the decoder into OSCGroups.
+
+* Diagnose
 
 #+begin_src sh
+lsof -nP -iUDP:57130
 lsof -nP -iUDP:22244
 lsof -nP -iUDP:39538
 #+end_src
 
-The client should own =22244=. The decoder should own =39538=. Bmc and the client both send to =39538=, but neither listens there.
+Bmc should own =57130=, =OscGroupClient= should own =22244=, and the decoder should own =39538=. The local encoder and local client both send to Bmc on =57130=.

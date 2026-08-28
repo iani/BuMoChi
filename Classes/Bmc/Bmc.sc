@@ -10,7 +10,7 @@ Bmc {
 	classvar <dispatcher, <recorder, <player, <library, <avatars, <wires;
 	classvar <defaultAvatar, recordingName, recorderPublisher;
 	classvar <sessions, <currentSession;
-	classvar <decoderPort, <oscGroupsPort, <forwardDecoder, <forwardOscGroups;
+	classvar <decoderPort, <forwardDecoder;
 
 	*initClass {
 		boneNames = #[
@@ -30,11 +30,9 @@ Bmc {
 		avatars = IdentityDictionary.new;
 		wires = List.new;
 		decoderPort = 39538;
-		oscGroupsPort = 22244;
 		forwardDecoder = true;
-		forwardOscGroups = true;
 		defaultAvatar = BmcAvatar(\default, "default");
-		defaultAvatar.output_({ |message| this.fanOut(message) });
+		defaultAvatar.output_({ |message| this.sendOutput(message) });
 		avatars[\default] = defaultAvatar;
 		dispatcher.registerAvatar(defaultAvatar);
 		player = BmcClipPlayer(nil, defaultAvatar);
@@ -82,7 +80,7 @@ Bmc {
 	*avatar { |name = \default| ^avatars[name.asSymbol] }
 	*addAvatar { |name, displayName|
 		var object = BmcAvatar(name, displayName);
-		object.output_({ |message| this.fanOut(message) });
+		object.output_({ |message| this.sendOutput(message) });
 		avatars[name.asSymbol] = object;
 		dispatcher.registerAvatar(object);
 		^object
@@ -102,13 +100,10 @@ Bmc {
 	}
 
 	*decoderPort_ { |port| decoderPort = this.validPort(port); ^decoderPort }
-	*oscGroupsPort_ { |port| oscGroupsPort = this.validPort(port); ^oscGroupsPort }
 	*forwardDecoder_ { |flag = true| forwardDecoder = flag == true; ^forwardDecoder }
-	*forwardOscGroups_ { |flag = true| forwardOscGroups = flag == true; ^forwardOscGroups }
 
-	*fanOut { |message|
+	*sendOutput { |message|
 		if(forwardDecoder) { NetAddr("127.0.0.1", decoderPort).sendMsg(*message) };
-		if(forwardOscGroups) { NetAddr("127.0.0.1", oscGroupsPort).sendMsg(*message) };
 		^message
 	}
 
@@ -224,7 +219,7 @@ Bmc {
 					Error("Session avatar % requires vmcPort for routed decoding"
 						.format(avatarName)).throw;
 				};
-				object.output_({ |message| this.fanOut(message) });
+				object.output_({ |message| this.sendOutput(message) });
 				object.vmcPort_(vmcPort);
 			};
 		};

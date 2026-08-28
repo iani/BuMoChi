@@ -36,6 +36,7 @@ Only one application can listen on a particular UDP port. Stop any older encoder
 
     ``` bash
     python3 BunrakuOSCEncoder.py \
+      --no-oscgroups \
       --avatar "BunrakuTestAvatar" \
       --source "xr-animator" \
       --verbose
@@ -45,6 +46,7 @@ Only one application can listen on a particular UDP port. Stop any older encoder
 
     ``` bash
     BunrakuOSCEncoder \
+      --no-oscgroups \
       --avatar "BunrakuTestAvatar" \
       --source "xr-animator" \
       --verbose
@@ -64,8 +66,6 @@ Only one application can listen on a particular UDP port. Stop any older encoder
 
     // Playback and live frames will be sent to the decoder on this port.
     Bmc.avatar(\BunrakuTestAvatar).vmcPort_(39539);
-    Bmc.forwardOscGroups_(false); // local recording test only
-
     // Receive encoded XR-Animator frames here.
     Bmc.start(57130);
     )

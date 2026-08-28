@@ -106,9 +106,8 @@ Bmc.selectAvatar(\Mother);
 Bmc.addAvatar(\Ishidomaru, "Ishidomaru");
 Bmc.avatar(\Ishidomaru).vmcPort_(39540);
 
-// Keep local rendering; suppress only the unused network copy.
+// Keep local rendering enabled.
 Bmc.forwardDecoder_(true);
-Bmc.forwardOscGroups_(false);
 
 Bmc.start(57130);
 Bmc.status;
@@ -123,12 +122,13 @@ Open a second Terminal window:
 
 ``` bash
 BunrakuOSCEncoder \
+  --no-oscgroups \
   --avatar "Mother" \
   --source "xr-animator" \
   --verbose
 ```
 
-The default encoder input is `39537` and its default Bmc output is `57130`, so neither port needs to be supplied. The encoder never sends directly to OSCGroups; `Bmc.forwardOscGroups_(false)` disables the network branch for this setup. Keep this Terminal open.
+The default encoder input is `39537` and its default Bmc output is `57130`. The `--no-oscgroups` flag disables the encoder's network source copy for this single-user setup. Keep this Terminal open.
 
 ## 5. Start XR-Animator output
 

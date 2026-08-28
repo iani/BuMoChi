@@ -2,98 +2,60 @@
 title: OSC Encoder and Decoder Use and Configuration
 ---
 
-Two Python applications convert between standard VMC bundles and the compact Bunraku OSC frame protocol: `BunrakuOSCEncoder` and `BunrakuOSCDecoder`.
+Two Python applications convert between standard VMC bundles and the Bunraku OSC frame protocol.
 
-# OSCEncoder
+# BunrakuOSCEncoder
 
-`BunrakuOSCEncoder` receives VMC packets emitted by XR-Animator or another source such as Waidayo. It collects a complete 21-bone pose and encodes it as one route-free `/bunraku/vmc/frame` OSC message. It sends every completed frame to local Bmc:
+The encoder receives VMC from XR-Animator, collects a complete 21-bone pose, and emits one route-free version-1 `/bunraku/vmc/frame` message. By default it sends identical source-frame copies to:
 
-| Output    | Default destination |
-|-----------|---------------------|
-| local Bmc | `127.0.0.1:57130`   |
+| Purpose                                     | Destination       |
+|---------------------------------------------|-------------------|
+| local synthesis in Bmc                      | `127.0.0.1:57130` |
+| distribution through local `OscGroupClient` | `127.0.0.1:22244` |
 
-The encoder does not send directly to OSCGroups. Bmc first processes the frame, assigns the final avatar and VMC target port, and then fans the identical routed version-2 frame out to the local decoder and `OscGroupClient`.
+Thus local Bmc does not depend on a server echo, while remote workstations receive the same source through OSCGroups. The encoder distributes source data only; it does not select a final Godot avatar or VMC port.
 
-You need the encoder when a local mocap source produces VMC and Bmc or OSCGroups must receive Bunraku frames.
-
-# OSCDecoder
-
-`BunrakuOSCDecoder` receives complete Bunraku frame messages from Bmc, SuperCollider, or OSCGroups and reconstructs VMC bundles that drive animation in Godot.
-
-Protocol-version-2 frames carry the final Godot VMC target port. One decoder can therefore receive every avatar stream on one input port and dispatch each reconstructed bundle to the corresponding Godot receiver. Version-1 frames remain supported through a command-line fallback target.
-
-You need the decoder whenever a Bunraku frame stream must drive a standard VMC receiver such as Godot.
-
-Routing is added only when a completed figure is assigned to a Bmc avatar. It is not stored in clips.
-
-# Launch the applications
-
-The commands below use the terminal aliases installed in `~/.local/bin`. Those aliases link to the scripts in this repository and may be run from any working directory. If the aliases are unavailable, replace `BunrakuOSCEncoder` or `BunrakuOSCDecoder` with the corresponding `python3` script path.
-
-## Encoder: standard launch
-
-XR-Animator sends VMC to the encoder on `39537`. The encoder sends every completed frame to Bmc on `57130`. Both ports are defaults:
+## Standard multiuser launch
 
 ``` bash
 BunrakuOSCEncoder \
+  --avatar "XRAnimator" \
+  --source "workstation-a-xr-animator" \
+  --verbose
+```
+
+Configure XR-Animator VMC output as `127.0.0.1:39537`. Bmc listens on `57130`, and `OscGroupClient` listens for local transmissions on `22244`.
+
+## Single-user launch
+
+``` bash
+BunrakuOSCEncoder \
+  --no-oscgroups \
   --avatar "XRAnimator" \
   --source "xr-animator" \
   --verbose
 ```
 
-Configure XR-Animator VMC output as:
+This keeps the local Bmc copy and disables only network distribution.
+
+## Output options
 
 ``` example
-Host: 127.0.0.1
-Port: 39537
+--bmc-ip 127.0.0.1
+--bmc-port 57130
+--oscgroups-ip 127.0.0.1
+--oscgroups-port 22244
+--no-bmc
+--no-oscgroups
 ```
 
-In SuperCollider, Bmc listens for the local encoder:
+`--target-ip` and `--target-port` remain aliases for the OSCGroups destination. At least one output must be enabled. `--no-bmc` is useful only for network diagnostics because it removes the direct local source copy.
 
-``` supercollider
-Bmc.start(57130);
-```
+# BunrakuOSCDecoder
 
-Start `OscGroupClient` only for a multiuser session. Bmc, rather than the encoder, supplies its network input.
+The decoder receives locally synthesized, routed version-2 frames from Bmc on `39538`. It reconstructs VMC and sends each avatar to the target port embedded by local Bmc. The decoder does not receive remote source frames directly; those must first enter local Bmc and participate in local scene synthesis.
 
-## Single-user output control
-
-The encoder command is unchanged for single-user work. Disable Bmc's network fan-out in SuperCollider:
-
-``` supercollider
-Bmc.forwardOscGroups_(false);
-```
-
-Local decoder forwarding remains enabled. `Bmc.reset` restores both fan-out destinations to enabled.
-
-## Encoder output overrides
-
-Override the encoder-to-Bmc port when Bmc uses a different input:
-
-``` bash
-BunrakuOSCEncoder \
-  --bmc-ip 127.0.0.1 \
-  --bmc-port 57131 \
-  --avatar "XRAnimator" \
-  --source "xr-animator"
-```
-
-The encoder routing switches are `--bmc-ip` and `--bmc-port`. Former OSCGroups-related encoder options remain accepted only as compatibility no-ops; do not use them in new commands.
-
-## Bmc fan-out options
-
-``` supercollider
-Bmc.decoderPort_(39538);       // default decoder input
-Bmc.oscGroupsPort_(22244);     // default OscGroupClient transmit input
-Bmc.forwardDecoder_(true);     // enable or disable local rendering output
-Bmc.forwardOscGroups_(true);   // enable or disable network output
-```
-
-These are class-wide settings. Each Bmc avatar sends the same routed message to every enabled destination.
-
-## Decoder: one routed decoder for several local avatars
-
-In the basic form, the decoder reads and accepts any valid destination port embedded by Bmc in a protocol-version-2 frame:
+## One decoder for several avatars
 
 ``` bash
 BunrakuOSCDecoder \
@@ -101,7 +63,7 @@ BunrakuOSCDecoder \
   --verbose
 ```
 
-Use an allow-list when the decoder should accept only known Godot VMC ports. This advanced example permits Mother on `39539` and Ishidomaru on `39540`:
+Optional allow-list:
 
 ``` bash
 BunrakuOSCDecoder \
@@ -111,25 +73,20 @@ BunrakuOSCDecoder \
   --verbose
 ```
 
-The allow-list does not supply or replace the route. The decoder still reads the destination from every frame; it rejects a frame when its embedded destination is absent from the list. Without an allow-list, every valid embedded port is accepted.
+The allow-list validates embedded destinations; it does not supply them.
 
-Configure the Bmc avatar outputs:
+## Bmc local output configuration
 
 ``` supercollider
-(
-Bmc.addAvatar(\Mother, "Mother");
-Bmc.avatar(\Mother).vmcPort_(39539);
-
-Bmc.addAvatar(\Ishidomaru, "Ishidomaru");
-Bmc.avatar(\Ishidomaru).vmcPort_(39540);
-)
+Bmc.decoderPort_(39538);       // default local decoder input
+Bmc.forwardDecoder_(true);     // false disables local renderer output
 ```
 
-Godot must have distinct VMC receivers on ports `39539` and `39540`, connected to the corresponding body and face tracker names.
+These are Bmc's only class-wide network-output controls. Bmc has no OSCGroups or remote-forwarding output option.
 
-## Decoder: legacy version-1 fallback
+## Legacy version-1 fallback
 
-Use this only for a route-free version-1 stream sent directly to the decoder:
+For a deliberate route-free stream sent directly to the decoder:
 
 ``` bash
 BunrakuOSCDecoder \
@@ -138,28 +95,21 @@ BunrakuOSCDecoder \
   --verbose
 ```
 
-The fallback `--target-port` is not required for version-2 frames because each frame contains its own target port.
+Normal BuMoChi operation uses routed version-2 output from local Bmc instead.
 
-## Launch by repository path instead of aliases
-
-From the `Testing_BuMoChi` directory:
+# Repository launch paths
 
 ``` bash
 cd /Users/iani/Obsidian/Iani/Projects/260715_ICLC27/AppsAndCode/BuMoChi/Testing_BuMoChi
-
 python3 BunrakuOSCEncoder.py --help
 python3 BunrakuOSCDecoder.py --help
 ```
 
-Replace `--help` with one of the complete option sets above.
-
-# Stop and diagnose
-
-Keep each application in its own Terminal window. Press `Control-C` to stop it and print final statistics.
-
-If an application cannot listen on a port, identify the current owner on macOS:
+Press `Control-C` to stop either process. Diagnose occupied ports with:
 
 ``` bash
 lsof -nP -iUDP:39537
+lsof -nP -iUDP:57130
+lsof -nP -iUDP:22244
 lsof -nP -iUDP:39538
 ```

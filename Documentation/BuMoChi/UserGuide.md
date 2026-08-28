@@ -43,10 +43,12 @@ The complete networked pipeline is:
 ``` text
 XR Animator
     → BunrakuOSCEncoder.py
-    → SuperCollider + BuMoChi
-    → local BunrakuOSCDecoder.py and OSCGroups
-    → remote BunrakuOSCDecoder.py
-    → Godot
+    → local SuperCollider + BuMoChi and OSCGroups
+OSCGroups
+    → every collaborator's SuperCollider + BuMoChi
+each local BuMoChi
+    → local BunrakuOSCDecoder.py
+    → local Godot
 ```
 
 On a single computer, OSCGroups can initially be omitted:
@@ -55,7 +57,13 @@ On a single computer, OSCGroups can initially be omitted:
 XR Animator → encoder → BuMoChi → decoder → Godot
 ```
 
-The components have different jobs. XR Animator observes a person, the encoder packages one complete route-free skeleton frame, and BuMoChi records or transforms it. BuMoChi then sends the same routed result to the local decoder and through OSCGroups to remote decoders. Each decoder restores standard VMC messages, and matching Godot scenes display the same animated characters.
+The components have different jobs. XR Animator observes a person, and the encoder packages one complete route-free skeleton frame. It sends identical copies to local BuMoChi and to OSCGroups. OSCGroups distributes these source frames to the other workstations, where they also enter BuMoChi. Each local BuMoChi records, combines, transforms, and assigns all available sources to figures and avatars, then sends its completed scene only to its own decoder and Godot renderer.
+
+### Distributed sources, local synthesis
+
+BuMoChi uses a distributed-sources, local-synthesis model. What travels between collaborators is motion source material, not a finished rendered animation. Every workstation receives its own motion source directly and remote motion sources through OSCGroups. Its local SuperCollider/BuMoChi process then creates the complete animation scene from those inputs, using the same session definition as the other workstations. Finally, it routes the completed avatars through its local decoder to its local Godot scene.
+
+This separation is fundamental. OSCGroups is the shared source-data layer; BuMoChi is the local animation synthesis layer; Godot is the local renderer. Bmc's processed routed frames never return to OSCGroups. When collaborators load the same session and Godot scene, they synthesize and render the same defined performance independently, in the same way that sc-hacks-redux shared control sources while each workstation synthesized sound locally.
 
 ### SuperCollider and BuMoChi
 
@@ -98,7 +106,7 @@ Testing_BuMoChi/BunrakuOSCDecoder.py
 
 Their supporting Python modules are in the same directory. Keep those files together. The scripts use Python 3 and do not require third-party Python packages.
 
-`BunrakuOSCEncoder.py` receives VMC from XR Animator. It collects the 21 required humanoid bones and sends one route-free `/bunraku/vmc/frame` message per complete pose to Bmc on port `57130`. Bmc adds the final avatar and VMC route, then sends the identical routed frame to the local decoder on `39538` and `OscGroupClient` on `22244`.
+`BunrakuOSCEncoder.py` receives VMC from XR Animator. It collects the 21 required humanoid bones and sends each route-free `/bunraku/vmc/frame` both to local Bmc on `57130` and to local `OscGroupClient` on `22244`. Remote clients deliver their route-free frames to Bmc on `57130`. Bmc synthesizes the complete local scene, adds final avatar routes, and sends routed output only to the local decoder on `39538`.
 
 `BunrakuOSCDecoder.py` performs the reverse conversion. It receives Bunraku frames from SuperCollider and emits standard VMC messages for Godot.
 
@@ -190,9 +198,8 @@ Bmc.reset;
 Bmc.addAvatar(\BunrakuTestAvatar, "BunrakuTestAvatar");
 Bmc.selectAvatar(\BunrakuTestAvatar);
 
-// Route this avatar to Godot and disable the unused network branch.
+// Route this avatar through the local decoder to Godot.
 Bmc.avatar(\BunrakuTestAvatar).vmcPort_(39539);
-Bmc.forwardOscGroups_(false);
 
 // Receive Bunraku frames from the Python encoder.
 Bmc.start(57130);
@@ -213,6 +220,7 @@ In a second terminal, also opened in `Testing_BuMoChi`, run:
 
 ``` bash
 python3 BunrakuOSCEncoder.py \
+  --no-oscgroups \
   --avatar "BunrakuTestAvatar" \
   --source "xr-animator" \
   --verbose
@@ -287,7 +295,7 @@ Then disable XR Animator output, press **Control-C** in the encoder and decoder 
 
 1.  `Bmc.start(port: 57130)`
 
-    Starts the Bunraku Frame OSC receiver. The port must match the local encoder output. Remote OSCGroups frames go directly to the decoder rather than through this receiver.
+    Starts the Bunraku Frame OSC receiver. The port must match both the local encoder output and `OscGroupClient.localRxPort`. Bmc receives local and remote route-free source frames here.
 
 2.  `Bmc.stop`
 
@@ -317,7 +325,7 @@ Then disable XR Animator output, press **Control-C** in the encoder and decoder 
 
 4.  `Bmc.output(destination)`
 
-    Replaces the selected avatar's default fan-out function with a custom destination. This is an advanced escape hatch; ordinary use should retain the class-wide fan-out settings.
+    Replaces the selected avatar's default local-decoder output function with a custom destination. This is an advanced escape hatch.
 
     ``` supercollider
     Bmc.output(NetAddr("127.0.0.1", 39538));
@@ -327,19 +335,13 @@ Then disable XR Animator output, press **Control-C** in the encoder and decoder 
 
 5.  `Bmc.decoderPort_(port)`
 
-    Sets the local decoder destination for all avatars using the default fan-out. Default: `39538`.
+    Sets the local decoder destination for all avatars using the default output. Default: `39538`.
 
-6.  `Bmc.oscGroupsPort_(port)`
-
-    Sets the local `OscGroupClient` transmit destination for the default fan-out. Default: `22244`.
-
-7.  `Bmc.forwardDecoder_(flag)`
+6.  `Bmc.forwardDecoder_(flag)`
 
     Enables or disables forwarding to the local decoder. Default: `true`.
 
-8.  `Bmc.forwardOscGroups_(flag)`
-
-    Enables or disables forwarding to OSCGroups. Default: `true`. Use `false` for a deliberately network-free local session.
+    These are Bmc's only class-wide network-output controls. Source distribution to OSCGroups belongs to `BunrakuOSCEncoder`, not Bmc.
 
 ### Recording
 
@@ -609,9 +611,9 @@ An older compatibility parser for symbol-labelled Bunraku messages and control b
 The repository includes four staged communication tests:
 
 1.  XR Animator → Godot
-2.  XR Animator → encoder → OSCGroups → decoder → Godot
+2.  XR Animator → encoder → OSCGroups → remote BuMoChi
 3.  SuperCollider playback → decoder → Godot
-4.  XR Animator → encoder → OSCGroups → SuperCollider → decoder → Godot
+4.  local and remote sources → BuMoChi synthesis → local decoder → local Godot
 
 They are located in:
 

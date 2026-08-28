@@ -18,10 +18,10 @@
 \begin{tikzpicture}[node distance=16mm and 20mm]
   \node[box,fill=vmcblue] (xr) {XR-Animator A\\camera tracking};
   \node[box,fill=bunrakuorange,right=of xr] (enc) {BunrakuOSCEncoder\\avatar: \texttt{PerformerA}\\source: \texttt{workstation-a-}\\\texttt{xr-animator}};
-  \node[box,fill=scyellow,right=35mm of enc] (bmc) {SuperCollider / Bmc\\input: UDP \texttt{57130}\\routes \texttt{PerformerA}\\fan-out: \texttt{39538}, \texttt{22244}};
+  \node[box,fill=scyellow,right=35mm of enc] (bmc) {SuperCollider / Bmc\\input: UDP \texttt{57130}\\local + remote sources\\synthesizes full scene};
   \node[box,fill=bunrakuorange,right=of bmc] (dec) {BunrakuOSCDecoder\\input: UDP \texttt{39538}\\reads embedded target port};
 
-  \node[smallbox,fill=networkviolet,below=22mm of bmc] (client) {OscGroupClient A\\localTx: \texttt{22244}\\localRx: \texttt{39538}\\unique username A};
+  \node[smallbox,fill=networkviolet,below=22mm of bmc] (client) {OscGroupClient A\\localTx: \texttt{22244}\\localRx: \texttt{57130}\\unique username A};
   \node[smallbox,fill=networkviolet,below=18mm of client] (server) {OscGroupServer\\server port: \texttt{22242}\\shared group};
 
   \node[smallbox,fill=godotgreen,above right=10mm and 19mm of dec] (godot1) {Godot A: Ishidomaru\\driven by local \texttt{PerformerA}\\VMC input: \texttt{39539}};
@@ -29,14 +29,14 @@
 
   \draw[flow] (xr) -- node[label,above]{VMC\\UDP \texttt{39537}} (enc);
   \draw[flow] (enc) -- node[label,above]{route-free v1 frame\\UDP \texttt{57130}} (bmc);
-  \draw[flow] (bmc) -- node[label,left]{identical routed v2\\network copy\\UDP \texttt{22244}} (client);
+  \draw[flow] (enc.south) |- node[label,pos=.65,above]{identical route-free v1 network copy\\UDP \texttt{22244}} (client.west);
   \draw[net] (client) -- node[label,right]{Internet / OSCGroups\\send A; receive B} (server);
-  \draw[flow] (client.east) -| node[label,pos=.72,below]{remote \texttt{PerformerB} routed v2\\UDP \texttt{39538}} (dec.south);
-  \draw[flow] (bmc) -- node[label,above]{routed v2 local copy\\UDP \texttt{39538}} (dec);
+  \draw[flow] (client.east) -| node[label,pos=.72,below]{remote \texttt{PerformerB} route-free v1\\UDP \texttt{57130}} (bmc.south);
+  \draw[flow] (bmc) -- node[label,above]{locally synthesized routed v2\\UDP \texttt{39538}} (dec);
   \draw[flow] (dec) -- node[label,above,sloped]{VMC \texttt{39539}} (godot1);
   \draw[flow] (dec) -- node[label,below,sloped]{VMC \texttt{39540}} (godot2);
 
-  \node[font=\sffamily\bfseries,above=12mm of bmc] {Workstation A -- local pipeline and remote reception};
+  \node[font=\sffamily\bfseries,above=12mm of bmc] {Workstation A -- distributed sources, local synthesis and rendering};
   \node[font=\sffamily\scriptsize,align=center,below=4mm of server] {The server forwards A's network copy to other clients;\\it does not echo \texttt{PerformerA} back to Client A.};
 \end{tikzpicture}
 \end{document}

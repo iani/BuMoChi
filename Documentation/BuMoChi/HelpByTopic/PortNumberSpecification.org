@@ -14,11 +14,10 @@ Port numbers are configurable. The examples below are recommended defaults for o
 | Decoder VMC output for Mother             | Mother's Godot VMC source        |        39539 |
 | Decoder VMC output for Ishidomaru         | Ishidomaru's Godot VMC source    |        39540 |
 
-All Bmc avatars fan each routed frame out to the shared decoder port and the =OscGroupClient= transmit port. Each protocol-version-2 frame contains the =vmcPort= of its final Godot destination. Consequently, every workstation can deliver the same frame to the same avatar port in a matching Godot scene.
+All Bmc avatars send routed frames to the local shared decoder. Each protocol-version-2 frame contains the =vmcPort= of its final local Godot destination.
 
 #+begin_example
-Bmc avatars -+-> 127.0.0.1:39538 -> one decoder -> Godot ports
-             `-> 127.0.0.1:22244 -> OscGroupClient -> remote decoders
+Bmc avatars -> 127.0.0.1:39538 -> one decoder -> local Godot ports
 #+end_example
 
 * Shared decoder command
@@ -35,20 +34,20 @@ The allow-list is recommended but optional. =--target-ip= defaults to =127.0.0.1
 
 * Live input before Bmc
 
-XR-Animator sends ordinary VMC to the Python encoder's =--listen-port=. The encoder sends complete route-free version-1 Bunraku frames only to Bmc. Bmc adds routing after figure composition and avatar assignment, then sends the same routed version-2 frame to its local decoder and to OSCGroups.
+XR-Animator sends ordinary VMC to the Python encoder. The encoder sends identical route-free version-1 frames to local Bmc and local =OscGroupClient=. The client delivers remote route-free frames to Bmc. Bmc synthesizes the complete scene from all sources, adds routing after figure composition and avatar assignment, and sends routed version-2 frames only to its local decoder.
 
 A practical complete local path is:
 
 | Connection                       | Example receiving port |
 |----------------------------------+------------------------|
 | XR-Animator -> encoder           |                  39537 |
-| encoder -> Bmc                   |                  57130 |
-| Bmc/OscGroupClient -> decoder    |                  39538 |
-| Bmc -> OscGroupClient tx input   |                  22244 |
+| encoder/client -> Bmc            |                  57130 |
+| encoder -> OscGroupClient tx     |                  22244 |
+| Bmc -> local decoder             |                  39538 |
 | decoder -> Mother Godot VMC      |                  39539 |
 | decoder -> Ishidomaru Godot VMC  |                  39540 |
 
-The =OscGroupClient= local receive output is =39538=, so remote routed frames go directly to the decoder rather than back to Bmc.
+The =OscGroupClient= local receive output is =57130=, so remote source frames enter local Bmc synthesis.
 
 * Legacy version-1 playback
 
@@ -64,11 +63,11 @@ This fallback is unnecessary when a Bmc avatar has =vmcPort= configured and ther
 
 1. One receiving process per host/port pair.
 2. =Bmc.decoderPort= must equal the shared decoder's =--listen-port=.
-3. =Bmc.oscGroupsPort= must equal =OscGroupClient.localTxPort=.
-4. Each avatar's =vmcPort= must equal that avatar's Godot VMC listening port on every workstation.
-5. Independent Godot VMC sources require distinct ports.
-6. Routing is added only at the Figure -> Avatar boundary and is never stored in clips.
-7. Use an allow-list when routed frames are received from a network or any untrusted source.
+3. Encoder =--oscgroups-port= must equal =OscGroupClient.localTxPort=.
+4. =OscGroupClient.localRxPort= must equal the Bmc input port.
+5. Each avatar's =vmcPort= must equal that avatar's local Godot VMC listening port.
+6. Independent Godot VMC sources require distinct ports.
+7. Routing is added only at the Figure -> Avatar boundary and is never stored in clips.
 
 * Diagnose a conflict
 

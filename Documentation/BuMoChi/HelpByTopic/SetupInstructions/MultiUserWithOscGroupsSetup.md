@@ -2,36 +2,42 @@
 title: Multi User With OSCGroups Setup
 ---
 
-This is the canonical setup for collaborative rehearsal and performance between two or more workstations over the Internet. Every workstation runs the same Godot scene and uses the same avatar-to-VMC-port assignments. BuMoChi sends each completed routed frame both to the local decoder and to OSCGroups, so the local and remote Godot instances receive the same motion frames.
+This is the canonical collaborative setup. It follows BuMoChi's **distributed sources, local synthesis** model: OSCGroups distributes route-free motion-source frames; every workstation's SuperCollider/BuMoChi process receives all sources, independently constructs the complete animation scene, and sends the finished local result to its own decoder and Godot renderer.
+
+# Operational model
+
+Every workstation's Bmc receives two kinds of input on port `57130`:
+
+1.  its own encoder's local source-frame copy;
+2.  remote source frames delivered by its `OscGroupClient`.
+
+The local encoder also sends an identical route-free copy to `OscGroupClient` transmit port `22244`. Bmc never sends processed output to OSCGroups. After combining, filtering, layering, and assigning motions to figures and avatars, Bmc sends routed version-2 frames only to its local decoder on `39538`. The decoder reconstructs VMC for local Godot.
+
+This is analogous to networked sound synthesis in sc-hacks-redux: collaborators share source material, while every workstation performs the full synthesis locally.
 
 # One client per workstation
 
 One full-duplex `OscGroupClient` handles both network directions:
 
 ``` example
-local Bmc -> client localTxPort -> OSCGroups network
-OSCGroups network -> client localRxPort -> local decoder -> local Godot
+local encoder -> client localTxPort -> OSCGroups network
+OSCGroups network -> client localRxPort -> local Bmc
 ```
 
-Do not start separate sending and receiving clients on an ordinary workstation. Two clients are needed only when deliberately simulating two workstations on one computer, joining two different groups, or using two independent OSCGroups identities.
+Do not start separate sending and receiving clients on an ordinary workstation.
 
-# The shared-scene rule
+# Shared-scene rule
 
-All workstations must use the same Godot scene, avatar identities, and VMC destination ports. For example:
+All workstations should load the same Bmc session/composition and run the same Godot scene, including the same avatar-to-VMC-port assignments:
 
-| Routed performer | Godot avatar | VMC port |
-|------------------|--------------|----------|
-| `PerformerA`     | Ishidomaru   | 39539    |
-| `PerformerB`     | Mother       | 39540    |
+| Source stream | Completed avatar | Godot character | VMC port |
+|---------------|------------------|-----------------|----------|
+| `PerformerA`  | `Ishidomaru`     | Ishidomaru      | 39539    |
+| `PerformerB`  | `Mother`         | Mother          | 39540    |
 
-When Workstation A's Bmc completes a `PerformerA` frame, it embeds target port `39539` and sends the exact same routed version-2 message to:
+Both Bmc instances receive both source streams and synthesize both completed avatars locally. Both Godot instances therefore render the same defined scene. Network latency can cause small timing differences.
 
-1.  its local decoder on `127.0.0.1:39538`;
-2.  its local `OscGroupClient` transmit input on `127.0.0.1:22244`.
-
-Workstation B receives the network copy from its `OscGroupClient` directly on decoder port `39538`. Both decoders reconstruct the same VMC frame for Godot port `39539`. Workstation B applies the same procedure to `PerformerB` on port `39540`.
-
-The OSCGroups server normally does not echo a workstation's own message back to it. This is not a problem: Bmc sends its local decoder copy directly.
+The OSCGroups server normally does not echo a workstation's own message back. This is expected: the encoder supplies its local Bmc copy directly.
 
 # Signal path on every workstation
 
@@ -39,110 +45,62 @@ The OSCGroups server normally does not echo a workstation's own message back to 
 local XR-Animator
     -> VMC 127.0.0.1:39537
 local BunrakuOSCEncoder
-    -> route-free version-1 frame 127.0.0.1:57130
-local Bmc in SuperCollider
-    -> routed version-2 frame 127.0.0.1:39538 (local decoder)
-    -> identical routed version-2 frame 127.0.0.1:22244 (OscGroupClient)
+    -> route-free v1 127.0.0.1:57130 (local Bmc)
+    -> identical route-free v1 127.0.0.1:22244 (OscGroupClient)
 one local OscGroupClient
     -> OSCGroups server and remote collaborators
-
-remote routed version-2 frames
+remote route-free v1 frames
     -> same local OscGroupClient
-    -> 127.0.0.1:39538 (local decoder, not Bmc)
+    -> 127.0.0.1:57130 (local Bmc)
+local Bmc
+    -> synthesizes the complete scene from local and remote sources
+    -> routed v2 frames 127.0.0.1:39538 (local decoder only)
 one local BunrakuOSCDecoder
     -> local Godot VMC ports 39539, 39540, ...
 ```
 
-The encoder sends only to Bmc. Bmc is the sole authority that adds the final avatar identity and VMC destination before distributing the routed frame locally and over the network.
+Only route-free source frames cross the network. Clips, motions, figures, avatar assignments, final routing, decoding, and rendering remain local.
 
 # Complete workstation pipelines
 
-The diagrams show a two-workstation example. `PerformerA` and `PerformerB` are stable stream identities; `workstation-a-xr-animator` and `workstation-b-xr-animator` are unique source identities. Both workstations run the same Godot scene: Ishidomaru listens on `39539` and Mother listens on `39540`.
+The diagrams show two workstations. Both synthesize the same scene: Ishidomaru listens on `39539` and Mother on `39540`.
 
 ## Workstation A
 
 <figure width="100%">
 <img src="diagrams/workstation-a-pipeline.png" />
-<figcaption>Workstation A routes PerformerA to both local Godot and Workstation B, while receiving PerformerB directly at its decoder.</figcaption>
+<figcaption>Workstation A shares PerformerA source frames, receives PerformerB source frames, and synthesizes the complete scene locally.</figcaption>
 </figure>
 
 ## Workstation B
 
 <figure width="100%">
 <img src="diagrams/workstation-b-pipeline.png" />
-<figcaption>Workstation B routes PerformerB to both local Godot and Workstation A, while receiving PerformerA directly at its decoder.</figcaption>
+<figcaption>Workstation B shares PerformerB source frames, receives PerformerA source frames, and synthesizes the same complete scene locally.</figcaption>
 </figure>
 
 # Shared and unique settings
 
-All collaborators must agree on:
-
-- OSCGroups server address and server port, normally `22242`;
-- group name and password;
-- stable performer/avatar and source names;
-- the Godot scene;
-- the avatar-to-VMC-port map.
-
-Every workstation must have its own:
-
-- OSCGroups username and user password;
-- `localToRemotePort` when required by the network/NAT;
-- encoder `--avatar` and `--source` identity.
-
-Local application ports may use the same numbers on different workstations because each computer has its own network stack.
+All collaborators must agree on the OSCGroups server, group credentials, stable source identities, Bmc session/composition, Godot scene, and avatar-to-port map. Every workstation needs a unique OSCGroups username and normally a unique `localToRemotePort`. Local application ports may use the same numbers on different computers.
 
 # Port map on each workstation
 
 | Port | Listener | Sender |
 |----|----|----|
 | 39537 | local `BunrakuOSCEncoder` | local XR-Animator |
-| 57130 | local Bmc/SuperCollider | local encoder |
-| 22244 | local `OscGroupClient` tx input | local Bmc avatars |
-| 39538 | local shared decoder | local Bmc and `OscGroupClient` rx output |
+| 57130 | local Bmc/SuperCollider | local encoder and `OscGroupClient` rx |
+| 22244 | local `OscGroupClient` tx input | local encoder |
+| 39538 | local shared decoder | local Bmc synthesized outputs |
 | 39539 | first local Godot VMC receiver | local decoder |
 | 39540 | second local Godot VMC receiver | local decoder |
 
-`localToRemotePort` is an additional client port. Choose a free value distinct from `22244` and `39538`; collaborators behind the same NAT may need different values.
-
-# Before the rehearsal
-
-Exchange these values privately:
-
-``` example
-SERVER_ADDRESS
-GROUP_NAME
-GROUP_PASSWORD
-each workstation's unique USER_NAME
-each performer's stable AVATAR_NAME and SOURCE_NAME
-the common avatar-to-VMC-port map
-```
-
-Do not store real passwords in this repository. Confirm that every Godot project uses the same scene and port map before testing motion.
-
-# Startup procedure on every workstation
-
-Perform these steps in order. Commands containing uppercase names are templates.
+# Startup procedure
 
 ## 1. Start Godot
 
-Open and run the agreed shared scene. Give every independently animated avatar a distinct VMC port and distinct body/face tracker names. In this example:
+Run the agreed scene. In this example Ishidomaru listens on `39539` and Mother on `39540`.
 
-- Ishidomaru listens on `39539`;
-- Mother listens on `39540`.
-
-## 2. Start one shared local decoder
-
-### Basic version
-
-``` bash
-BunrakuOSCDecoder \
-  --listen-port 39538 \
-  --verbose
-```
-
-The decoder accepts the destination embedded in each routed version-2 frame. It receives local frames from Bmc and remote frames from `OscGroupClient` on the same UDP port.
-
-### Advanced allow-list version
+## 2. Start the local decoder
 
 ``` bash
 BunrakuOSCDecoder \
@@ -152,67 +110,36 @@ BunrakuOSCDecoder \
   --verbose
 ```
 
-Keep the Terminal open.
+The allow-list is optional.
 
-## 3. Configure Bmc for the local performer
+## 3. Configure and start Bmc
 
-Each workstation's Bmc processes its own local source. Configure the same target port used for that performer in every copy of the Godot scene. Bmc supplies both standard outputs automatically.
-
-Workstation A:
+Both workstations load the same session/composition. Minimal routing:
 
 ``` supercollider
 (
 Bmc.reset;
-Bmc.addAvatar(\PerformerA, "Ishidomaru");
-Bmc.avatar(\PerformerA).vmcPort_(39539);
+Bmc.addAvatar(\Ishidomaru, "Ishidomaru");
+Bmc.avatar(\Ishidomaru).vmcPort_(39539);
+Bmc.addAvatar(\Mother, "Mother");
+Bmc.avatar(\Mother).vmcPort_(39540);
+Bmc.decoderPort_(39538);   // default
+Bmc.forwardDecoder_(true); // false disables local renderer output
 Bmc.start(57130);
-Bmc.status;
 )
 ```
 
-Workstation B:
-
-``` supercollider
-(
-Bmc.reset;
-Bmc.addAvatar(\PerformerB, "Mother");
-Bmc.avatar(\PerformerB).vmcPort_(39540);
-Bmc.start(57130);
-Bmc.status;
-)
-```
-
-Do not replace the avatar's default output function. It fans each routed frame out to the local decoder `127.0.0.1:39538` and `OscGroupClient` `127.0.0.1:22244` destinations.
-
-The fan-out settings are class-wide and may be changed before or during a session:
-
-``` supercollider
-Bmc.decoderPort_(39538);       // default local decoder port
-Bmc.oscGroupsPort_(22244);     // default OscGroupClient transmit port
-Bmc.forwardDecoder_(true);     // enable/disable the local decoder copy
-Bmc.forwardOscGroups_(true);   // enable/disable the network copy
-```
-
-The defaults shown above are restored by `Bmc.reset`. Normally no configuration is required. Disable a destination only for deliberate testing or a single-user setup.
+`Bmc.reset` restores decoder port `39538` and enables decoder forwarding.
 
 ## 4. Start one OscGroupClient
 
-From the top-level `260715_ICLC27` project directory:
-
 ``` bash
 AppsAndCode/OSCGroups/bin/macos/OscGroupClient \
-  SERVER_ADDRESS \
-  22242 \
-  LOCAL_TO_REMOTE_PORT \
-  22244 \
-  39538 \
-  USER_NAME \
-  USER_PASSWORD \
-  GROUP_NAME \
-  GROUP_PASSWORD
+  SERVER_ADDRESS 22242 LOCAL_TO_REMOTE_PORT 22244 57130 \
+  USER_NAME USER_PASSWORD GROUP_NAME GROUP_PASSWORD
 ```
 
-Here `22244` is `localTxPort` and `39538` is `localRxPort`. The client forwards received routed frames directly to the shared decoder. Keep this one client running for both sending and receiving.
+`22244` is `localTxPort` and `57130` is `localRxPort`. Remote route-free frames enter the same Bmc input as local frames.
 
 ## 5. Start the local encoder
 
@@ -225,72 +152,40 @@ BunrakuOSCEncoder \
   --verbose
 ```
 
-Workstation B uses `PerformerB` and `workstation-b-xr-animator`. The encoder's only output is local Bmc on `57130`; it does not send to OSCGroups.
+Workstation B uses `PerformerB` and `workstation-b-xr-animator`. Encoder defaults are local Bmc `57130` and local `OscGroupClient` `22244`.
 
-## 6. Enable XR-Animator output
+Optional controls:
 
-``` example
-Host: 127.0.0.1
-Port: 39537
+``` bash
+--bmc-ip 127.0.0.1 --bmc-port 57130
+--oscgroups-ip 127.0.0.1 --oscgroups-port 22244
+--no-bmc        # network-only diagnostic mode
+--no-oscgroups  # local-only mode
 ```
 
-Enable VMC output.
+At least one output must remain enabled.
 
-# Verify the collaboration
+## 6. Enable XR-Animator
 
-Check from left to right:
+Set its VMC destination to `127.0.0.1:39537`.
 
-1.  Each encoder reports increasing `received` and `sent` counts.
-2.  Each `Bmc.status` reports `running: true` on port `57130`.
-3.  Each `OscGroupClient` reports successful group registration.
-4.  Each decoder receives local frames from Bmc and remote frames from OSCGroups on `39538`.
-5.  `PerformerA` moves Ishidomaru on `39539` in both Godot scenes.
-6.  `PerformerB` moves Mother on `39540` in both Godot scenes.
+# Verify
 
-The visual scenes should match apart from ordinary network latency and rendering differences.
+1.  Each encoder's `received`, `sent`, `bmc_sent`, and `oscgroups_sent` counts increase.
+2.  Each Bmc runs on `57130` and receives both source identities.
+3.  Each client registers successfully.
+4.  Each local decoder receives only locally synthesized routed frames from Bmc on `39538`.
+5.  Ishidomaru moves on `39539` and Mother on `39540` in both Godot scenes.
 
 # Avoid feedback and identity errors
 
-## Give every encoder a unique identity
-
-``` bash
-# Workstation A
-BunrakuOSCEncoder --avatar "PerformerA" --source "workstation-a-xr-animator"
-
-# Workstation B
-BunrakuOSCEncoder --avatar "PerformerB" --source "workstation-b-xr-animator"
-```
-
-Do not give both encoders the same `--avatar` and `--source`. Bmc would be unable to distinguish the streams reliably.
-
-## Do not send encoder output directly to OSCGroups
-
-The encoder produces route-free input for Bmc. Do not use the former `--oscgroups-port` route or start a second relay from encoder output to `22244`. That would bypass Bmc and distribute frames without the final shared Godot destination.
-
-## Keep Bmc's two outputs together
-
-For every completed avatar frame, Bmc sends an identical routed message to decoder port `39538` and client transmit port `22244`. Do not configure different avatar names or target ports for the two destinations.
-
-## Keep client receive and transmit ports distinct
-
-``` example
-localTxPort = 22244   Bmc -> OSCGroups
-localRxPort = 39538   OSCGroups -> local decoder
-```
-
-Do not set `localRxPort` to `22244`: received traffic would re-enter the client's own transmission input and create a network loop. Do not set it to `57130`: remote routed frames must not return to Bmc for processing and retransmission.
-
-## Do not relay decoder or client output back to OSCGroups
-
-The decoder's VMC output terminates at Godot. Never send decoder output, or frames received by the client on `39538`, back to `22244`. Such a return path repeatedly retransmits remote frames.
-
-## Use one unique OscGroupClient username per client
-
-Duplicate usernames may replace or confuse a registered endpoint.
-
-## Do not expect a server echo
-
-The group does not need to return a workstation's own frames. Bmc supplies the local decoder copy at the same time that it supplies the network copy.
+- Give each encoder a unique `--avatar` and `--source` pair.
+- Send only encoder-produced route-free source frames to `22244`.
+- Never send Bmc routed output, decoder output, or Godot VMC output to OSCGroups.
+- Keep client `localTxPort` `22244` and `localRxPort` `57130` distinct.
+- Never set `localRxPort` to `22244`, which creates a loop.
+- Never set `localRxPort` to `39538`, which bypasses local synthesis.
+- Do not expect the server to echo local frames; the encoder provides the local copy.
 
 # Diagnose ports
 
@@ -301,16 +196,9 @@ lsof -nP -iUDP:22244
 lsof -nP -iUDP:39538
 ```
 
-Only one process should listen on each port. Multiple processes may send to decoder port `39538`; locally these are Bmc and `OscGroupClient`.
+# Shutdown
 
-# Shutdown on every workstation
-
-1.  Disable XR-Animator VMC output.
-2.  Evaluate `Bmc.stop` in SuperCollider.
-3.  Press `Control-C` in the encoder Terminal.
-4.  Press `Control-C` in the single `OscGroupClient` Terminal.
-5.  Press `Control-C` in the decoder Terminal.
-6.  Stop the running Godot project.
+Disable XR-Animator, evaluate `Bmc.stop`, stop the encoder/client/decoder with `Control-C`, and stop Godot.
 
 # Related detail
 
@@ -318,4 +206,3 @@ Only one process should listen on each port. Multiple processes may send to deco
 - [OSC Encoder and Decoder Use and Configuration](../OSCEncoder-DecoderUseAndConfiguration.org)
 - [Avatar Port Numbers](../Avatar_Port_Numbers.org)
 - [Port Number Specification](../PortNumberSpecification.org)
-- [Troubleshooting Port Numbers](../TroubleshootingInstructions/TroubleshootingPortNumbers.scd)
