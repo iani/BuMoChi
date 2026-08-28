@@ -67,8 +67,8 @@ BmcClipLibrary {
 	savedPathFor { |name|
 		var bmcPath = this.defaultPathFor(name);
 		var scdPath = this.defaultScdPathFor(name);
-		if(File.exists(bmcPath)) { ^bmcPath };
 		if(File.exists(scdPath)) { ^scdPath };
+		if(File.exists(bmcPath)) { ^bmcPath };
 		^nil
 	}
 	size { ^clips.size }
@@ -144,7 +144,7 @@ BmcClipLibrary {
 	pathFor { |name|
 		name = name ?? { currentName };
 		if(name.isNil) { ^nil };
-		^paths[name.asSymbol] ?? { this.defaultPathFor(name) }
+		^paths[name.asSymbol] ?? { this.defaultScdPathFor(name) }
 	}
 
 	exportScd { |name|

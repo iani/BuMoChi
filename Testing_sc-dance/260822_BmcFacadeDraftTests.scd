@@ -2,6 +2,7 @@
 // Recompile the class library before evaluating.
 (
 var check, makeFrame, take1, take2, combined, typed, savedPath, scdPath, wire, composite;
+var recordedTake1Path, recordedTake2Path;
 
 check = { |condition, failureMessage|
 	if(condition.not) { Error("FAIL: " ++ failureMessage).throw };
@@ -31,12 +32,16 @@ Bmc.dispatcher.receive(makeFrame.("avatar-a", "camera-a", 2, 0.1, 0.0), 10.1);
 take1 = Bmc.stopRecording;
 check.(take1.size == 2, "Bmc.record did not capture two frames");
 check.(Bmc.currentClip === take1, "recorded clip was not selected");
+recordedTake1Path = BmcClipLibrary.defaultDirectory +/+ "take1.scd";
+check.(File.exists(recordedTake1Path), "Bmc.record did not save take1 as SCD");
 
 Bmc.record(\take2, "avatar-b", "camera-b");
 Bmc.dispatcher.receive(makeFrame.("avatar-b", "camera-b", 1, 0.0, 1.0), 20.0);
 Bmc.dispatcher.receive(makeFrame.("avatar-b", "camera-b", 2, 0.1, 1.0), 20.1);
 take2 = Bmc.stopRecording;
 check.(Bmc.clip(\take2) === take2, "named clip lookup failed");
+recordedTake2Path = BmcClipLibrary.defaultDirectory +/+ "take2.scd";
+check.(File.exists(recordedTake2Path), "Bmc.record did not save take2 as SCD");
 
 // Clip composition delegates to the existing frame merge implementation.
 combined = Bmc.combineClips(\take1, \take2, \leftArm, \combined);
@@ -68,6 +73,8 @@ check.(Bmc.clip(\loadedScdTake).frameAt(1) == take1.frameAt(1),
 	"SCD round trip changed a frame");
 Bmc.removeClip(\loadedScdTake);
 File.delete(scdPath);
+File.delete(recordedTake1Path);
+File.delete(recordedTake2Path);
 
 // Live source wiring into a composite avatar.
 composite = Bmc.addAvatar(\composite, "composite");

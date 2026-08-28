@@ -110,6 +110,8 @@ Only one application can listen on a particular UDP port. Stop any older encoder
     ~take1 = Bmc.stopRecording;
     ```
 
+    Stopping an ordinary `Bmc.record` recording also saves `take1.scd` automatically in `BmcClipLibrary.defaultDirectory`. The clip remains loaded in memory.
+
 5.  Inspect the result:
 
     ``` supercollider
@@ -126,14 +128,14 @@ Only one application can listen on a particular UDP port. Stop any older encoder
     Bmc.cancelRecording;
     ```
 
-7.  Save the recording to disk so that it can be loaded after a restart:
+7.  Inspect the automatically selected SCD path:
 
     ``` supercollider
-    ~take1Path = Bmc.saveClip(\take1);
+    ~take1Path = BmcClipLibrary.defaultDirectory +/+ "take1.scd";
     ~take1Path.postln;
     ```
 
-    With no explicit path, BuMoChi saves `take1.bmc` in the `BmcClips` directory inside `Platform.userAppSupportDir`. Display that directory at any time with:
+    With no explicit path, BuMoChi saves `take1.scd` in the `BmcClips` directory inside `Platform.userAppSupportDir`. Display that directory at any time with:
 
     ``` supercollider
     BmcClipLibrary.defaultDirectory.postln;
@@ -163,7 +165,7 @@ The window initially lists clips in memory. Clicking an in-memory row makes that
 
 Use the buttons above the list as follows:
 
-- `List saved` scans the default `BmcClips` directory and lists the names of its `.bmc` files. It does not load their frame data into memory.
+- `List saved` scans the default `BmcClips` directory and lists the names of its `.scd` and `.bmc` files. It does not load their frame data into memory.
 - Select a row and press `Play selected`. If the clip is only on disk, Bmc loads it first and then starts playback. If it is already in memory, Bmc plays the existing in-memory clip directly.
 
 The saved-file scan is limited to `BmcClipLibrary.defaultDirectory`. Files stored in other directories must first be loaded explicitly with `Bmc.loadClip`.
@@ -182,7 +184,7 @@ Loading is necessary after restarting SuperCollider, evaluating `Bmc.reset`, or 
 2.  Construct the path and load the saved clip:
 
     ``` supercollider
-    ~take1Path = ~clipDirectory +/+ "take1.bmc";
+    ~take1Path = ~clipDirectory +/+ "take1.scd";
     Bmc.loadClip(~take1Path, \take1);
     ```
 
@@ -202,24 +204,24 @@ Loading is necessary after restarting SuperCollider, evaluating `Bmc.reset`, or 
 
 # Save and load clips in readable SCD format
 
-BuMoChi supports two clip storage schemes:
+BuMoChi supports two clip storage schemes. SCD is the default used by `Bmc.record`; BMC remains available explicitly for legacy archive compatibility:
 
 | Format | Save method | Load method | Character |
 |----|----|----|----|
-| `.bmc` | `Bmc.saveClip` | `Bmc.loadClip` | compact SuperCollider object archive |
-| `.scd` | `Bmc.saveClipScd` | `Bmc.loadClipScd` | readable timestamp/message text |
+| `.scd` | automatic after `Bmc.record`, or `Bmc.saveClipScd` | `Bmc.loadClipScd` | default; readable timestamp/message text |
+| `.bmc` | `Bmc.recordBmc`, or `Bmc.saveClip` | `Bmc.loadClip` | legacy compact SuperCollider object archive |
 
 To save the selected in-memory clip under the default `BmcClips` directory:
 
 ``` supercollider
 Bmc.record(\take1);
 // perform the motion
-Bmc.stopRecording;
-~path = Bmc.saveClipScd(\take1);
+Bmc.stopRecording; // automatically writes take1.scd
+~path = BmcClipLibrary.defaultDirectory +/+ "take1.scd";
 ~path.postln;
 ```
 
-`Bmc.record` itself remains an in-memory recorder. `Bmc.saveClipScd` writes the completed clip after `Bmc.stopRecording`; selecting `.scd` does not change how frames are accumulated during capture.
+`Bmc.record` retains the complete clip in memory during capture. `Bmc.stopRecording` adds the completed clip to the in-memory library and writes it to `.scd` frame by frame. Use `Bmc.recordScd` when the format should be explicit, or `Bmc.recordBmc` to request the legacy archive format. `Bmc.saveClipScd` remains useful for writing an existing in-memory clip again or choosing a custom path.
 
 The default result is `BmcClips/take1.scd`. Supply an explicit path as the second argument when required:
 
@@ -254,7 +256,7 @@ This is different from `Bmc.record`:
 
 | Recorder | Disk behavior during capture | In-memory behavior |
 |----|----|----|
-| `Bmc.record` | does not write until `Bmc.saveClip` or `Bmc.saveClipScd` | retains the complete clip |
+| `Bmc.record` | writes one complete `.scd` file when `Bmc.stopRecording` is called | retains the complete clip |
 | `OscRecorder` | writes successive limited-size `.scd` files while recording | may retain the complete session in `sessionData` |
 
 The relevant implementation is [Classes/Animation/OscRecorder.sc](../../../Classes/Animation/OscRecorder.sc). Its companion `SessionData` and `OscFile` classes read the sequence of recorder files. By contrast, `Bmc.loadClipScd(path)` loads one complete `.scd` clip file. Loading an entire directory of numbered `OscRecorder` chunks as one Bmc clip is not currently part of `Bmc.loadClipScd`.
@@ -394,7 +396,7 @@ The loading and replay sequence is:
 1.  Find the settings by their clip key.
 2.  Register the named avatar if it is not already registered.
 3.  Set that avatar's output to its configured host and port.
-4.  Use the in-memory clip when available; otherwise load its `.bmc` archive.
+4.  Use the in-memory clip when available; otherwise load its saved `.scd` file, with `.bmc` retained as a legacy fallback.
 5.  Select the configured avatar as the player's output.
 6.  Rewrite the outgoing frame's avatar field to the selected avatar name.
 7.  Apply `rate`, `loop`, and `start`.
@@ -404,7 +406,7 @@ This sequence is performed automatically by `Bmc.playSessionClip`.
 
 # Sessions
 
-A Bmc playback session is a named collection of clip playback settings and avatar OSC routes. It is configuration data, not recorded motion data: the `.bmc` clip archives remain separate files.
+A Bmc playback session is a named collection of clip playback settings and avatar OSC routes. It is configuration data, not recorded motion data: the `.scd` clip files remain separate files.
 
 The proposed two-dictionary design is correct. Bmc stores both dictionaries inside one top-level session data object:
 
@@ -501,7 +503,7 @@ Bmc.playSessionClip(\ishidomaruReply);
 
 The current implementation has one Bmc clip player. Consequently these calls play one configured clip at a time; they do not start several clips simultaneously. A future multi-player session layer can add simultaneous or scheduled ensemble playback without changing the stored session format.
 
-See [Avatar Port Numbers](Avatar_Port_Numbers.org) for the complete multi-avatar OSC routing pipeline and terminal commands.
+See [Avatar Port Numbers](Avatar_Port_Numbers.md) for the complete multi-avatar OSC routing pipeline and terminal commands.
 
 # Set clip and avatar name
 

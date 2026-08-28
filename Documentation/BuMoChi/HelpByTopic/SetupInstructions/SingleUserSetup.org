@@ -181,7 +181,7 @@ The saved clip remains independent of Mother and of port =39539=. Avatar identit
 
 * Related detail
 
-- [[file:../OSCEncoder-DecoderUseAndConfiguration.org][OSC Encoder and Decoder Use and Configuration]]
-- [[file:../Avatar_Port_Numbers.org][Avatar Port Numbers]]
+- [[file:../OSCEncoder-DecoderUseAndConfiguration.md][OSC Encoder and Decoder Use and Configuration]]
+- [[file:../Avatar_Port_Numbers.md][Avatar Port Numbers]]
 - [[file:../RecordingAndPlayback.org][Recording and Playback]]
 - [[file:../TroubleshootingInstructions/TroubleshootingPortNumbers.scd][Troubleshooting Port Numbers]]

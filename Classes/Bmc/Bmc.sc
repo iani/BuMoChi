@@ -8,7 +8,7 @@
 Bmc {
 	classvar <boneNames;
 	classvar <dispatcher, <recorder, <player, <library, <avatars, <wires;
-	classvar <defaultAvatar, recordingName, recorderPublisher;
+	classvar <defaultAvatar, recordingName, recordingFormat, recorderPublisher;
 	classvar <sessions, <currentSession;
 	classvar <decoderPort, <forwardDecoder;
 
@@ -117,8 +117,21 @@ Bmc {
 
 	// ----- recording -----
 	*record { |name, avatar, source, capturePoint = \rawFrame, metadata|
+		^this.startRecording(name, avatar, source, capturePoint, metadata, \scd)
+	}
+
+	*recordScd { |name, avatar, source, capturePoint = \rawFrame, metadata|
+		^this.startRecording(name, avatar, source, capturePoint, metadata, \scd)
+	}
+
+	*recordBmc { |name, avatar, source, capturePoint = \rawFrame, metadata|
+		^this.startRecording(name, avatar, source, capturePoint, metadata, \bmc)
+	}
+
+	*startRecording { |name, avatar, source, capturePoint, metadata, format|
 		if(recorder.isRecording) { Error("Bmc is already recording").throw };
 		recordingName = name;
+		recordingFormat = format;
 		recorder.record(avatar, source, capturePoint, metadata);
 		recorderPublisher = if(capturePoint == \completedFrame) { defaultAvatar } { dispatcher };
 		recorderPublisher.addDependant(recorder);
@@ -132,7 +145,13 @@ Bmc {
 		recorderPublisher = nil;
 		clip = recorder.stop;
 		library.add(recordingName, clip);
+		if(recordingFormat == \bmc) {
+			library.save(recordingName)
+		} {
+			library.saveScd(recordingName)
+		};
 		recordingName = nil;
+		recordingFormat = nil;
 		^clip
 	}
 
@@ -140,6 +159,7 @@ Bmc {
 		if(recorderPublisher.notNil) { recorderPublisher.removeDependant(recorder) };
 		recorderPublisher = nil;
 		recordingName = nil;
+		recordingFormat = nil;
 		recorder.cancel;
 		^this
 	}
@@ -237,7 +257,10 @@ Bmc {
 		avatarObject = this.avatar(settings[\avatar]);
 		clip = library.at(settings[\clip]);
 		if(clip.isNil) {
-			clipPath = settings[\path] ?? { library.defaultPathFor(settings[\clip]) };
+			clipPath = settings[\path] ?? {
+				library.savedPathFor(settings[\clip])
+				?? { library.defaultScdPathFor(settings[\clip]) }
+			};
 			clip = library.load(clipPath, settings[\clip]);
 		};
 		defaultAvatar = avatarObject;

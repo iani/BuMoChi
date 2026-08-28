@@ -27,12 +27,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Documentation/BuMoChi/HelpByTopic/OBSOLETE_WorkAndTroubleShootingConfigurations/CollaborationScenarios.md",
+                "file": "Documentation/BuMoChi/HelpByTopic/SetupInstructions/MultiUserWithOscGroupsSetup.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "CollaborationScenarios"
+              "title": "MultiUserWithOscGroupsSetup"
             }
           }
         ],
@@ -114,7 +114,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Documentation/BuMoChi/HelpByTopic/OBSOLETE_WorkAndTroubleShootingConfigurations/CollaborationScenarios.md",
+                "file": "Documentation/BuMoChi/HelpByTopic/SetupInstructions/MultiUserWithOscGroupsSetup.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -133,7 +133,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Documentation/BuMoChi/HelpByTopic/OBSOLETE_WorkAndTroubleShootingConfigurations/CollaborationScenarios.md",
+                "file": "Documentation/BuMoChi/HelpByTopic/SetupInstructions/MultiUserWithOscGroupsSetup.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
@@ -176,7 +176,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Documentation/BuMoChi/HelpByTopic/OBSOLETE_WorkAndTroubleShootingConfigurations/CollaborationScenarios.md",
+                "file": "Documentation/BuMoChi/HelpByTopic/SetupInstructions/MultiUserWithOscGroupsSetup.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
@@ -205,14 +205,20 @@
   },
   "active": "8058796946613262",
   "lastOpenFiles": [
-    "Documentation/BuMoChi/HelpByTopic/OBSOLETE_WorkAndTroubleShootingConfigurations/AnimationPipelineScenarios.md",
-    "Documentation/BuMoChi/HelpByTopic/Glossary.md",
-    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/MultiUserWithOscGroupsSetup.md",
     "Documentation/BuMoChi/HelpByTopic/SetupInstructions/MultiUserAvatarSignalFlow.md",
     "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-b-pipeline.png",
-    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-a-pipeline.png",
     "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-b-pipeline.pdf",
+    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-a-pipeline.png",
     "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-a-pipeline.pdf",
+    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/MultiUserWithOscGroupsSetup.md",
+    "Documentation/BuMoChi/HelpByTopic/OBSOLETE_WorkAndTroubleShootingConfigurations/TroubleShootingScenarios.md",
+    "Documentation/BuMoChi/HelpByTopic/OBSOLETE_WorkAndTroubleShootingConfigurations/SoloWorkScenarios.md",
+    "Documentation/BuMoChi/HelpByTopic/OBSOLETE_WorkAndTroubleShootingConfigurations/PortConfigurationDiagrams.md",
+    "Documentation/BuMoChi/HelpByTopic/OBSOLETE_WorkAndTroubleShootingConfigurations/CollaborationScenarios.md",
+    "Documentation/BuMoChi/HelpByTopic/OBSOLETE_WorkAndTroubleShootingConfigurations/AnimationPipelineScenarios.md",
+    "Documentation/BuMoChi/HelpByTopic/RecordingAndPlayback.md",
+    "Documentation/BuMoChi/HelpByTopic/Scene composition and motion source combination.md",
+    "Documentation/BuMoChi/HelpByTopic/Glossary.md",
     "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-b-pipeline.aux",
     "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-a-pipeline.aux",
     "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-a-pipeline.log",

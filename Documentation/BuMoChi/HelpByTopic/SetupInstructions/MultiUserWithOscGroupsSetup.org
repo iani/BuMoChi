@@ -200,7 +200,7 @@ Disable XR-Animator, evaluate =Bmc.stop=, stop the encoder/client/decoder with =
 
 * Related detail
 
-- [[file:../OSCGroupsUseAndConfiguration.org][OscGroupClient Use and Configuration]]
-- [[file:../OSCEncoder-DecoderUseAndConfiguration.org][OSC Encoder and Decoder Use and Configuration]]
-- [[file:../Avatar_Port_Numbers.org][Avatar Port Numbers]]
-- [[file:../PortNumberSpecification.org][Port Number Specification]]
+- [[file:../OSCGroupsUseAndConfiguration.md][OscGroupClient Use and Configuration]]
+- [[file:../OSCEncoder-DecoderUseAndConfiguration.md][OSC Encoder and Decoder Use and Configuration]]
+- [[file:../Avatar_Port_Numbers.md][Avatar Port Numbers]]
+- [[file:../PortNumberSpecification.md][Port Number Specification]]

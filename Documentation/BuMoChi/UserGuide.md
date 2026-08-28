@@ -347,7 +347,7 @@ Then disable XR Animator output, press **Control-C** in the encoder and decoder 
 
 1.  `Bmc.record(name, avatar, source, capturePoint, metadata)`
 
-    Begins a recording. Every argument is optional.
+    Begins a recording. Every argument is optional. SCD is the default recording format: when `Bmc.stopRecording` is called, the completed clip is retained in memory and automatically saved as `name.scd` in `BmcClipLibrary.defaultDirectory`.
 
     ``` supercollider
     Bmc.record;                         // record all incoming frames
@@ -357,15 +357,23 @@ Then disable XR Animator output, press **Control-C** in the encoder and decoder 
 
     `capturePoint` is `\rawFrame` by default. Use `\completedFrame` to record the selected avatar after reference-pose completion and live wiring.
 
-2.  `Bmc.stopRecording`
+2.  `Bmc.recordScd(name, avatar, source, capturePoint, metadata)`
 
-    Stops recording, returns a `BmcMocapClip`, adds it to the clip library, and makes it the current clip.
+    Explicit alias for the default `Bmc.record` behavior.
 
-3.  `Bmc.cancelRecording`
+3.  `Bmc.recordBmc(name, avatar, source, capturePoint, metadata)`
+
+    Begins a recording that will be saved in the legacy `.bmc` archive format when stopped. Use this only when that format is specifically required.
+
+4.  `Bmc.stopRecording`
+
+    Stops recording, returns a `BmcMocapClip`, adds it to the in-memory clip library, makes it the current clip, and saves it to disk in the format selected when recording began. Ordinary `Bmc.record` and `Bmc.recordScd` calls save `.scd`; `Bmc.recordBmc` saves `.bmc`.
+
+5.  `Bmc.cancelRecording`
 
     Stops recording and discards the frames collected in that take.
 
-4.  `Bmc.isRecording`
+6.  `Bmc.isRecording`
 
     Returns `true` or `false`.
 
@@ -395,7 +403,7 @@ Then disable XR Animator output, press **Control-C** in the encoder and decoder 
 
     Opens the clip window. Initially it shows clips currently loaded in memory. The buttons above the list provide two disk and playback operations:
 
-    - `List saved` scans `BmcClipLibrary.defaultDirectory` for `.bmc` files and displays their names without loading their contents into memory.
+    - `List saved` scans `BmcClipLibrary.defaultDirectory` for `.scd` and `.bmc` files and displays their names without loading their contents into memory.
     - `Play selected` loads the selected saved clip if necessary, then begins playback. A clip already in memory is played directly.
 
     Selecting a row for an in-memory clip also makes it the current clip. Saved clips shown by `List saved` remain unloaded until `Play selected` is pressed.
@@ -418,13 +426,13 @@ Then disable XR Animator output, press **Control-C** in the encoder and decoder 
 
 11. `Bmc.saveClipScd(name, path)`
 
-    Saves a clip directly in the complete, human-readable timestamp/message format. When `path` is omitted, the file is saved as `name.scd` in the default `BmcClips` directory. This method is called after `Bmc.stopRecording`; Bmc retains the complete recording in memory during capture and then writes it frame by frame to the `.scd` file.
+    Explicitly saves or resaves an in-memory clip in the complete, human-readable timestamp/message format. When `path` is omitted, the file is saved as `name.scd` in the default `BmcClips` directory. Ordinary `Bmc.record` already performs this save automatically when `Bmc.stopRecording` is called; use `Bmc.saveClipScd` when an explicit path is required or an existing in-memory clip must be written again.
 
     ``` supercollider
     Bmc.record(\take1);
     // perform the motion
     Bmc.stopRecording;
-    Bmc.saveClipScd(\take1);
+    // take1.scd now exists in BmcClipLibrary.defaultDirectory
     ```
 
 12. `Bmc.loadClipScd(path, name)`
