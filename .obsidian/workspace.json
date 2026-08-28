@@ -11,12 +11,14 @@
             "id": "178b566eb9df6f44",
             "type": "leaf",
             "state": {
-              "type": "pdf",
+              "type": "markdown",
               "state": {
-                "file": "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-a-pipeline.pdf"
+                "file": "Documentation/BuMoChi/HelpByTopic/Glossary.md",
+                "mode": "source",
+                "source": false
               },
-              "icon": "lucide-file-text",
-              "title": "workstation-a-pipeline"
+              "icon": "lucide-file",
+              "title": "Glossary"
             }
           }
         ]
@@ -97,7 +99,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-a-pipeline.pdf",
+                "file": "Documentation/BuMoChi/HelpByTopic/Glossary.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -116,7 +118,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-a-pipeline.pdf",
+                "file": "Documentation/BuMoChi/HelpByTopic/Glossary.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
@@ -159,7 +161,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-a-pipeline.pdf",
+                "file": "Documentation/BuMoChi/HelpByTopic/Glossary.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
@@ -188,16 +190,19 @@
   },
   "active": "178b566eb9df6f44",
   "lastOpenFiles": [
+    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/MultiUserWithOscGroupsSetup.md",
+    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/MultiUserAvatarSignalFlow.md",
+    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-b-pipeline.png",
+    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-a-pipeline.png",
+    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-b-pipeline.pdf",
+    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-a-pipeline.pdf",
+    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-b-pipeline.aux",
+    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-a-pipeline.aux",
+    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-a-pipeline.log",
     "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-b-pipeline.log",
     "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-b-pipeline.fls",
     "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/pdflatex34343.fls",
     "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-b-pipeline.fdb_latexmk",
-    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-b-pipeline.aux",
-    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-a-pipeline.log",
-    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-a-pipeline.fls",
-    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-a-pipeline.fdb_latexmk",
-    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-a-pipeline.aux",
-    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/pdflatex34101.fls",
-    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/pdflatex33821.fls"
+    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-a-pipeline.fls"
   ]
 }

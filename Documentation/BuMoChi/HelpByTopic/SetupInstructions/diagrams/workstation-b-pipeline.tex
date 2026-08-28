@@ -20,8 +20,8 @@
 \begin{tikzpicture}[node distance=16mm and 20mm]
   \node[box,fill=vmcblue] (xr) {XR-Animator B\\camera tracking};
   \node[box,fill=bunrakuorange,right=of xr] (enc) {BunrakuOSCEncoder\\avatar: \texttt{PerformerB}\\source: \texttt{workstation-b-}\\\texttt{xr-animator}};
-  \node[box,fill=scyellow,right=35mm of enc] (bmc) {SuperCollider / Bmc\\input: UDP \texttt{57130}\\local + remote sources\\synthesizes full scene};
-  \node[box,fill=bunrakuorange,right=of bmc] (dec) {BunrakuOSCDecoder\\input: UDP \texttt{39538}\\reads embedded target port};
+  \node[box,fill=scyellow,right=30mm of enc] (bmc) {SuperCollider / Bmc\\input: UDP \texttt{57130}\\local + remote sources\\synthesizes full scene};
+  \node[box,fill=bunrakuorange,right=40mm of bmc] (dec) {BunrakuOSCDecoder\\input: UDP \texttt{39538}\\reads embedded target port};
 
   \node[smallbox,fill=networkviolet,below=22mm of bmc] (client) {OscGroupClient B\\input port: \texttt{22244}\\output port: \texttt{57130}\\unique username B};
   \node[smallbox,fill=networkviolet,below=18mm of client] (server) {OscGroupServer\\server port: \texttt{22242}\\shared group};
@@ -38,7 +38,7 @@
   \draw[networkflow] (client.north) --
     node[label,midway,right]{remote \texttt{PerformerA} route-free v1\\UDP \texttt{57130}}
     node[font=\sffamily\scriptsize\bfseries,red,align=center,midway,left]{Receive mocap data\\from remote clients} (bmc.south);
-  \draw[flow] (bmc) -- node[label,above]{locally synthesized routed v2\\UDP \texttt{39538}} (dec);
+  \draw[flow] (bmc) -- node[label,above]{frame-embedded port nr\\UDP \texttt{39538}} (dec);
   \draw[flow] (dec) -- node[label,above,sloped]{VMC \texttt{39539}} (godot1);
   \draw[flow] (dec) -- node[label,below,sloped]{VMC \texttt{39540}} (godot2);
 
@@ -50,7 +50,9 @@
     {Render animation locally};
   \node[font=\sffamily\scriptsize\bfseries,above=5mm of xr] {Local motion capture source};
 
-  \node[font=\sffamily\bfseries,above=17mm of bmc] {Workstation B -- distributed sources, local synthesis and rendering};
+  \path (xr.west |- bmc.north) -- (godot1.east |- bmc.north)
+    node[font=\sffamily\bfseries,align=center,midway,above=17mm]
+    {Workstation B\\Distributed sources, local synthesis and rendering};
   \node[font=\sffamily\scriptsize,align=center,below=4mm of server] {The server forwards B's network copy to other clients;\\it does not echo \texttt{PerformerB} back to Client B.};
 \end{tikzpicture}
 \end{document}
