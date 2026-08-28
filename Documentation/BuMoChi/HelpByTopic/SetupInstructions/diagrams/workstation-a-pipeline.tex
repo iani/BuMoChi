@@ -29,9 +29,10 @@
 
   \draw[flow] (xr) -- node[label,above]{VMC\\UDP \texttt{39537}} (enc);
   \draw[flow] (enc) -- node[label,above]{route-free v1 frame\\UDP \texttt{57130}} (bmc);
-  \draw[flow] (enc.south) |- node[label,pos=.65,above]{identical route-free v1 network copy\\UDP \texttt{22244}} (client.west);
+  \draw[flow] (enc.south) -- (enc.south |- client.west)
+    -- node[label,midway,above]{identical route-free v1 network copy\\UDP \texttt{22244}} (client.west);
   \draw[net] (client) -- node[label,right]{Internet / OSCGroups\\send A; receive B} (server);
-  \draw[flow] (client.east) -| node[label,pos=.72,below]{remote \texttt{PerformerB} route-free v1\\UDP \texttt{57130}} (bmc.south);
+  \draw[flow] (client.north) -- node[label,midway,right]{remote \texttt{PerformerB} route-free v1\\UDP \texttt{57130}} (bmc.south);
   \draw[flow] (bmc) -- node[label,above]{locally synthesized routed v2\\UDP \texttt{39538}} (dec);
   \draw[flow] (dec) -- node[label,above,sloped]{VMC \texttt{39539}} (godot1);
   \draw[flow] (dec) -- node[label,below,sloped]{VMC \texttt{39540}} (godot2);
