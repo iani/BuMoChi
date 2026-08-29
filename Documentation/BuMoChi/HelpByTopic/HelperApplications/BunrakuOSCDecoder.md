@@ -152,7 +152,7 @@ After starting `BunrakuOSCDecoder`, recompile the SuperCollider class library an
 ~test = Bmc.testBunrakuOSCDecoder;
 ```
 
-The test sends complete routed Bunraku protocol-version-2 frames directly to the decoder's default input port `39538` at 60 frames per second for 60 seconds. Every frame embeds Ishidomaru's default Godot VMC destination port `39539`. The synthetic pose gently sways the hips and turns the head. With `BunrakuOSCDecoder --verbose`, the decoder should report received frames and VMC output to `127.0.0.1:39539`; if Godot is running, Ishidomaru should move.
+The test sends complete routed Bunraku protocol-version-2 frames directly to the decoder's default input port `39538` at 60 frames per second for 60 seconds. Every frame embeds Ishidomaru's default Godot VMC destination port `39539`. The default `rest` pose uses a known-good complete VMC transform snapshot previously captured from XR-Animator. Its absolute hips translation is normalized to `(0, 1, 0)` so the avatar remains visible on the project stage. Because the recorded source had an unusually compressed and bent torso chain, the diagnostic pose substitutes Ishidomaru-derived vertical offsets for the spine, chest, neck, and head and gives those four bones upright rotations. The validated limb transforms remain unchanged. The test gently moves only the root position. With `BunrakuOSCDecoder --verbose`, the decoder should report received frames and VMC output to `127.0.0.1:39539`; if Godot is running, Ishidomaru should move.
 
 Stop the test before 60 seconds have elapsed with:
 
@@ -166,7 +166,7 @@ If no arguments are supplied, `Bmc.testBunrakuOSCDecoder` sends to decoder input
 ~test = Bmc.testBunrakuOSCDecoder;
 ```
 
-Optional arguments specify, in order, the decoder input port, the destination avatar's Godot/VMC port, the frame rate, and the duration in seconds. Any omitted argument uses the following default:
+Optional arguments specify, in order, the decoder input port, the destination avatar's Godot/VMC port, the frame rate, the duration in seconds, and the test pose. Any omitted argument uses the following default:
 
 | Argument | Default | Meaning |
 |---|---:|---|
@@ -174,11 +174,12 @@ Optional arguments specify, in order, the decoder input port, the destination av
 | Avatar VMC port | `Bmc.defaultAvatar.vmcPort` | Godot VMC tracker destination embedded in each routed frame; currently `39539` for Ishidomaru |
 | Frame rate | `60` | Number of synthetic test frames sent per second |
 | Duration | `60.0` | Test duration in seconds |
+| Pose | `\rest` | Known-good complete VMC reference pose; use `\calibration` for the older generic calibration frame |
 
 The effective method signature is:
 
 ```text
-Bmc.testBunrakuOSCDecoder(inputPort = 39538, avatarPort = Bmc.defaultAvatar.vmcPort, frameRate = 60, duration = 60.0)
+Bmc.testBunrakuOSCDecoder(inputPort = 39538, avatarPort = Bmc.defaultAvatar.vmcPort, frameRate = 60, duration = 60.0, pose = \rest)
 ```
 
 ```supercollider
@@ -192,3 +193,21 @@ The second argument is embedded in every routed test frame. For example, to test
 ```
 
 If the avatar port is omitted or `nil`, the test uses the VMC port of `Bmc.defaultAvatar`.
+
+## Choose the test pose
+
+The default rest pose is intended for ordinary visual inspection. It is a complete reference frame captured from valid XR-Animator output, including the source coordinate conventions expected by the Godot VMC tracker:
+
+```supercollider
+~test = Bmc.testBunrakuOSCDecoder(pose: \rest);
+```
+
+The older generic calibration pose remains available for comparison. It uses approximate generic body dimensions rather than Ishidomaru's measured proportions.
+
+```supercollider
+~test = Bmc.testBunrakuOSCDecoder(pose: \calibration);
+```
+
+Godot's imported `Skeleton3D` rest transforms cannot be copied directly into VMC messages: the VMC tracker performs an additional source-to-XR coordinate conversion while retargeting. Applying imported Godot rest transforms as if they were VMC input therefore distorts the avatar.
+
+Both modes test the same SuperCollider-to-decoder-to-Godot transport and routing path. The `rest` mode is the reliable visual test; `calibration` is retained for protocol comparison.
