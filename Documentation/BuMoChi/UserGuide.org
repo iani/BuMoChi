@@ -363,6 +363,17 @@ Stops clip playback, cancels an unfinished recording, and closes the BuMoChi OSC
 :END:
 Posts and returns an event containing receiver, recording, playback, clip, and wire statistics. Useful keys include =running=, =port=, =received=, =rejected=, =dropped=, =recording=, =playing=, =currentClip=, and =clipCount=.
 
+**** =Bmc.showDispatcherStatus(updateInterval: 0.25)=
+:PROPERTIES:
+:CUSTOM_ID: bmcshowdispatcherstatus
+:END:
+Opens the OSC/VMC input monitor window. A static field identifies the monitored OSC address and the dispatcher's configured UDP port. A dynamic field displays the latest =BmcDispatcher.status= dictionary and refreshes every =0.25= seconds by default. Supply another interval in seconds to change the refresh rate. Closing the window stops its update routine.
+
+#+begin_src supercollider
+Bmc.showDispatcherStatus;      // refresh four times per second
+Bmc.showDispatcherStatus(1.0); // refresh once per second
+#+end_src
+
 **** =Bmc.reset=
 :PROPERTIES:
 :CUSTOM_ID: bmcreset

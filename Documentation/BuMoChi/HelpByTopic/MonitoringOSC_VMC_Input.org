@@ -1,0 +1,128 @@
+#+title: Monitoring Osc Vmc Input
+
+* Default OSC/VMC frame input after library compilation
+
+After the SuperCollider class library has compiled, BuMoChi creates its default =BmcDispatcher= and starts it automatically.
+
+The dispatcher listens on UDP port =57130= by default:
+
+#+begin_src supercollider
+Bmc.defaultInputPort;  // 57130
+#+end_src
+
+The active port can be inspected directly:
+
+#+begin_src supercollider
+Bmc.dispatcher.port;
+#+end_src
+
+The dispatcher receives OSC messages at the address:
+
+#+begin_example
+/bunraku/vmc/frame
+#+end_example
+
+These are BuMoChi route-free frame messages produced by =BunrakuOSCEncoder=. They are not the original collection of standard VMC bone and expression messages sent by XR-Animator.
+
+The default local input route is:
+
+#+begin_example
+XR-Animator
+    -> standard VMC messages, UDP 39537
+BunrakuOSCEncoder
+    -> /bunraku/vmc/frame messages, UDP 57130
+BmcDispatcher
+#+end_example
+
+Use the following expressions to confirm that reception is active:
+
+#+begin_src supercollider
+Bmc.dispatcher.isRunning;  // true
+Bmc.dispatcher.port;       // 57130
+Bmc.dispatcher.status;
+#+end_src
+
+The =received= value in the status dictionary should increase while =BunrakuOSCEncoder= is sending valid frames.
+
+If another application already occupies UDP port =57130=, SuperCollider will report an address-in-use error and the dispatcher will not be able to receive frames on that port.
+
+* Obtaining the active BmcDispatcher
+
+The active dispatcher is stored in the =Bmc= class variable =dispatcher= and is available through its read accessor:
+
+#+begin_src supercollider
+~dispatcher = Bmc.dispatcher;
+#+end_src
+
+This returns the actual dispatcher used by the top-level Bmc system, not a copy.
+
+Its current dispatcher-only status is available with:
+
+#+begin_src supercollider
+Bmc.dispatcher.status;
+#+end_src
+
+A typical result is:
+
+#+begin_example
+( 'running': true, 'port': 57130, 'received': 284,
+  'rejected': 0, 'dropped': 0, 'avatars': 2 )
+#+end_example
+
+The fields have the following meanings:
+
+| Field      | Meaning |
+|------------+---------|
+| =running=  | Whether the dispatcher currently has its OSC receiver installed. |
+| =port=     | The UDP port on which the dispatcher listens. |
+| =received= | Number of valid BuMoChi frames accepted since this dispatcher was created. |
+| =rejected= | Number of incoming messages rejected as invalid frames. |
+| =dropped=  | Number of detected discontinuities in frame identifiers. |
+| =avatars=  | Number of dispatcher avatar lookup entries; this may exceed the number of distinct avatar objects because an avatar can be registered under both its ID and display name. |
+
+=Bmc.status= returns a broader system status that starts with the dispatcher fields and adds recording, playback, clip-library, and wire information:
+
+#+begin_src supercollider
+Bmc.status;
+#+end_src
+
+The dispatcher alone can be stopped and restarted explicitly:
+
+#+begin_src supercollider
+Bmc.dispatcher.stop;
+Bmc.dispatcher.start;        // restart on its current port
+Bmc.dispatcher.start(57131); // restart on a different input port
+#+end_src
+
+Changing the Bmc input port also requires changing the destination used by =BunrakuOSCEncoder=.
+
+* Continuously monitoring dispatcher status in a window
+
+=Bmc.showDispatcherStatus= opens a small window with two fields.
+
+The static field identifies the OSC address and UDP port selected when the window opens:
+
+When the dispatcher is active, the first line reads:
+
+#+begin_example
+Listening for '/bunraku/vmc/frame' on port: 57130
+#+end_example
+
+The dynamic field below it shows the string representation of the active dispatcher's latest status dictionary.
+
+The text updates four times per second by default:
+
+#+begin_src supercollider
+Bmc.showDispatcherStatus;
+#+end_src
+
+An optional argument specifies the update interval in seconds:
+
+#+begin_src supercollider
+Bmc.showDispatcherStatus(0.1); // update ten times per second
+Bmc.showDispatcherStatus(1.0); // update once per second
+#+end_src
+
+Closing the window stops its update routine.
+
+While the OSC/VMC input pipeline is running, the =received= field should update continuously. A rising =rejected= count indicates malformed or incompatible input. A rising =dropped= count indicates discontinuities in the frame IDs for one or more avatar/source streams.

@@ -2,6 +2,8 @@
 title: Recording And Playback
 ---
 
+# Purpose of the guide
+
 This guide tests recording and playback with XR-Animator, the Bunraku OSC encoder, SuperCollider/BuMoChi, the Bunraku OSC decoder, and Godot on the same computer. A recording is stored and managed as a *clip*. The examples below use clip methods such as `Bmc.record`, `Bmc.listClips`, and `Bmc.playClip`.
 
 Use this port map throughout the test:
@@ -15,80 +17,7 @@ Use this port map throughout the test:
 
 Only one application can listen on a particular UDP port. Stop any older encoder or decoder processes before starting this test.
 
-# Connect XR-Animator to SuperCollider via OscEncoder
-
-1.  In XR-Animator, open the VMC/OSC output settings and set the destination to:
-
-    ``` example
-    Host: 127.0.0.1
-    Port: 39537
-    ```
-
-    Enable VMC output. XR-Animator may remain running while the other parts of the pipeline are started.
-
-2.  Open Terminal and change to BuMoChi's testing directory:
-
-    ``` bash
-    cd /Users/iani/Obsidian/Iani/Projects/260715_ICLC27/AppsAndCode/BuMoChi/PipelineApplications
-    ```
-
-3.  Start the Python encoder in that terminal:
-
-    ``` bash
-    python3 BunrakuOSCEncoder.py \
-      --no-oscgroups \
-      --avatar "BunrakuTestAvatar" \
-      --source "xr-animator" \
-      --verbose
-    ```
-
-    Alternatively, if you have installed a globally accessible copy of BurakuOSCEncoder, try:
-
-    ``` bash
-    BunrakuOSCEncoder \
-      --no-oscgroups \
-      --avatar "BunrakuTestAvatar" \
-      --source "xr-animator" \
-      --verbose
-    ```
-
-    Keep this terminal open. When XR-Animator is sending data, the encoder's received/sent counters should increase.
-
-4.  In SuperCollider, evaluate the following block. Evaluate the entire block by placing the cursor inside it and pressing `Command-Return`.
-
-    ``` supercollider
-    (
-    Bmc.reset;
-
-    // This identifier must match the encoder's --avatar value.
-    Bmc.addAvatar(\BunrakuTestAvatar, "BunrakuTestAvatar");
-    Bmc.selectAvatar(\BunrakuTestAvatar);
-
-    // Playback and live frames will be sent to the decoder on this port.
-    Bmc.avatar(\BunrakuTestAvatar).vmcPort_(39539);
-    // Receive encoded XR-Animator frames here.
-    Bmc.start(57130);
-    )
-    ```
-
-5.  Confirm that SuperCollider is receiving frames:
-
-    ``` supercollider
-    Bmc.status;
-    ```
-
-    In the Post window, `running` should be `true`, `port` should be `57130`, and `received` should increase while you move in front of XR-Animator.
-
-6.  Optional but recommended: make the live and replayed motion visible in Godot. Run a Godot project whose VMC tracker listens on port `39539`, such as the Mother input of `Seed_4_Mother_Ishidomaru_C`. Then open a second terminal in `PipelineApplications` and start the decoder:
-
-    ``` bash
-    python3 BunrakuOSCDecoder.py \
-      --listen-port 39538 \
-      --accept-avatar "BunrakuTestAvatar" \
-      --verbose
-    ```
-
-    The avatar in Godot should now follow the live XR-Animator motion. This confirms the complete path before recording.
+For complete port configuration and pipeline connection instructions, see [Port Number Setup](PortNumberSetup.md).
 
 # Record
 

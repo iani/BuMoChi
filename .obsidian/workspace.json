@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Documentation/BuMoChi/HelpByTopic/MainApplications/Alternative free Mocap Systems for future reference.md",
+                "file": "Documentation/BuMoChi/HelpByTopic/PortNumberSetup.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Alternative free Mocap Systems for future reference"
+              "title": "PortNumberSetup"
             }
           }
         ]
@@ -83,7 +83,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 357.21484375
+    "width": 357.21484375,
+    "collapsed": true
   },
   "right": {
     "id": "884288881732969b",
@@ -99,7 +100,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Documentation/BuMoChi/HelpByTopic/MainApplications/Alternative free Mocap Systems for future reference.md",
+                "file": "Documentation/BuMoChi/HelpByTopic/PortNumberSetup.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -118,7 +119,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Documentation/BuMoChi/HelpByTopic/MainApplications/Alternative free Mocap Systems for future reference.md",
+                "file": "Documentation/BuMoChi/HelpByTopic/PortNumberSetup.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
@@ -161,7 +162,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Documentation/BuMoChi/HelpByTopic/MainApplications/Alternative free Mocap Systems for future reference.md",
+                "file": "Documentation/BuMoChi/HelpByTopic/PortNumberSetup.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
@@ -170,11 +171,12 @@
               "title": "Outline"
             }
           }
-        ]
+        ],
+        "currentTab": 4
       }
     ],
     "direction": "horizontal",
-    "width": 300,
+    "width": 297.3984375,
     "collapsed": true
   },
   "left-ribbon": {
@@ -190,13 +192,27 @@
   },
   "active": "8058796946613262",
   "lastOpenFiles": [
-    "Documentation/BuMoChi/HelpByTopic/MainApplications/Planned - Unity, Unity Face Capture.md",
+    "Documentation/BuMoChi/HelpByTopic/PortNumberSpecification.md",
+    "Documentation/BuMoChi/HelpByTopic/PortNumberSetup.md",
+    "Documentation/BuMoChi/HelpByTopic/RecordingAndPlayback.md",
+    "Documentation/BuMoChi/HelpByTopic/PortNumberSetup.org",
+    "Documentation/BuMoChi/HelpByTopic/SessionDataObjectsAndTerminology.md",
+    "Documentation/BuMoChi/HelpByTopic/OSCGroupsUseAndConfiguration.md",
+    "Documentation/BuMoChi/HelpByTopic/Multi-Avatar project port number setting in godot - NOTES.md",
+    "Documentation/BuMoChi/HelpByTopic/MonitoringOSC_VMC_Input.org",
+    "Documentation/BuMoChi/HelpByTopic/images/mother-ishidomaru-vmc-trackers.png",
+    "Documentation/BuMoChi/HelpByTopic/images",
+    "Pasted image 20260829125859.png",
+    "Pasted image 20260829114448.png",
+    "Pasted image 20260829114345.png",
+    "Pasted image 20260829114306.png",
+    "Documentation/BuMoChi/HelpByTopic/HelperApplications/BunrakuOSCDecoder.md",
     "Documentation/BuMoChi/HelpByTopic/MainApplications/Alternative free Mocap Systems for future reference.md",
+    "Documentation/BuMoChi/HelpByTopic/MainApplications/Planned - Unity, Unity Face Capture.md",
     "Documentation/BuMoChi/HelpByTopic/MainApplications/WaiDayo.md",
     "Documentation/BuMoChi/HelpByTopic/MainApplications/Godot.md",
     "Documentation/BuMoChi/HelpByTopic/MainApplications/XR-Animator.md",
     "Documentation/BuMoChi/HelpByTopic/MainApplications/SuperCollider and BuMoChi library.md",
-    "Documentation/BuMoChi/HelpByTopic/HelperApplications/BunrakuOSCDecoder.md",
     "Documentation/BuMoChi/HelpByTopic/MainApplications",
     "Documentation/BuMoChi/HelpByTopic/HelperApplications/BunrakuOSCEncoder.md",
     "Documentation/BuMoChi/HelpByTopic/HelperApplications/OSCGroupsClient.md",
@@ -213,28 +229,13 @@
     "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shirt.png",
     "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shader_NoneNormal.normal.png.import",
     "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shader_NoneNormal.normal.png",
-    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shader_NoneBlack.png.import",
     "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shader_NoneBlack.png",
-    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Pants.tres",
-    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Pants.png.import",
-    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Pants.png",
-    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/NeckTie.png",
-    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Mouth.png",
-    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Highlights.png",
-    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Hair_Normal.png",
     "PipelineApplications/Reference/SoftwareArchitecture.md",
     "PipelineApplications/Reference/2026-08-13a XR-Animator OSC data frame keys.md",
     "PipelineApplications/Communication_Tests/04_XR_Animator_Encoder_OSCGroups_SC_Decoder_Godot.md",
     "PipelineApplications/Communication_Tests/03_SC_playback_Decoder_Godot.md",
     "PipelineApplications/Communication_Tests/02_XR_Animator_Encoder_OSCGroups_Decoder_Godot.md",
     "PipelineApplications/Communication_Tests/01_XR_Animator_Godot.md",
-    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/MultiUserSetup.md",
-    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/MultiUserAvatarSignalFlow.md",
-    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/SingleUserSetup.md",
-    "Documentation/BuMoChi/HelpByTopic/OBSOLETE_WorkAndTroubleShootingConfigurations/PortConfigurationDiagrams.md",
-    "Documentation/BuMoChi/HelpByTopic/OBSOLETE_WorkAndTroubleShootingConfigurations/TroubleShootingScenarios.md",
-    "Documentation/BuMoChi/HelpByTopic/OBSOLETE_WorkAndTroubleShootingConfigurations/SoloWorkScenarios.md",
-    "Documentation/BuMoChi/HelpByTopic/OBSOLETE_WorkAndTroubleShootingConfigurations/CollaborationScenarios.md",
-    "Documentation/BuMoChi/HelpByTopic/OBSOLETE_WorkAndTroubleShootingConfigurations/AnimationPipelineScenarios.md"
+    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/MultiUserSetup.md"
   ]
 }

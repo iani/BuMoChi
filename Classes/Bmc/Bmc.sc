@@ -80,6 +80,28 @@ Bmc {
 		^result
 	}
 
+	*showDispatcherStatus { |updateInterval = 0.25|
+		updateInterval = updateInterval.asFloat.max(0.05);
+		{
+			var window = Window("Bmc OSC/VMC Input", Rect(120, 120, 460, 210));
+			var listening = StaticText().string_(
+				"Listening for '/bunraku/vmc/frame' on port: %".format(dispatcher.port)
+			);
+			var text = TextView().editable_(false);
+			var updater;
+			window.layout = VLayout(listening, text);
+			updater = Routine({
+				loop {
+					text.string_(dispatcher.status.asCompileString);
+					updateInterval.wait;
+				}
+			}).play(AppClock);
+			window.onClose_({ updater.stop });
+			window.front;
+		}.defer;
+		^this
+	}
+
 	*reset {
 		this.stop;
 		this.initializeEnvironment;
