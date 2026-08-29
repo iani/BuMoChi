@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Documentation/BuMoChi/HelpByTopic/HelperApplications/BunrakuOSCEncoder.md",
+                "file": "Documentation/BuMoChi/HelpByTopic/HelperApplications/BunrakuOSCDecoder.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "BunrakuOSCEncoder"
+              "title": "BunrakuOSCDecoder"
             }
           }
         ]
@@ -99,7 +99,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Documentation/BuMoChi/HelpByTopic/HelperApplications/BunrakuOSCEncoder.md",
+                "file": "Documentation/BuMoChi/HelpByTopic/HelperApplications/BunrakuOSCDecoder.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -118,7 +118,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Documentation/BuMoChi/HelpByTopic/HelperApplications/BunrakuOSCEncoder.md",
+                "file": "Documentation/BuMoChi/HelpByTopic/HelperApplications/BunrakuOSCDecoder.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
@@ -161,7 +161,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Documentation/BuMoChi/HelpByTopic/HelperApplications/BunrakuOSCEncoder.md",
+                "file": "Documentation/BuMoChi/HelpByTopic/HelperApplications/BunrakuOSCDecoder.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
@@ -190,9 +190,9 @@
   },
   "active": "8058796946613262",
   "lastOpenFiles": [
+    "Documentation/BuMoChi/HelpByTopic/HelperApplications/BunrakuOSCEncoder.md",
     "Classes/Bmc/BunrakuOSCDecoderTest.sc",
     "Documentation/BuMoChi/HelpByTopic/HelperApplications/BunrakuOSCDecoder.md",
-    "Documentation/BuMoChi/HelpByTopic/HelperApplications/BunrakuOSCEncoder.md",
     "Classes/Bmc/BunrakuOSCEncoderTest.sc",
     "Documentation/BuMoChi/HelpByTopic/HelperApplications/OSCGroupsClient.md",
     "Documentation/BuMoChi/HelpByTopic/SetupInstructions/MultiUserSetup.md",
@@ -217,7 +217,6 @@
     "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-b-pipeline.aux",
     "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-a-pipeline.aux",
     "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-a-pipeline.log",
-    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-b-pipeline.log",
-    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-b-pipeline.fls"
+    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-b-pipeline.log"
   ]
 }

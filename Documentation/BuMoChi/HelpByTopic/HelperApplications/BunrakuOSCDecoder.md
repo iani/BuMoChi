@@ -144,6 +144,8 @@ This works if you have installed a globally accessible script according to the i
 
 # Test the decoder from SuperCollider
 
+Run the following to test that SuperCollider can send animations to Godot.  In detail, this tests that animations are translated by BunrakuOSCDecoder and sent to Godot 
+
 After starting `BunrakuOSCDecoder`, recompile the SuperCollider class library and evaluate:
 
 ```supercollider
