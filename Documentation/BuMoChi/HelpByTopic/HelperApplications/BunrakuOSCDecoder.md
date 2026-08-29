@@ -17,7 +17,7 @@ All repository paths in this guide are relative to the root of the BuMoChi repos
 The entry-point script and its supporting Python modules are in:
 
 ```text
-Testing_BuMoChi/
+PipelineApplications/
 ```
 
 The main entry point is `BunrakuOSCDecoder.py`. Keep it beside `bunraku_frame_to_vmc.py` and `bunraku_protocol.py`. Copying only `BunrakuOSCDecoder.py` elsewhere will break its imports.
@@ -29,7 +29,7 @@ The current implementation uses only Python's standard library; it does not requ
 For the default Ishidomaru pipeline:
 
 ```bash
-python3 Testing_BuMoChi/BunrakuOSCDecoder.py \
+python3 PipelineApplications/BunrakuOSCDecoder.py \
   --listen-port 39538 \
   --allow-target-port 39539 \
   --verbose
@@ -38,7 +38,7 @@ python3 Testing_BuMoChi/BunrakuOSCDecoder.py \
 The allow-list is optional, but it prevents an incorrectly routed frame from being forwarded to an unexpected local UDP port. For a scene containing additional avatars, repeat the option:
 
 ```bash
-python3 Testing_BuMoChi/BunrakuOSCDecoder.py \
+python3 PipelineApplications/BunrakuOSCDecoder.py \
   --listen-port 39538 \
   --allow-target-port 39539 \
   --allow-target-port 39540 \
@@ -60,7 +60,7 @@ mkdir -p "$HOME/.local/bin"
 Create or replace the launcher link. `$PWD` captures the current BuMoChi repository root, while the repository path following it remains relative to that root:
 
 ```bash
-ln -sf "$PWD/Testing_BuMoChi/BunrakuOSCDecoder.py" "$HOME/.local/bin/BunrakuOSCDecoder"
+ln -sf "$PWD/PipelineApplications/BunrakuOSCDecoder.py" "$HOME/.local/bin/BunrakuOSCDecoder"
 ```
 
 Ensure that `~/.local/bin` is in your shell search path. For the default macOS `zsh` shell, add this line to `~/.zshrc`:

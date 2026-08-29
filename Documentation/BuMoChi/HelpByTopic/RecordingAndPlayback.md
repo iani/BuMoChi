@@ -29,7 +29,7 @@ Only one application can listen on a particular UDP port. Stop any older encoder
 2.  Open Terminal and change to BuMoChi's testing directory:
 
     ``` bash
-    cd /Users/iani/Obsidian/Iani/Projects/260715_ICLC27/AppsAndCode/BuMoChi/Testing_BuMoChi
+    cd /Users/iani/Obsidian/Iani/Projects/260715_ICLC27/AppsAndCode/BuMoChi/PipelineApplications
     ```
 
 3.  Start the Python encoder in that terminal:
@@ -79,7 +79,7 @@ Only one application can listen on a particular UDP port. Stop any older encoder
 
     In the Post window, `running` should be `true`, `port` should be `57130`, and `received` should increase while you move in front of XR-Animator.
 
-6.  Optional but recommended: make the live and replayed motion visible in Godot. Run a Godot project whose VMC tracker listens on port `39539`, such as the Mother input of `Seed_4_Mother_Ishidomaru_C`. Then open a second terminal in `Testing_BuMoChi` and start the decoder:
+6.  Optional but recommended: make the live and replayed motion visible in Godot. Run a Godot project whose VMC tracker listens on port `39539`, such as the Mother input of `Seed_4_Mother_Ishidomaru_C`. Then open a second terminal in `PipelineApplications` and start the decoder:
 
     ``` bash
     python3 BunrakuOSCDecoder.py \

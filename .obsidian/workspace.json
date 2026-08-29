@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Testing_BuMoChi/README.md",
+                "file": "Documentation/BuMoChi/HelpByTopic/HelperApplications/OSCGroupsClient.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "README"
+              "title": "OSCGroupsClient"
             }
           }
         ]
@@ -99,7 +99,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Testing_BuMoChi/README.md",
+                "file": "Documentation/BuMoChi/HelpByTopic/HelperApplications/OSCGroupsClient.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -118,7 +118,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Testing_BuMoChi/README.md",
+                "file": "Documentation/BuMoChi/HelpByTopic/HelperApplications/OSCGroupsClient.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
@@ -161,7 +161,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Testing_BuMoChi/README.md",
+                "file": "Documentation/BuMoChi/HelpByTopic/HelperApplications/OSCGroupsClient.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
@@ -188,18 +188,42 @@
       "bases:Create new base": false
     }
   },
-  "active": "8058796946613262",
+  "active": "fb407930b22eaac5",
   "lastOpenFiles": [
+    "Documentation/BuMoChi/HelpByTopic/Avatar_Port_Numbers.md",
+    "PipelineApplications/README.md",
     "Documentation/BuMoChi/HelpByTopic/HelperApplications/BunrakuOSCDecoder.md",
+    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Thumbnail.png.import",
+    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Thumbnail.png",
+    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shoes.tres",
+    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shoes.png.import",
+    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shoes.png",
+    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shirt.tres",
+    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shirt.png.import",
+    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shirt.png",
+    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shader_NoneNormal.normal.png.import",
+    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shader_NoneNormal.normal.png",
+    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shader_NoneBlack.png.import",
+    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shader_NoneBlack.png",
+    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Pants.tres",
+    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Pants.png.import",
+    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Pants.png",
+    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/NeckTie.tres",
+    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/NeckTie.png",
+    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Mouth.png",
+    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Highlights.png",
+    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Hair_Normal.png",
+    "PipelineApplications/Reference/SoftwareArchitecture.md",
+    "PipelineApplications/Reference/2026-08-13a XR-Animator OSC data frame keys.md",
+    "PipelineApplications/Communication_Tests/04_XR_Animator_Encoder_OSCGroups_SC_Decoder_Godot.md",
+    "PipelineApplications/Communication_Tests/03_SC_playback_Decoder_Godot.md",
+    "PipelineApplications/Communication_Tests/02_XR_Animator_Encoder_OSCGroups_Decoder_Godot.md",
+    "PipelineApplications/Communication_Tests/01_XR_Animator_Godot.md",
     "Documentation/BuMoChi/HelpByTopic/HelperApplications/BunrakuOSCEncoder.md",
-    "Classes/Bmc/BunrakuOSCDecoderTest.sc",
-    "Classes/Bmc/BunrakuOSCEncoderTest.sc",
     "Documentation/BuMoChi/HelpByTopic/HelperApplications/OSCGroupsClient.md",
     "Documentation/BuMoChi/HelpByTopic/SetupInstructions/MultiUserSetup.md",
-    "Documentation/BuMoChi/HelpByTopic/HelperApplications",
     "Documentation/BuMoChi/HelpByTopic/SetupInstructions/MultiUserAvatarSignalFlow.md",
     "Documentation/BuMoChi/HelpByTopic/SetupInstructions/SingleUserSetup.md",
-    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/MultiUserSetup.pdf",
     "Documentation/BuMoChi/HelpByTopic/OBSOLETE_WorkAndTroubleShootingConfigurations/PortConfigurationDiagrams.md",
     "Documentation/BuMoChi/HelpByTopic/OBSOLETE_WorkAndTroubleShootingConfigurations/TroubleShootingScenarios.md",
     "Documentation/BuMoChi/HelpByTopic/OBSOLETE_WorkAndTroubleShootingConfigurations/SoloWorkScenarios.md",
@@ -207,16 +231,7 @@
     "Documentation/BuMoChi/HelpByTopic/OBSOLETE_WorkAndTroubleShootingConfigurations/AnimationPipelineScenarios.md",
     "Documentation/BuMoChi/HelpByTopic/OSCEncoder-DecoderUseAndConfiguration.md",
     "Documentation/BuMoChi/HelpByTopic/Glossary.md",
-    "Documentation/BuMoChi/HelpByTopic/Avatar_Port_Numbers.md",
-    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-b-pipeline.pdf",
-    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-b-pipeline.png",
-    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-a-pipeline.png",
-    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-a-pipeline.pdf",
     "Documentation/BuMoChi/HelpByTopic/RecordingAndPlayback.md",
-    "Documentation/BuMoChi/HelpByTopic/Scene composition and motion source combination.md",
-    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-b-pipeline.aux",
-    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-a-pipeline.aux",
-    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-a-pipeline.log",
-    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/diagrams/workstation-b-pipeline.log"
+    "Documentation/BuMoChi/HelpByTopic/Scene composition and motion source combination.md"
   ]
 }

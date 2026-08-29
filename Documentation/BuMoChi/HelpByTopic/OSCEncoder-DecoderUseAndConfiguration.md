@@ -100,7 +100,7 @@ Normal BuMoChi operation uses routed version-2 output from local Bmc instead.
 # Repository launch paths
 
 ``` bash
-cd /Users/iani/Obsidian/Iani/Projects/260715_ICLC27/AppsAndCode/BuMoChi/Testing_BuMoChi
+cd /Users/iani/Obsidian/Iani/Projects/260715_ICLC27/AppsAndCode/BuMoChi/PipelineApplications
 python3 BunrakuOSCEncoder.py --help
 python3 BunrakuOSCDecoder.py --help
 ```

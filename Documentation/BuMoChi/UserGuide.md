@@ -100,8 +100,8 @@ Use the native Electron application for this pipeline because VMC output is a na
 The required Python command-line scripts are included in the BuMoChi distribution:
 
 ``` text
-Testing_BuMoChi/BunrakuOSCEncoder.py
-Testing_BuMoChi/BunrakuOSCDecoder.py
+PipelineApplications/BunrakuOSCEncoder.py
+PipelineApplications/BunrakuOSCDecoder.py
 ```
 
 Their supporting Python modules are in the same directory. Keep those files together. The scripts use Python 3 and do not require third-party Python packages.
@@ -116,7 +116,7 @@ An additional, more general VMC packet-preserving bridge is included under:
 HelperAppsAndExamples/VMC_Converter_Scripts/
 ```
 
-The Bmc classes documented here currently use the fixed Bunraku Frame protocol-v1 encoder and decoder in `Testing_BuMoChi`.
+The Bmc classes documented here currently use the fixed Bunraku Frame protocol-v1 encoder and decoder in `PipelineApplications`.
 
 ### OSCGroups
 
@@ -134,7 +134,7 @@ Upstream source and build instructions are available from:
 - <https://github.com/RossBencina/oscpack>
 - <http://www.rossbencina.com/code/oscgroups>
 
-You do not need OSCGroups for the first local test. Introduce it after the encoder-to-BuMoChi-to-decoder path works on one computer. Detailed staged tests are in `Testing_BuMoChi/Communication_Tests/`.
+You do not need OSCGroups for the first local test. Introduce it after the encoder-to-BuMoChi-to-decoder path works on one computer. Detailed staged tests are in `PipelineApplications/Communication_Tests/`.
 
 ### Godot
 
@@ -145,7 +145,7 @@ Godot renders the animated character. Download a current compatible Godot 4 edit
 A VMC-compatible reference project is included at:
 
 ``` text
-Testing_BuMoChi/GodotVMCReference/project.godot
+PipelineApplications/GodotVMCReference/project.godot
 ```
 
 Import that file from the Godot Project Manager and run the project. The reference test configuration listens for reconstructed VMC on UDP port `39539`.
@@ -172,12 +172,12 @@ Only one program can listen on a given UDP port. Stop older test processes befor
 Import and run:
 
 ``` text
-Testing_BuMoChi/GodotVMCReference/project.godot
+PipelineApplications/GodotVMCReference/project.godot
 ```
 
 ### Step 2: start the decoder
 
-Open a terminal in `Testing_BuMoChi` and run:
+Open a terminal in `PipelineApplications` and run:
 
 ``` bash
 python3 BunrakuOSCDecoder.py \
@@ -216,7 +216,7 @@ The posted event should include `running: true` and `port: 57130`.
 
 ### Step 4: start the encoder
 
-In a second terminal, also opened in `Testing_BuMoChi`, run:
+In a second terminal, also opened in `PipelineApplications`, run:
 
 ``` bash
 python3 BunrakuOSCEncoder.py \
@@ -639,7 +639,7 @@ The repository includes four staged communication tests:
 They are located in:
 
 ``` example
-Testing_BuMoChi/Communication_Tests/
+PipelineApplications/Communication_Tests/
 ```
 
 Each test includes its port map, startup order, pass criteria, and common failures. When the complete system fails, return to Test 1 and introduce one component at a time.

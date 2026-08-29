@@ -23,7 +23,7 @@ All repository paths in this guide are relative to the root of the BuMoChi repos
 The entry-point script and its supporting Python modules are in:
 
 ```text
-Testing_BuMoChi/
+PipelineApplications/
 ```
 
 The main entry point is `BunrakuOSCEncoder.py`. Keep it beside `vmc_to_bunraku_frame.py` and `bunraku_protocol.py`. Copying only `BunrakuOSCEncoder.py` elsewhere will break its imports.
@@ -46,7 +46,7 @@ Port `39537` is the encoder's default VMC input. Do not point XR-Animator direct
 For a multiuser OSCGroups session, first start Bmc and `OscGroupClient`, then run:
 
 ```bash
-python3 Testing_BuMoChi/BunrakuOSCEncoder.py \
+python3 PipelineApplications/BunrakuOSCEncoder.py \
   --avatar "Ishidomaru" \
   --source "workstation-a-xr-animator" \
   --verbose
@@ -57,7 +57,7 @@ The `--avatar` value is source metadata at this stage; it does not permanently b
 For a local-only session without OSCGroups:
 
 ```bash
-python3 Testing_BuMoChi/BunrakuOSCEncoder.py \
+python3 PipelineApplications/BunrakuOSCEncoder.py \
   --no-oscgroups \
   --avatar "Ishidomaru" \
   --source "local-xr-animator" \
@@ -79,7 +79,7 @@ mkdir -p "$HOME/.local/bin"
 Create or replace the launcher link. `$PWD` captures the current BuMoChi repository root, while the repository path following it remains relative to that root:
 
 ```bash
-ln -sf "$PWD/Testing_BuMoChi/BunrakuOSCEncoder.py" "$HOME/.local/bin/BunrakuOSCEncoder"
+ln -sf "$PWD/PipelineApplications/BunrakuOSCEncoder.py" "$HOME/.local/bin/BunrakuOSCEncoder"
 ```
 
 Ensure that `~/.local/bin` is in the default macOS `zsh` search path by adding this to `~/.zshrc` if it is not already present:
