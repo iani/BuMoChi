@@ -128,8 +128,8 @@ Bmc {
 		^frame
 	}
 
-	*testBunrakuOSCDecoder { |port = 39538, frameRate = 60, duration = 60.0|
-		^BunrakuOSCDecoderTest(port, frameRate, duration)
+	*testBunrakuOSCDecoder { |inputPort = 39538, avatarPort, frameRate = 60, duration = 60.0|
+		^BunrakuOSCDecoderTest(inputPort, avatarPort, frameRate, duration)
 	}
 
 	*calibrationFrame {

@@ -160,8 +160,35 @@ Stop the test before 60 seconds have elapsed with:
 ~test.stop;
 ```
 
-Optional arguments override the decoder input port, frame rate, and duration in seconds:
+If no arguments are supplied, `Bmc.testBunrakuOSCDecoder` sends to decoder input port `39538`, embeds Ishidomaru's current default avatar port `39539`, runs at `60` frames per second, and stops after `60` seconds:
 
 ```supercollider
-~test = Bmc.testBunrakuOSCDecoder(39538, 60, 60);
+~test = Bmc.testBunrakuOSCDecoder;
 ```
+
+Optional arguments specify, in order, the decoder input port, the destination avatar's Godot/VMC port, the frame rate, and the duration in seconds. Any omitted argument uses the following default:
+
+| Argument | Default | Meaning |
+|---|---:|---|
+| Decoder input port | `39538` | Port on which `BunrakuOSCDecoder` receives routed frames from SuperCollider |
+| Avatar VMC port | `Bmc.defaultAvatar.vmcPort` | Godot VMC tracker destination embedded in each routed frame; currently `39539` for Ishidomaru |
+| Frame rate | `60` | Number of synthetic test frames sent per second |
+| Duration | `60.0` | Test duration in seconds |
+
+The effective method signature is:
+
+```text
+Bmc.testBunrakuOSCDecoder(inputPort = 39538, avatarPort = Bmc.defaultAvatar.vmcPort, frameRate = 60, duration = 60.0)
+```
+
+```supercollider
+~test = Bmc.testBunrakuOSCDecoder(39538, 39539, 60, 60);
+```
+
+The second argument is embedded in every routed test frame. For example, to test an avatar whose Godot VMC tracker listens on port `39540` while keeping the decoder on `39538`:
+
+```supercollider
+~test = Bmc.testBunrakuOSCDecoder(39538, 39540, 60, 60);
+```
+
+If the avatar port is omitted or `nil`, the test uses the VMC port of `Bmc.defaultAvatar`.

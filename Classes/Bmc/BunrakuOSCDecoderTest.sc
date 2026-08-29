@@ -1,13 +1,13 @@
 BunrakuOSCDecoderTest {
 	var <destination, <targetPort, <frameRate, <duration, <task, <isRunning, <framesSent;
 
-	*new { |port = 39538, frameRate = 60, duration = 60.0, targetPort, host = "127.0.0.1"|
-		^super.new.init(host, port, targetPort, frameRate, duration)
+	*new { |inputPort = 39538, avatarPort, frameRate = 60, duration = 60.0, host = "127.0.0.1"|
+		^super.new.init(host, inputPort, avatarPort, frameRate, duration)
 	}
 
-	init { |host, port, argTargetPort, argFrameRate, argDuration|
-		port = this.validPort(port, "decoder input");
-		targetPort = argTargetPort ?? {
+	init { |host, inputPort, avatarPort, argFrameRate, argDuration|
+		inputPort = this.validPort(inputPort, "decoder input");
+		targetPort = avatarPort ?? {
 			if(Bmc.defaultAvatar.isNil) { nil } { Bmc.defaultAvatar.vmcPort }
 		};
 		if(targetPort.isNil) {
@@ -18,7 +18,7 @@ BunrakuOSCDecoderTest {
 		duration = argDuration.asFloat;
 		if(frameRate <= 0) { Error("BunrakuOSCDecoder test frame rate must be positive").throw };
 		if(duration <= 0) { Error("BunrakuOSCDecoder test duration must be positive").throw };
-		destination = NetAddr(host.asString, port);
+		destination = NetAddr(host.asString, inputPort);
 		framesSent = 0;
 		isRunning = false;
 		this.start;
