@@ -1,8 +1,8 @@
 # What is BunrakuOSCDecoder?
 
-`BunrakuOSCDecoder` is an open-source Python application included with BuMoChi. It receives complete, locally synthesized Bunraku animation frames from SuperCollider/Bmc and converts them back into standard VMC messages that Godot's VMC tracker can understand.
+`BunrakuOSCDecoder` is an open-source Python application included with BuMoChi. It is a bridge between synthesis applications that use BuMoChi's OSC frame format and animation applications that use VMC, such as Godot with the VMC Tracker plugin. It converts individual OSC frame messages received from SuperCollider/Bmc into standard VMC bundles and sends them to Godot. More specifically, it receives complete, locally synthesized, routed protocol-version-2 `/bunraku/vmc/frame` messages, reconstructs the corresponding VMC data, and forwards each result to the destination port embedded in its frame.
 
-Normal BuMoChi output uses routed protocol-version-2 frames. Each frame contains the destination VMC port assigned to its avatar. One decoder can therefore receive every locally synthesized avatar on input port `39538` and forward each one to its own local Godot port. In the default configuration, Ishidomaru is forwarded to `39539`.
+Each routed frame contains the destination VMC port assigned to its avatar. One decoder can therefore receive every locally synthesized avatar on input port `39538` and forward each one to its own local Godot port. In the default configuration, Ishidomaru is forwarded to `39539`.
 
 ```text
 SuperCollider/Bmc → routed frames on UDP 39538 → BunrakuOSCDecoder → VMC on UDP 39539 → Godot/Ishidomaru

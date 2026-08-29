@@ -1,6 +1,6 @@
 # What is BunrakuOSCEncoder?
 
-`BunrakuOSCEncoder` is an open-source Python application included with BuMoChi. It listens for standard VMC messages from XR-Animator (or Waidayo or other mocap applications), collects the required 21 humanoid bones into complete frames, and converts each complete pose into one route-free protocol-version-1 `/bunraku/vmc/frame` OSC message.
+`BunrakuOSCEncoder` is an open-source Python application included with BuMoChi. It is a bridge between motion-capture applications that use VMC, such as XR-Animator and Waidayo, and synthesis and network applications that use OSC. It converts VMC bundles into individual OSC frame messages and sends them to SuperCollider and [OSCGroupsClient](OSCGroupsClient.md). More specifically, it listens for standard VMC bundles, collects the required 21 humanoid bones into complete frames, and converts each complete pose into one route-free protocol-version-1 `/bunraku/vmc/frame` OSC message. Route-free means that the message does not yet contain the destination port of the avatar that will render the frame in Godot.
 
 By default, the encoder sends an identical copy of every source frame to two local destinations:
 
