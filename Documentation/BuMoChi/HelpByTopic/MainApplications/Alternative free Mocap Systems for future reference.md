@@ -297,3 +297,164 @@ I recommend beginning with the pure VMC bridge. It is simpler, reusable outside 
 9. Add recording and independent playback of the facial source in BuMoChi.
 
 This is quite feasible. The core transmitter is small; the more consequential work is ensuring that BuMoChi retains the 52 facial values during recording/composition and that each Godot avatar has an accurate Perfect-Sync-to-morph-target mapping.
+
+
+# Mainstream VTuber Apps and BuMoChi
+
+The mainstream VTuber animation landscape is divided primarily between 2D avatar puppetry, ready-made 3D VTubing applications, social virtual worlds, and general-purpose game engines.
+
+## 1. Live2D Cubism + VTube Studio
+
+This is probably the most recognizable mainstream pipeline for anime-style 2D VTubers.
+
+- **Live2D Cubism** creates and rigs a deformable 2D character from layered artwork.
+- **VTube Studio** receives webcam or iPhone facial tracking and animates the model.
+- It includes expressions, props, effects, hotkeys, audience interaction and online collaboration.
+- VTube Studio supports Live2D models only—not VRM or ordinary 3D characters. [VTube Studio requirements](https://github.com/DenchiSoft/VTubeStudio/wiki/Introduction-%26-Requirements), [Live2D Cubism](https://www.live2d.com/en/)
+
+This ecosystem emphasizes extremely expressive face and upper-body animation. It does not attempt naturalistic skeletal full-body movement in the same way as BuMoChi.
+
+## 2. VSeeFace
+
+VSeeFace has been one of the standard free applications for independent 3D VTubers using VRM avatars.
+
+It offers:
+
+- Webcam face and hand tracking.
+- iPhone Perfect Sync facial input.
+- VRM and VSFAvatar rendering.
+- VMC input and output.
+- Combination of tracking from multiple sources.
+- Transparent output for OBS.
+
+[VSeeFace](https://www.vseeface.icu/) is especially relevant to BuMoChi because it uses the same general VMC ecosystem. Conceptually, however, VSeeFace is an avatar puppeteering application: it combines tracking and renders an avatar, but it is not primarily a programmable system for recording, transforming and composing motion.
+
+## 3. Warudo
+
+Warudo is currently one of the most comprehensive dedicated 3D VTubing platforms.
+
+It includes:
+
+- VRM, VRChat and Unity-compatible avatars.
+- Webcam and iPhone tracking.
+- VMC-compatible motion sources.
+- Multiple characters, cameras, environments and props.
+- Node-based “Blueprint” programming.
+- Audience interaction.
+- Motion recording and FBX export.
+- OBS, NDI and virtual-camera output.
+- A C# plugin SDK.
+
+[Warudo’s documentation](https://docs.warudo.app/docs) describes it as a complete 3D livestreaming environment rather than merely a tracker. Of the mainstream applications, it is probably the closest functional comparison to SC–Godot/BuMoChi.
+
+Its emphasis is on configurable visual production and streaming. BuMoChi’s distinctive emphasis is temporal motion composition through live coding.
+
+## 4. VNyan
+
+[VNyan](https://vnyan.net/) is another free 3D VTubing environment. It is known particularly for:
+
+- VRM avatar presentation.
+- VMC tracking input.
+- Node-graph programming.
+- Twitch and audience interaction.
+- Props, effects and event-driven behavior.
+- Combining several tracking or control sources.
+
+VNyan and Warudo both treat a VTuber performance as a programmable scene rather than simply displaying a tracked character. They are important comparison points for your work.
+
+## 5. Animaze
+
+Animaze is the successor to FaceRig. It provides a more conventional commercial avatar-puppeteering workflow:
+
+- 2D and 3D avatars.
+- Webcam and iPhone facial tracking.
+- Multiple simultaneous trackers.
+- VMC input for full-body tracking.
+- Streaming and virtual-camera integration.
+
+Its architecture is more closed and product-oriented than what you are developing. [Animaze tracker documentation](https://www.animaze.us/manual/appmanual/trackers)
+
+## 6. VRChat
+
+VRChat is not principally a broadcasting application, but it is a major platform for embodied avatar performance and collaborative virtual production.
+
+It provides:
+
+- Networked multi-avatar environments.
+- Full-body IK.
+- Face and eye tracking on supported systems.
+- Avatar animation controllers.
+- OSC parameters and OSC tracker input.
+- Shared virtual stages and social interaction.
+
+[VRChat supports external tracking through OSC](https://docs.vrchat.com/docs/osc-trackers), but its collaborative model is very different from BuMoChi. VRChat synchronizes participants inside a centrally defined social-world system. BuMoChi distributes motion sources while allowing each workstation to synthesize and render its own complete scene.
+
+## 7. Unity
+
+Unity is arguably the underlying platform behind a large amount of custom and commercial VTuber software.
+
+It is used for:
+
+- Custom virtual stages.
+- VRM avatars through UniVRM.
+- VMC communication through EVMC4U and related libraries.
+- Live Capture and iPhone facial capture.
+- Timeline, Mecanim and custom animation graphs.
+- Networked performances.
+- Shader, lighting and camera systems.
+- Custom control panels and integrations.
+
+Warudo itself exposes Unity-compatible assets and C# extensions. Unity is therefore less a single VTuber application and more the dominant construction environment for specialized VTuber tools.
+
+## 8. Unreal Engine and MetaHuman
+
+Unreal Engine is used more for high-end virtual production and realistic digital humans than for ordinary anime-style independent VTubing.
+
+Its prominent components include:
+
+- MetaHuman.
+- MetaHuman Animator.
+- Live Link.
+- Control Rig.
+- Sequencer.
+- Professional motion-capture integrations.
+- Broadcast-quality environments and rendering.
+
+[MetaHuman Animator](https://www.metahuman.com/animate) provides high-quality facial animation in real time, while Live Link carries capture data into Unreal. It offers considerably greater rendering and facial-rig complexity, but also a much heavier production workflow.
+
+## Where SC–Godot/BuMoChi fits
+
+SC–Godot is not simply another replacement for VSeeFace. Its closest comparison is a combination of:
+
+```
+Warudo/VNyan scene composition
++ VMC motion interoperability
++ SuperCollider live coding
++ distributed performance
++ Godot rendering
+```
+
+Its distinguishing features are potentially:
+
+- Motion capture treated as composable temporal material.
+- Recording, replaying and transforming motion while performing.
+- Combining different body regions from different clips or live sources.
+- Algorithmic and Synth-controlled motion generation.
+- Multiple figures constructed locally from distributed motion sources.
+- Close synchronization between sound synthesis and avatar movement.
+- Network collaboration without requiring one central renderer.
+- Textual, live-coded control instead of—or alongside—a node graph.
+- Godot as an open and modifiable renderer.
+
+A useful conceptual comparison is:
+
+|Platform|Main abstraction|
+|---|---|
+|VTube Studio|Live2D character parameters|
+|VSeeFace|Tracked VRM avatar|
+|Warudo/VNyan|Programmable streaming scene|
+|VRChat|Networked embodied social world|
+|Unity/Unreal|General real-time production engine|
+|**BuMoChi**|**Live-coded composition of motion sources into figures**|
+
+Therefore, BuMoChi’s strongest original territory is not merely “VTubing in Godot.” It is **collaborative live coding of avatar motion**, analogous to the way SuperCollider treats sound as material that can be generated, routed, transformed, layered, recorded and performed.
