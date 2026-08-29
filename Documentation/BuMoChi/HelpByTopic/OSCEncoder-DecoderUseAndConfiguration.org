@@ -2,7 +2,7 @@
 
 Two Python applications convert between standard VMC bundles and the Bunraku OSC frame protocol.
 
-* BunrakuOSCEncoder
+* [[file:HelperApplications/BunrakuOSCEncoder.md][BunrakuOSCEncoder]]
 
 The encoder receives VMC from XR-Animator, collects a complete 21-bone pose, and emits one route-free version-1 =/bunraku/vmc/frame= message. By default it sends identical source-frame copies to:
 
@@ -49,7 +49,7 @@ This keeps the local Bmc copy and disables only network distribution.
 
 =--target-ip= and =--target-port= remain aliases for the OSCGroups destination. At least one output must be enabled. =--no-bmc= is useful only for network diagnostics because it removes the direct local source copy.
 
-* BunrakuOSCDecoder
+* [[file:HelperApplications/BunrakuOSCDecoder.md][BunrakuOSCDecoder]]
 
 The decoder receives locally synthesized, routed version-2 frames from Bmc on =39538=. It reconstructs VMC and sends each avatar to the target port embedded by local Bmc. The decoder does not receive remote source frames directly; those must first enter local Bmc and participate in local scene synthesis.
 

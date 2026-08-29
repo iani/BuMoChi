@@ -26,9 +26,9 @@ Use these values consistently:
 
 | Port  | Listener                      | Sender              |
 |-------|-------------------------------|---------------------|
-| 39537 | `BunrakuOSCEncoder`           | XR-Animator         |
-| 57130 | Bmc/SuperCollider             | `BunrakuOSCEncoder` |
-| 39538 | shared `BunrakuOSCDecoder`    | Bmc avatars         |
+| 39537 | [BunrakuOSCEncoder](../HelperApplications/BunrakuOSCEncoder.md) | XR-Animator |
+| 57130 | Bmc/SuperCollider | [BunrakuOSCEncoder](../HelperApplications/BunrakuOSCEncoder.md) |
+| 39538 | shared [BunrakuOSCDecoder](../HelperApplications/BunrakuOSCDecoder.md) | Bmc avatars |
 | 39539 | Mother's Godot VMC receiver   | shared decoder      |
 | 39540 | Ishidomaru Godot VMC receiver | shared decoder      |
 

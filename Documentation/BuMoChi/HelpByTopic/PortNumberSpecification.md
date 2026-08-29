@@ -12,7 +12,7 @@ Port numbers are configurable. The examples below are recommended defaults for o
 
 | Connection | Receiver | Example port |
 |----|----|----|
-| Bmc routed Bunraku frames | Shared `BunrakuOSCDecoder` | 39538 |
+| Bmc routed Bunraku frames | Shared [BunrakuOSCDecoder](HelperApplications/BunrakuOSCDecoder.md) | 39538 |
 | Decoder VMC output for Mother | Mother's Godot VMC source | 39539 |
 | Decoder VMC output for Ishidomaru | Ishidomaru's Godot VMC source | 39540 |
 

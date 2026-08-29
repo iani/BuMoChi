@@ -127,9 +127,9 @@ Testing_BuMoChi/BunrakuOSCDecoder.py
 
 Their supporting Python modules are in the same directory. Keep those files together. The scripts use Python 3 and do not require third-party Python packages.
 
-=BunrakuOSCEncoder.py= receives VMC from XR Animator. It collects the 21 required humanoid bones and sends each route-free =/bunraku/vmc/frame= both to local Bmc on =57130= and to local =OscGroupClient= on =22244=. Remote clients deliver their route-free frames to Bmc on =57130=. Bmc synthesizes the complete local scene, adds final avatar routes, and sends routed output only to the local decoder on =39538=.
+[[file:HelpByTopic/HelperApplications/BunrakuOSCEncoder.md][BunrakuOSCEncoder]] receives VMC from XR Animator. It collects the 21 required humanoid bones and sends each route-free =/bunraku/vmc/frame= both to local Bmc on =57130= and to local =OscGroupClient= on =22244=. Remote clients deliver their route-free frames to Bmc on =57130=. Bmc synthesizes the complete local scene, adds final avatar routes, and sends routed output only to the local decoder on =39538=.
 
-=BunrakuOSCDecoder.py= performs the reverse conversion. It receives Bunraku frames from SuperCollider and emits standard VMC messages for Godot.
+[[file:HelpByTopic/HelperApplications/BunrakuOSCDecoder.md][BunrakuOSCDecoder]] performs the reverse conversion. It receives Bunraku frames from SuperCollider and emits standard VMC messages for Godot.
 
 An additional, more general VMC packet-preserving bridge is included under:
 
@@ -409,7 +409,7 @@ Sets the local decoder destination for all avatars using the default output. Def
 **** =Bmc.forwardDecoder_(flag)=
 Enables or disables forwarding to the local decoder. Default: =true=.
 
-These are Bmc's only class-wide network-output controls. Source distribution to OSCGroups belongs to =BunrakuOSCEncoder=, not Bmc.
+These are Bmc's only class-wide network-output controls. Source distribution to OSCGroups belongs to [[file:HelpByTopic/HelperApplications/BunrakuOSCEncoder.md][BunrakuOSCEncoder]], not Bmc.
 
 **** =Bmc.sendCalibrationFrame(port)=
 Sends one approximate upright T-pose for the selected avatar to a local decoder input. If =port= is omitted, Bmc uses its currently configured decoder port, which defaults to =39538=. The routed frame separately embeds the selected avatar's Godot VMC destination, which defaults to =39539= for Ishidomaru.

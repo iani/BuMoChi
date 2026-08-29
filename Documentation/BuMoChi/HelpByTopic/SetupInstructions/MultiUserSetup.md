@@ -10,9 +10,9 @@ This is the canonical collaborative setup. It follows BuMoChi's **distributed so
 
 ### Local animation sources
 
-Data from local mocap sources (XR-Animator, Waidayo, or other) are converted from VMC to OSC using BunrakuOSCEncoder and sent:
+Data from local mocap sources (XR-Animator, Waidayo, or other) are converted from VMC to OSC using [BunrakuOSCEncoder](../HelperApplications/BunrakuOSCEncoder.md) and sent:
 1. to the local SuperCollider animation composer (Bmc), and:
-2. to remote workstations via OSCGroupsClient.
+2. to remote workstations via [OSCGroupsClient](../HelperApplications/OSCGroupsClient.md).
 
 ### Remote animation sources
 
@@ -30,7 +30,7 @@ Every workstation's Bmc receives two kinds of input on port `57130`:
 
 After combining, filtering, layering, and assigning motions to figures and avatars in SuperCollider, Bmc sends the completed animation frames to its local decoder on `39538`. Each frame is an OSC message containing the VMC destination port assigned to its avatar. The decoder reconstructs a VMC bundle, forwards it to the specified local Godot receiver, and Godot renders the avatar.
 
-The local encoder (BunrakuOSCEncoder) also sends an identical route-free copy of every local motion-source frame to `OscGroupClient` input port `22244`, which shares it with the remote workstations.
+The local encoder ([BunrakuOSCEncoder](../HelperApplications/BunrakuOSCEncoder.md)) also sends an identical route-free copy of every local motion-source frame to `OscGroupClient` input port `22244`, which shares it with the remote workstations.
 
 SuperCollider/Bmc never sends processed output to OSCGroups. The final animation is synthesized and rendered locally. Because every workstation receives the shared source frames and uses the same session/composition and Godot scene, each workstation independently constructs and renders the same intended animation.
 
@@ -108,7 +108,7 @@ All collaborators must agree on the OSCGroups server, group credentials, stable 
 
 | Port | Listener | Sender |
 |----|----|----|
-| 39537 | local `BunrakuOSCEncoder` | local XR-Animator |
+| 39537 | local [BunrakuOSCEncoder](../HelperApplications/BunrakuOSCEncoder.md) | local XR-Animator |
 | 57130 | local Bmc/SuperCollider | local encoder and `OscGroupClient` rx |
 | 22244 | local `OscGroupClient` tx input | local encoder |
 | 39538 | local shared decoder | local Bmc synthesized outputs |

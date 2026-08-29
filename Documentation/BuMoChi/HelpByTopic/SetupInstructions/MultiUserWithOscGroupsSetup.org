@@ -50,7 +50,7 @@ The OSCGroups server normally does not echo a workstation's own message back. Th
 #+begin_example
 local XR-Animator
     -> VMC 127.0.0.1:39537
-local BunrakuOSCEncoder
+local [[file:../HelperApplications/BunrakuOSCEncoder.md][BunrakuOSCEncoder]]
     -> route-free v1 127.0.0.1:57130 (local Bmc)
     -> identical route-free v1 127.0.0.1:22244 (OscGroupClient)
 one local OscGroupClient
@@ -61,7 +61,7 @@ remote route-free v1 frames
 local Bmc
     -> synthesizes the complete scene from local and remote sources
     -> routed v2 frames 127.0.0.1:39538 (local decoder only)
-one local BunrakuOSCDecoder
+one local [[file:../HelperApplications/BunrakuOSCDecoder.md][BunrakuOSCDecoder]]
     -> local Godot VMC ports 39539, 39540, ...
 #+end_example
 
@@ -93,7 +93,7 @@ All collaborators must agree on the OSCGroups server, group credentials, stable 
 
 | Port  | Listener                        | Sender                                |
 |-------+---------------------------------+---------------------------------------|
-| 39537 | local =BunrakuOSCEncoder=       | local XR-Animator                     |
+| 39537 | local [[file:../HelperApplications/BunrakuOSCEncoder.md][BunrakuOSCEncoder]] | local XR-Animator |
 | 57130 | local Bmc/SuperCollider         | local encoder and =OscGroupClient= rx |
 | 22244 | local =OscGroupClient= tx input | local encoder                         |
 | 39538 | local shared decoder            | local Bmc synthesized outputs         |
