@@ -1,5 +1,3 @@
-# Full Setup Procedure
-
 # Overview
 
 This guide starts and configures the six applications in the following downstream order:

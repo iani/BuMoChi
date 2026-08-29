@@ -1,5 +1,3 @@
-#+title: Full Setup Procedure
-
 * Overview
 :PROPERTIES:
 :CUSTOM_ID: overview
