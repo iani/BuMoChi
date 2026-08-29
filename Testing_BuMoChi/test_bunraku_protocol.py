@@ -154,8 +154,8 @@ class BunrakuProtocolTests(unittest.TestCase):
             )
 
             received = [parse_frame(receiver.recvfrom(65507)[0]) for receiver in receivers]
-            self.assertEqual(received[0].avatar, "XRAnimator")
-            self.assertEqual(received[1].avatar, "XRAnimator")
+            self.assertEqual(received[0].avatar, "Ishidomaru")
+            self.assertEqual(received[1].avatar, "Ishidomaru")
             self.assert_transforms_almost_equal(received[0].transforms, received[1].transforms)
         finally:
             if process is not None:

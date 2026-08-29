@@ -3,7 +3,7 @@
 (
 var check, makeFrame, take1, take2, combined, typed, savedPath, scdPath, wire, composite;
 var recordedTake1Path, recordedTake2Path;
-var defaultOutputMessage, defaultOutputFrame;
+var defaultOutputMessage, defaultOutputFrame, calibrationFrame;
 
 check = { |condition, failureMessage|
 	if(condition.not) { Error("FAIL: " ++ failureMessage).throw };
@@ -23,6 +23,13 @@ check.(Bmc.defaultAvatar.vmcPort == 39539, "Bmc default Ishidomaru VMC port is n
 check.(Bmc.avatar === Bmc.defaultAvatar, "Bmc.avatar did not return the default Ishidomaru avatar");
 check.(Bmc.decoderPort == 39538, "Bmc default decoder port is not 39538");
 check.(Bmc.forwardDecoder, "Bmc decoder forwarding is not enabled by default");
+calibrationFrame = Bmc.calibrationFrame;
+check.(calibrationFrame.avatar == "Ishidomaru", "calibration frame did not use the selected avatar");
+check.(calibrationFrame.source == "bmc-calibration", "calibration frame source is wrong");
+check.(calibrationFrame.targetPort == 39539, "calibration frame did not embed Ishidomaru port 39539");
+check.(calibrationFrame.pose.isComplete, "calibration frame pose is incomplete");
+check.(Bmc.bone(calibrationFrame.asOSCMessage, \Hips).copyRange(0, 2) == [0.0, 1.0, 0.0],
+	"calibration frame hips position is wrong");
 Bmc.output({ |message| defaultOutputMessage = message });
 Bmc.dispatcher.receive(makeFrame.("Ishidomaru", "default-test", 1, 0.0, 0.0), 9.0);
 defaultOutputFrame = BmcFrame.fromOSC(defaultOutputMessage);

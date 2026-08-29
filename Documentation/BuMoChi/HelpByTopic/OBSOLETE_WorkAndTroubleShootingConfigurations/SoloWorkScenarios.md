@@ -1,4 +1,0 @@
----
-title: Solo Work Scenarios
----
-

@@ -345,6 +345,17 @@ After the SuperCollider class library compiles, Bmc automatically listens for ro
 
     These are Bmc's only class-wide network-output controls. Source distribution to OSCGroups belongs to `BunrakuOSCEncoder`, not Bmc.
 
+7.  `Bmc.sendCalibrationFrame(port)`
+
+    Sends one approximate upright T-pose for the selected avatar to a local decoder input. If `port` is omitted, Bmc uses its currently configured decoder port, which defaults to `39538`. The routed frame separately embeds the selected avatar's Godot VMC destination, which defaults to `39539` for Ishidomaru.
+
+    ``` supercollider
+    Bmc.sendCalibrationFrame;       // decoder input 39538 by default
+    Bmc.sendCalibrationFrame(39548); // explicitly use another decoder input
+    ```
+
+    This is a pipeline-connectivity test, not a calibrated reference pose for a particular VRM model.
+
 ### Recording
 
 1.  `Bmc.record(name, avatar, source, capturePoint, metadata)`

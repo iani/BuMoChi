@@ -121,6 +121,59 @@ Bmc {
 		^message
 	}
 
+	*sendCalibrationFrame { |port|
+		var frame = this.calibrationFrame;
+		port = this.validPort(port ?? { decoderPort });
+		NetAddr("127.0.0.1", port).sendMsg(*frame.asOSCMessage);
+		^frame
+	}
+
+	*testBunrakuOSCDecoder { |port = 39538, frameRate = 60, duration = 60.0|
+		^BunrakuOSCDecoderTest(port, frameRate, duration)
+	}
+
+	*calibrationFrame {
+		var pose = BmcPose.neutral;
+		var rotation = [0.0, 0.0, 0.0, 1.0];
+		var positions = IdentityDictionary[
+			\Hips -> [0.00, 1.00, 0.00],
+			\Spine -> [0.00, 0.10, 0.00],
+			\Chest -> [0.00, 0.14, 0.00],
+			\Neck -> [0.00, 0.14, 0.00],
+			\Head -> [0.00, 0.12, 0.00],
+			\LeftShoulder -> [0.10, 0.08, 0.00],
+			\LeftUpperArm -> [0.18, 0.00, 0.00],
+			\LeftLowerArm -> [0.25, 0.00, 0.00],
+			\LeftHand -> [0.20, 0.00, 0.00],
+			\RightShoulder -> [-0.10, 0.08, 0.00],
+			\RightUpperArm -> [-0.18, 0.00, 0.00],
+			\RightLowerArm -> [-0.25, 0.00, 0.00],
+			\RightHand -> [-0.20, 0.00, 0.00],
+			\LeftUpperLeg -> [0.08, -0.40, 0.00],
+			\LeftLowerLeg -> [0.00, -0.40, 0.00],
+			\LeftFoot -> [0.00, -0.10, 0.05],
+			\LeftToes -> [0.00, 0.00, 0.10],
+			\RightUpperLeg -> [-0.08, -0.40, 0.00],
+			\RightLowerLeg -> [0.00, -0.40, 0.00],
+			\RightFoot -> [0.00, -0.10, 0.05],
+			\RightToes -> [0.00, 0.00, 0.10]
+		];
+		if(defaultAvatar.isNil) { Error("Bmc has no selected avatar").throw };
+		if(defaultAvatar.vmcPort.isNil) {
+			Error("Bmc selected avatar has no VMC destination port").throw
+		};
+		positions.keysValuesDo { |name, position|
+			pose.put(name, position ++ rotation);
+		};
+		^BmcFrame(
+			defaultAvatar.avatarName,
+			"bmc-calibration",
+			0,
+			SystemClock.seconds,
+			pose
+		).withTargetPort(defaultAvatar.vmcPort)
+	}
+
 	*validPort { |port|
 		port = port.asInteger;
 		if((port < 1) or: { port > 65535 }) {

@@ -1,10 +1,22 @@
 ---
-title: Multi User With OSCGroups Setup
+title: Multi User Setup
 ---
 
 This is the canonical collaborative setup. It follows BuMoChi's **distributed sources, local synthesis** model: OSCGroups distributes route-free motion-source frames; every workstation's SuperCollider/BuMoChi process receives all sources, independently constructs the complete animation scene, and sends the finished local result to its own decoder and Godot renderer.
 
 # Operational model
+
+## Receiving and sharing animation data
+
+### Local animation sources
+
+Data from local mocap sources (XR-Animator, Waidayo, or other) are converted from VMC to OSC using BunrakuOSCEncoder and sent:
+1. to the local SuperCollider animation composer (Bmc), and:
+2. to remote workstations via OSCGroupsClient.
+
+### Remote animation sources
+
+
 
 ## Animation data input
 
@@ -15,9 +27,10 @@ Every workstation's Bmc receives two kinds of input on port `57130`:
 
 ## Animation data output
 
-The local encoder also sends an identical route-free copy of every local motion-source frame to `OscGroupClient` input port `22244`, which shares it with the remote workstations.
 
 After combining, filtering, layering, and assigning motions to figures and avatars in SuperCollider, Bmc sends the completed animation frames to its local decoder on `39538`. Each frame is an OSC message containing the VMC destination port assigned to its avatar. The decoder reconstructs a VMC bundle, forwards it to the specified local Godot receiver, and Godot renders the avatar.
+
+The local encoder (BunrakuOSCEncoder) also sends an identical route-free copy of every local motion-source frame to `OscGroupClient` input port `22244`, which shares it with the remote workstations.
 
 SuperCollider/Bmc never sends processed output to OSCGroups. The final animation is synthesized and rendered locally. Because every workstation receives the shared source frames and uses the same session/composition and Godot scene, each workstation independently constructs and renders the same intended animation.
 

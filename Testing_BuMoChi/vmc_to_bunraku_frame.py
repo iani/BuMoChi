@@ -148,7 +148,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--oscgroups-port", "--target-port", dest="oscgroups_port", type=int, default=22244, help="local OscGroupClient transmission port")
     p.add_argument("--no-bmc", action="store_true", help="disable the local Bmc source-frame copy")
     p.add_argument("--no-oscgroups", action="store_true", help="disable the OSCGroups source-frame copy")
-    p.add_argument("--avatar", default="XRAnimator", help="avatar name included in every frame")
+    p.add_argument("--avatar", default="Ishidomaru", help="avatar name included in every frame")
     p.add_argument("--source", help="stable sender ID; default is random per run")
     p.add_argument("--max-packet-size", type=int, default=1200); p.add_argument("--stats-interval", type=float, default=5.0)
     p.add_argument("--verbose", action="store_true")
