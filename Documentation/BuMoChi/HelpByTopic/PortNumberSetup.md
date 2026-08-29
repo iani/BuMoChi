@@ -180,11 +180,23 @@ BmcDispatcher listening port       = 57131
 
 ### 4. Godot avatar-specific listening port
 
-Each avatar rendered by Godot is assigned its own VMC listening port. This port is encoded in the file of the project that contains the avatar.  So each project has its own port numbers for each avatar.  The 
+Each avatar rendered by Godot is assigned its own VMC listening port. This port is encoded in the scene file of the project that contains the avatar, so each project has its own port numbers for its avatars.
 
 For the default Ishidomaru setup saved in project Seed_2_Ishidomaru_C is `39539`. Each avatar must have a different port number, because this is the address where VMC sends its data to animate that avatar. 
 
 To inspect and/or set the port number of an avatar in a project do this:
+
+1. Stop the running Godot scene, if necessary.
+2. Open `demo.tscn`.
+3. At the top of the Scene tree, select the avatar's VMC receiver node, such as `IshidomaruVMCTracker`.
+4. In the panel on the right, select **Inspector**, not **Node**.
+5. Find **UDP Listener Port** and enter the required port number.
+6. In the same Inspector, verify that **Body Tracker Name** and **Face Tracker Name** belong to the selected avatar.
+7. Save the scene with `Command-S`.
+
+![Godot VMC receiver nodes and UDP Listener Port setting](images/mother-ishidomaru-vmc-trackers.png)
+
+The screenshot shows `IshidomaruVMCTracker` selected and its **UDP Listener Port** set to `39540` in the two-avatar `Seed_4_Mother_Ishidomaru_E` project. In the default single-avatar `Seed_2_Ishidomaru_C` project, use `39539` instead. Do not change the port on `XRBodyModifier3D`; that node contains the internal body tracker name, not the network port.
 
 
 

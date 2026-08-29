@@ -1,6 +1,6 @@
 # BuMoChi User Guide
 
-> Draft user guide for the current Bmc interface.
+> [!note] This is a user guide draft for the current Bmc interface. It outlines the purpose of the BuMoChi library, the applications it works with, and gives examples of commands for doing basic tasks with this library like recording, playback and composition of animation clips. For installation and getting started see files [[Documentation/BuMoChi/Installation|Installation]] and [[Getting Started]]. 
 
 ## 1. What BuMoChi is
 

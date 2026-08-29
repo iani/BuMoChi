@@ -83,8 +83,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 357.21484375,
-    "collapsed": true
+    "width": 357.21484375
   },
   "right": {
     "id": "884288881732969b",
@@ -176,8 +175,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 297.3984375,
-    "collapsed": true
+    "width": 297.3984375
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -192,12 +190,25 @@
   },
   "active": "8058796946613262",
   "lastOpenFiles": [
-    "Documentation/BuMoChi/HelpByTopic/PortNumberSpecification.md",
+    "Documentation/BuMoChi/HelpByTopic/Full Setup Procedure.md",
+    "Documentation/BuMoChi/Getting Started.md",
+    "Documentation/BuMoChi/HelpByTopic/Component Applications and Sources.md",
+    "Documentation/BuMoChi/HelpByTopic/Bunraku pipeline tests.org",
+    "Documentation/BuMoChi/HelpByTopic/Component Applications and Sources.org",
+    "Documentation/BuMoChi/Getting Started.org",
+    "Documentation/BuMoChi/Installation.md",
+    "Documentation/BuMoChi/UserGuide.md",
+    "Documentation/BuMoChi/HelpByTopic/Bunraku pipeline tests.md",
+    "PipelineApplications/Communication_Tests/01_XR_Animator_Godot.md",
+    "Documentation/BuMoChi/Installation.org",
+    "Documentation/BuMoChi/HelpByTopic/Avatar_Port_Numbers.md",
+    "Documentation/BuMoChi/HelpByTopic/Full Setup Procedure.org",
     "Documentation/BuMoChi/HelpByTopic/PortNumberSetup.md",
+    "Documentation/BuMoChi/HelpByTopic/OSCGroupsUseAndConfiguration.md",
+    "Documentation/BuMoChi/HelpByTopic/PortNumberSpecification.md",
     "Documentation/BuMoChi/HelpByTopic/RecordingAndPlayback.md",
     "Documentation/BuMoChi/HelpByTopic/PortNumberSetup.org",
     "Documentation/BuMoChi/HelpByTopic/SessionDataObjectsAndTerminology.md",
-    "Documentation/BuMoChi/HelpByTopic/OSCGroupsUseAndConfiguration.md",
     "Documentation/BuMoChi/HelpByTopic/Multi-Avatar project port number setting in godot - NOTES.md",
     "Documentation/BuMoChi/HelpByTopic/MonitoringOSC_VMC_Input.org",
     "Documentation/BuMoChi/HelpByTopic/images/mother-ishidomaru-vmc-trackers.png",
@@ -216,26 +227,13 @@
     "Documentation/BuMoChi/HelpByTopic/MainApplications",
     "Documentation/BuMoChi/HelpByTopic/HelperApplications/BunrakuOSCEncoder.md",
     "Documentation/BuMoChi/HelpByTopic/HelperApplications/OSCGroupsClient.md",
-    "Documentation/BuMoChi/HelpByTopic/Avatar_Port_Numbers.md",
-    "PipelineApplications/README.md",
     "Testing_BuMoChi/README.md",
     "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Thumbnail.png.import",
     "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Thumbnail.png",
-    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shoes.tres",
-    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shoes.png.import",
     "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shoes.png",
-    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shirt.tres",
-    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shirt.png.import",
     "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shirt.png",
-    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shader_NoneNormal.normal.png.import",
     "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shader_NoneNormal.normal.png",
     "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shader_NoneBlack.png",
-    "PipelineApplications/Reference/SoftwareArchitecture.md",
-    "PipelineApplications/Reference/2026-08-13a XR-Animator OSC data frame keys.md",
-    "PipelineApplications/Communication_Tests/04_XR_Animator_Encoder_OSCGroups_SC_Decoder_Godot.md",
-    "PipelineApplications/Communication_Tests/03_SC_playback_Decoder_Godot.md",
-    "PipelineApplications/Communication_Tests/02_XR_Animator_Encoder_OSCGroups_Decoder_Godot.md",
-    "PipelineApplications/Communication_Tests/01_XR_Animator_Godot.md",
-    "Documentation/BuMoChi/HelpByTopic/SetupInstructions/MultiUserSetup.md"
+    "PipelineApplications/Reference/SoftwareArchitecture.md"
   ]
 }

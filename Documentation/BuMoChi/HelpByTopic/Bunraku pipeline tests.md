@@ -1,0 +1,37 @@
+# Overview
+
+BuMoChi contains portable components and step-by-step guides for testing the XR Animator–Bunraku–SuperCollider–Godot pipeline.
+
+## Basic troubleshooting sequence
+
+Run the four tests in order. Each test retains Godot as the visible endpoint, so a failure can be isolated to the component introduced in that step.
+
+1.  [XR Animator → Godot](../../../PipelineApplications/Communication_Tests/01_XR_Animator_Godot.md)
+2.  [XR Animator → Encoder → OSCGroups → Decoder → Godot](../../../PipelineApplications/Communication_Tests/02_XR_Animator_Encoder_OSCGroups_Decoder_Godot.md)
+3.  [SuperCollider playback → Decoder → Godot](../../../PipelineApplications/Communication_Tests/03_SC_playback_Decoder_Godot.md)
+4.  [XR Animator → Encoder → OSCGroups → SuperCollider → Decoder → Godot](../../../PipelineApplications/Communication_Tests/04_XR_Animator_Encoder_OSCGroups_SC_Decoder_Godot.md)
+
+The four guides are stored in `PipelineApplications/Communication_Tests/`. They include the purpose, port map, startup order, commands, pass criteria, diagnostics, and shutdown procedure for each path.
+
+## Components
+
+- `PipelineApplications/BunrakuOSCEncoder.py` receives standard VMC from XR Animator and emits one `/bunraku/vmc/frame` OSC message per animation frame.
+- `PipelineApplications/BunrakuOSCDecoder.py` receives Bunraku frames and recreates standard VMC for an unmodified Godot VMC project. Protocol-version-2 frames carry their VMC target port, so one decoder can dispatch several avatar streams.
+- `PipelineApplications/GodotVMCReference/` is the canonical Godot XR VMC Tracker demo. It listens for standard VMC on UDP port `39539`.
+- `PipelineApplications/BunrakuPipelineTests.scd` contains the SuperCollider receiver, inspection, playback, synthetic-pose, and forwarding helpers.
+- `PipelineApplications/pipeline_test_sender.py` is an optional camera-free diagnostic source.
+- The lower-case Python modules in `PipelineApplications/` are implementation/support files and should remain beside the two command-line scripts.
+
+Run commands from the root of the BuMoChi repository unless an individual guide explicitly says otherwise.
+
+## Port overview for one Mac
+
+| UDP port | Use                                           |
+|---------:|-----------------------------------------------|
+|  `39537` | XR-Animator VMC output to `BunrakuOSCEncoder` |
+|  `39538` | Routed Bmc frame input to `BunrakuOSCDecoder` |
+|  `22244` | Encoder-to-OSCGroups sender input             |
+|  `57130` | OSCGroups-to-SuperCollider input              |
+|  `39539` | Standard VMC input to Godot                   |
+
+Two listeners cannot use the same port on the same computer. Stop all processes from one test before starting the next.
