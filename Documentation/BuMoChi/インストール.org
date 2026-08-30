@@ -1,0 +1,260 @@
+* 概要
+:PROPERTIES:
+:CUSTOM_ID: 概要
+:END:
+BuMoChi は複数のアプリケーションを接続します。個別にインストールするものと、BuMoChi リポジトリに含まれているものがあります。
+
+| コンポーネント                   | 入手先                                                                    | 必須か                                                                       |
+|----------------------------------+---------------------------------------------------------------------------+------------------------------------------------------------------------------|
+| XR-Animator                      | 公式リリースページからダウンロード                                        | Web カメラによるモーションキャプチャーには必須。クリップだけを扱う場合は任意 |
+| Python 3                         | Python 公式サイトまたは OS のパッケージマネージャーからインストール       | エンコーダーとデコーダーに必須                                               |
+| =BunrakuOSCEncoder=              | =PipelineApplications/= に同梱                                            | XR-Animator の入力に必須                                                     |
+| =OscGroupClient=                 | =HelperAppsAndExamples/OSCGroups/= 以下にバイナリを同梱                   | OSCGroups を介した共同作業にのみ必須                                         |
+| SuperCollider                    | 公式サイトからダウンロード                                                | 必須                                                                         |
+| BuMoChi SuperCollider ライブラリ | このリポジトリ                                                            | 必須                                                                         |
+| =BunrakuOSCDecoder=              | =PipelineApplications/= に同梱                                            | BuMoChi のアニメーションを Godot に送信するために必須                        |
+| Godot                            | 公式サイトからダウンロード                                                | アバターのレンダリングに必須                                                 |
+| BuMoChi Godot プロジェクト       | 完全版 ICLC27 ワークスペースに同梱。参照用プロジェクトは BuMoChi にも同梱 | アバターを画面に表示するために必須                                           |
+
+準備済みプロジェクトは Godot 4.5 で開発およびテストされています。再現性のある結果を得るため、Godot 4.5 をインストールしてください。動作中のパフォーマンスプロジェクトを新しい Godot バージョンへ移行する場合は、必ず先にコピーを作成してください。
+
+特に記載がない限り、以下のパスはすべて BuMoChi リポジトリのルートを基準とした相対パスです。
+
+* BuMoChi を入手する
+:PROPERTIES:
+:CUSTOM_ID: bumochi-を入手する
+:END:
+まだリポジトリを取得していない場合は、次のコマンドでクローンします。
+
+#+begin_src sh
+git clone https://github.com/iani/BuMoChi.git
+cd BuMoChi
+#+end_src
+
+完全版 ICLC27 ワークスペースを使用している場合、BuMoChi リポジトリはすでに次の場所にあります。
+
+#+begin_src text
+AppsAndCode/BuMoChi/
+#+end_src
+
+リポジトリは恒久的な場所に置いてください。以下で説明するオプションのコマンドラインランチャーと SuperCollider のインストールでは、この場所を指すシンボリックリンクを使用できます。
+
+* XR-Animator
+:PROPERTIES:
+:CUSTOM_ID: xr-animator
+:END:
+XR-Animator は Web カメラから身体と顔の動きを取得し、VMC として送信します。
+
+1. [[https://github.com/ButzYung/SystemAnimatorOnline/releases][XR-Animator 公式リリースページ]]を開きます。
+2. 使用している OS とプロセッサーに適したネイティブデスクトップ版をダウンロードします。
+3. そのリリースに付属するインストールノートを読んでください。macOS 版は現在、開発者によってベータ版と説明されています。
+4. アプリケーションを BuMoChi リポジトリの外にある通常のアプリケーションフォルダーへ展開またはインストールします。
+5. XR-Animator を起動し、macOS または OS から求められた場合はカメラへのアクセスを許可します。
+
+BuMoChi パイプラインではネイティブデスクトップアプリケーションを使用してください。ブラウザー版は実験には便利ですが、ここではネイティブ VMC 出力が必要です。
+
+この時点ではポートを設定しないでください。完全な起動手順とポート設定については、[[file:HelpByTopic/BuMoChi%20フルセットアップ手順.md][BuMoChi フルセットアップ手順]]および [[file:HelpByTopic/PortNumberSetup.md][Port Number Setup]]を参照してください。
+
+* Python 3
+:PROPERTIES:
+:CUSTOM_ID: python-3
+:END:
+2つの Bunraku パイプラインアプリケーションには Python 3 が必要です。使用するのは Python 標準ライブラリだけなので、=pip= によるインストールやサードパーティ製 Python パッケージは不要です。
+
+Python がすでに利用できるか確認します。
+
+#+begin_src sh
+python3 --version
+#+end_src
+
+コマンドを利用できない場合は、[[https://www.python.org/downloads/][python.org]] または OS のパッケージマネージャーから Python 3 をインストールしてください。その後、新しいターミナルを開き、もう一度バージョンを確認します。
+
+* BunrakuOSCEncoder
+:PROPERTIES:
+:CUSTOM_ID: bunrakuoscencoder
+:END:
+=BunrakuOSCEncoder= は BuMoChi に含まれています。XR-Animator が送信する VMC バンドルを、SuperCollider と OSCGroups が使用する完全なルート情報を持たない Bunraku フレームメッセージへ変換します。
+
+エントリーポイントとサポートモジュールは次の場所にまとめて保存されています。
+
+#+begin_src text
+PipelineApplications/
+#+end_src
+
+別途インストールする必要はありません。ターミナルを BuMoChi リポジトリのルートに置き、起動できることを確認します。
+
+#+begin_src sh
+python3 PipelineApplications/BunrakuOSCEncoder.py --help
+#+end_src
+
+=BunrakuOSCEncoder.py= は同じ場所にあるモジュールをインポートするため、このファイルだけをコピーしないでください。どのターミナルディレクトリからでも実行できるようにするには、[[file:HelpByTopic/HelperApplications/BunrakuOSCEncoder.md#make-bunrakuoscencoder-available-from-any-terminal-directory][任意のターミナルディレクトリから BunrakuOSCEncoder を利用可能にする]]で説明するオプションのシンボリックリンクランチャーを作成します。
+
+目的、オプション、起動コマンドについては、[[file:HelpByTopic/HelperApplications/BunrakuOSCEncoder.md][BunrakuOSCEncoder]]を参照してください。
+
+* OscGroupClient
+:PROPERTIES:
+:CUSTOM_ID: oscgroupclient
+:END:
+=OscGroupClient= が必要なのは、ワークステーション間でライブモーションソースを共有する場合だけです。単一ユーザーのローカルパイプラインでは省略できます。
+
+BuMoChi には macOS、Linux x86-64、Windows 用のクライアントバイナリが含まれています。
+
+#+begin_src text
+HelperAppsAndExamples/OSCGroups/bin/macos/OscGroupClient
+HelperAppsAndExamples/OSCGroups/bin/linux/arch/OscGroupClient
+HelperAppsAndExamples/OSCGroups/bin/windows/OscGroupClient.exe
+#+end_src
+
+同梱の macOS バイナリは Intel =x86_64= 実行ファイルです。Apple シリコン搭載 Mac では、初回実行時に macOS から Rosetta のインストールを求められる場合があります。
+
+macOS または Linux では、必要に応じて選択したバイナリに実行権限を付与します。macOS の場合：
+
+#+begin_src sh
+chmod u+x HelperAppsAndExamples/OSCGroups/bin/macos/OscGroupClient
+#+end_src
+
+クライアントには OSCGroups サーバーのアドレス、ユーザー認証情報、グループ名、グループパスワードが必要です。共同作業サーバーの運用者から取得してください。
+
+グローバルに利用できるコマンドとしてのインストール方法と、起動時に必要な9つの引数については、[[file:HelpByTopic/HelperApplications/OSCGroupsClient.md][OscGroupClient]]を参照してください。
+
+上流の OSCGroups ソースプロジェクトは [[https://github.com/RossBencina/oscgroups][Ross Bencina の OSCGroups リポジトリ]]で管理されています。
+
+* SuperCollider
+:PROPERTIES:
+:CUSTOM_ID: supercollider
+:END:
+BuMoChi は SuperCollider の言語環境で動作します。
+
+1. [[https://supercollider.github.io/downloads][SuperCollider 公式ダウンロードページ]]から、使用しているコンピューターに適した最新の安定版をダウンロードします。
+2. SuperCollider IDE をインストールして起動します。
+3. SuperCollider ドキュメントで次の行を評価し、ユーザー用クラスライブラリを置くディレクトリを確認します。
+
+#+begin_src supercollider
+Platform.userExtensionDir.postln;
+#+end_src
+
+返されるパスはプラットフォームとユーザーによって異なります。固定パスを仮定せず、表示された値を使用してください。
+
+BuMoChi のモーション処理には SuperCollider オーディオサーバーの起動は不要です。パフォーマンスで音声の合成または処理も行う場合にのみ、オーディオサーバーを起動してください。
+
+* BuMoChi SuperCollider ライブラリ
+:PROPERTIES:
+:CUSTOM_ID: bumochi-supercollider-ライブラリ
+:END:
+SuperCollider は =Platform.userExtensionDir= の下で BuMoChi リポジトリを見つけられる必要があります。次のいずれかの方法を使用します。
+
+1. BuMoChi リポジトリフォルダー全体をユーザー拡張ディレクトリにコピーします。
+2. より適切な方法として、ユーザー拡張ディレクトリ内に、恒久的な BuMoChi リポジトリを指すシンボリックリンクを作成します。これにより、作業中の Git チェックアウトとインストール済みクラスライブラリが同期した状態に保たれます。
+
+macOS では、=Platform.userExtensionDir= が返したパスを確認した後、通常は次のようにシンボリックリンクを作成します。
+
+#+begin_src sh
+mkdir -p "$HOME/Library/Application Support/SuperCollider/Extensions"
+ln -s "/absolute/path/to/BuMoChi" "$HOME/Library/Application Support/SuperCollider/Extensions/BuMoChi"
+#+end_src
+
+=/absolute/path/to/BuMoChi= を実際のリポジトリパスに置き換えてください。リンク先に =BuMoChi= という項目がすでに存在する場合は、置き換える前に内容を確認してください。
+
+リポジトリをコピーまたはリンクした後：
+
+1. SuperCollider で *Language → Recompile Class Library* を選択します。
+2. ポストウィンドウにコンパイルエラーがないか確認します。
+3. 次を評価します。
+
+#+begin_src supercollider
+Bmc.status;
+#+end_src
+
+有効なステータス応答が返れば、=Bmc= クラスは正しくインストールされています。クラスライブラリのコンパイルに成功すると、Bmc は UDP ポート =57130= でデフォルトの OSC ディスパッチャーも起動します。
+
+* BunrakuOSCDecoder
+:PROPERTIES:
+:CUSTOM_ID: bunrakuoscdecoder
+:END:
+=BunrakuOSCDecoder= は BuMoChi に含まれています。SuperCollider/Bmc から送られるルート付きフレームを、Godot 用の標準 VMC バンドルへ戻します。
+
+ターミナルを BuMoChi リポジトリのルートに置き、起動できることを確認します。
+
+#+begin_src sh
+python3 PipelineApplications/BunrakuOSCDecoder.py --help
+#+end_src
+
+エンコーダーと同様に、エントリーポイントはサポートモジュールと同じ場所に置いてください。Python ファイルだけをコピーしないでください。どのターミナルディレクトリからでも実行できるようにするには、[[file:HelpByTopic/HelperApplications/BunrakuOSCDecoder.md#make-bunrakuoscdecoder-available-from-any-terminal-directory][任意のターミナルディレクトリから BunrakuOSCDecoder を利用可能にする]]で説明するオプションのシンボリックリンクランチャーを作成します。
+
+目的、オプション、起動コマンドについては、[[file:HelpByTopic/HelperApplications/BunrakuOSCDecoder.md][BunrakuOSCDecoder]]を参照してください。
+
+* Godot
+:PROPERTIES:
+:CUSTOM_ID: godot
+:END:
+Godot はローカルで合成されたアバターシーンをレンダリングします。
+
+1. [[https://godotengine.org/download/archive/4.5-stable/][Godot 4.5 公式アーカイブページ]]から Godot 4.5 をダウンロードします。
+2. 使用している OS 向けの標準ビルドを選択します。準備済みプロジェクトは GDScript を使用しており、.NET ビルドは不要です。
+3. Godot をインストールまたは展開し、Project Manager を起動します。
+
+現在のプロジェクトは Godot 4.5 との互換性を宣言しています。新しい Godot リリースでは、プロジェクトのアップグレードを求められる場合があります。パフォーマンス用途では、動作が確認された 4.5 を維持し、アップグレードは複製したプロジェクトでのみテストしてください。
+
+* BuMoChi 用 Godot プロジェクト
+:PROPERTIES:
+:CUSTOM_ID: bumochi-用-godot-プロジェクト
+:END:
+完全版 ICLC27 ワークスペースがある場合、準備済み Godot プロジェクトは BuMoChi と並んで次の場所に保存されています。
+
+#+begin_src text
+AppsAndCode/GodotProjects/
+#+end_src
+
+デフォルトの単一アバター Ishidomaru パイプラインには、次を使用します。
+
+#+begin_src text
+AppsAndCode/GodotProjects/Seed_2_Ishidomaru_C/project.godot
+#+end_src
+
+Mother と Ishidomaru を均一に扱う2体構成には、次を使用します。
+
+#+begin_src text
+AppsAndCode/GodotProjects/Seed_4_Mother_Ishidomaru_E/project.godot
+#+end_src
+
+プロジェクトを Godot にインポートします。
+
+1. Godot Project Manager を開きます。
+2. *Import* をクリックします。
+3. プロジェクトの =project.godot= ファイルを選択します。
+4. プロジェクトパスを確認し、インポートします。
+5. シーンを実行する前に、Godot の初回インポートが完了するまで待ちます。
+
+準備済みの各アバタープロジェクトには、必要な Godot VMC Tracker、VRM importer、MToon shader アドオンが、それぞれの =addons/= ディレクトリ内に含まれています。そのプロジェクトへ Asset Library から重複するアドオンをインストールしないでください。
+
+BuMoChi の単独チェックアウトにも、身体トラッキングの参照プロジェクトが含まれています。
+
+#+begin_src text
+PipelineApplications/GodotVMCReference/project.godot
+#+end_src
+
+この参照プロジェクトには Godot VMC Tracker が含まれており、パイプラインの診断を目的としています。完全版 ICLC27 ワークスペースの準備済みプロジェクトには、パフォーマンス例で使用する設定済みアバターが含まれています。
+
+アバターの受信ポートとトラッカー名については、[[file:HelpByTopic/PortNumberSetup.md][Port Number Setup]]および [[file:HelpByTopic/Multi-Avatar%20project%20port%20number%20setting%20in%20godot%20-%20NOTES.md][Godot における複数アバタープロジェクトのポート番号設定]]を参照してください。
+
+* インストールを確認する
+:PROPERTIES:
+:CUSTOM_ID: インストールを確認する
+:END:
+完全なライブパイプラインを試す前に、次のコマンドを個別に確認します。
+
+#+begin_src sh
+python3 --version
+python3 PipelineApplications/BunrakuOSCEncoder.py --help
+python3 PipelineApplications/BunrakuOSCDecoder.py --help
+#+end_src
+
+SuperCollider では次を確認します。
+
+#+begin_src supercollider
+Bmc.status;
+#+end_src
+
+Godot では、選択したプロジェクトがアドオン不足やスクリプトエラーなしで開くことを確認します。
+
+以上でインストールは完了です。小さなユーザーテストを順番に行うには[[file:はじめに.md][はじめに]]へ進み、XR-Animator-BuMoChi-Godot パイプライン全体を起動して接続するには[[file:HelpByTopic/BuMoChi%20フルセットアップ手順.md][BuMoChi フルセットアップ手順]]を使用してください。

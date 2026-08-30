@@ -258,7 +258,7 @@ Listening for '/bunraku/vmc/frame' on port: 57130
 
 XR-Animator が送信中であれば、動的な `received` カウントが増加します。この値には、エンコーダーから直接受信したローカルフレームと、`OscGroupClient` を通じて受信した遠隔フレームの両方が含まれる場合があります。
 
-詳細については、[OscGroupClient を待ち受ける SuperCollider のポート](PortNumberSetup.md#3-supercollider-port-listening-to-oscgroupclient)、[クラスライブラリの新規コンパイル後における BuMoChi のデフォルト転送パイプライン](PortNumberSetup.md#default-forwarding-pipeline-of-bumochi-after-fresh-library-compile)、[Bmc システム制御](../UserGuide.md#system-control)を参照してください。
+詳細については、[OscGroupClient を待ち受ける SuperCollider のポート](PortNumberSetup.md#3-supercollider-port-listening-to-oscgroupclient)、[クラスライブラリの新規コンパイル後における BuMoChi のデフォルト転送パイプライン](PortNumberSetup.md#default-forwarding-pipeline-of-bumochi-after-fresh-library-compile)、[Bmc システム制御](../BuMoChi%20ユーザーガイド.md#システム制御)を参照してください。
 
 # 5. BunrakuOSCDecoder
 

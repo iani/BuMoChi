@@ -2,7 +2,11 @@
 
 This guide introduces BuMoChi through a sequence of small tests. Perform them in order. Each step reuses the working pipeline and material created by the previous step.
 
-If the software is not installed yet, follow [Installation](Installation.md). For the complete multiuser startup procedure, see [Full Setup Procedure](HelpByTopic/Full%20Setup%20Procedure.md).
+If the software is not installed yet, follow [Installation](Installation.md). 
+For a detailed description of the setup see: [Full Setup Procedure](HelpByTopic/Full%20Setup%20Procedure.md).
+
+For a 
+
 
 The first five exercises use the current default configuration:
 
