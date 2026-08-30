@@ -72,6 +72,8 @@ BunrakuOSCDecoder output ports:
 
 The final list is generated from the avatars currently configured in Bmc, so it expands when additional avatar routes are added. Run `Bmc.help;` again after changing any ports.
 
+The following sections are only necessary if you want to customize the pipeline or check for errors.
+
 # Details
 
 This guide provides information to troubleshoot or tweak the internal port numbers of all applications of the pipeline.  It shows how to start and configure the six applications in the following downstream order:
@@ -102,7 +104,6 @@ Run all terminal commands from the root of the BuMoChi repository unless the com
 
 Only the receiving application owns a UDP listening port. Several applications may send packets to Bmc on `57130` without conflict because Bmc is the single listener.
 
-The following sections are only necessary if you want to customize the pipeline or check for errors.
 # Before starting
 
 1. Confirm that Python 3 is available:

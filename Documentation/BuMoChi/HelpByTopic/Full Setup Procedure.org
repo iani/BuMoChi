@@ -76,11 +76,13 @@ BunrakuOSCDecoder output ports:
 
 The final list is generated from the avatars currently configured in Bmc, so it expands when additional avatar routes are added. Run =Bmc.help;= again after changing any ports.
 
-* Overview
+The following sections are only necessary if you want to customize the pipeline or check for errors.
+
+* Details
 :PROPERTIES:
-:CUSTOM_ID: overview
+:CUSTOM_ID: details
 :END:
-This guide starts and configures the six applications in the following downstream order:
+This guide provides information to troubleshoot or tweak the internal port numbers of all applications of the pipeline. It shows how to start and configure the six applications in the following downstream order:
 
 #+ATTR_LATEX: :align @{}r p{0.15\textwidth} p{0.15\textwidth} p{0.18\textwidth} p{0.38\textwidth}@{}
 | No. | Application         | Input/listening port | Output/destination port | Required configuration                                                                                                                                                                                                 |
@@ -108,8 +110,6 @@ The procedure uses the default single-avatar Ishidomaru configuration. Ishidomar
 Run all terminal commands from the root of the BuMoChi repository unless the command uses a globally installed launcher.
 
 Only the receiving application owns a UDP listening port. Several applications may send packets to Bmc on =57130= without conflict because Bmc is the single listener.
-
-The following sections are only necessary if you want to customize the pipeline or check for errors.
 
 * Before starting
 :PROPERTIES:
