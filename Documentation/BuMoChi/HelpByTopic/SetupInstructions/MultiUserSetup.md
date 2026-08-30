@@ -10,17 +10,18 @@ This is the canonical collaborative setup. It follows BuMoChi's **distributed so
 
 ### Local animation sources
 
-Data from local mocap sources (XR-Animator, Waidayo, or other) are converted from VMC to OSC using [BunrakuOSCEncoder](../HelperApplications/BunrakuOSCEncoder.md) and sent:
-1. to the local SuperCollider animation composer (Bmc), and:
-2. to remote workstations via [OSCGroupsClient](../HelperApplications/OSCGroupsClient.md).
+Data from local motion-capture sources such as XR-Animator or Waidayo is converted from VMC into route-free Bunraku frames by [BunrakuOSCEncoder](../HelperApplications/BunrakuOSCEncoder.md). The encoder sends an identical copy of every frame to two local destinations:
+
+1. Bmc on port `57130`, for immediate local synthesis.
+2. [OscGroupClient](../HelperApplications/OSCGroupsClient.md) on port `22244`, for distribution to remote workstations.
 
 ### Remote animation sources
 
-
+Each remote workstation performs the same two-way encoder fan-out. OSCGroups transports its route-free source frames to the local `OscGroupClient`, which forwards them to Bmc on port `57130`. Remote frames therefore enter through the same Bmc input as the encoder's direct local copy, while their stable `--avatar` and `--source` identities distinguish one motion source from another.
 
 ## Animation data input
 
-Every workstation's Bmc receives two kinds of input on port `57130`:
+Both input paths converge on every workstation's Bmc at port `57130`:
 
 1.  Its own encoder's local source-frame copy. This is animation data from a local mocap system, such as XR-Animator with a webcam.
 2.  Remote source frames delivered by its `OscGroupClient`. These are animation data from remote mocap systems on computers connected through OSCGroups.
@@ -29,8 +30,6 @@ Every workstation's Bmc receives two kinds of input on port `57130`:
 
 
 After combining, filtering, layering, and assigning motions to figures and avatars in SuperCollider, Bmc sends the completed animation frames to its local decoder on `39538`. Each frame is an OSC message containing the VMC destination port assigned to its avatar. The decoder reconstructs a VMC bundle, forwards it to the specified local Godot receiver, and Godot renders the avatar.
-
-The local encoder ([BunrakuOSCEncoder](../HelperApplications/BunrakuOSCEncoder.md)) also sends an identical route-free copy of every local motion-source frame to `OscGroupClient` input port `22244`, which shares it with the remote workstations.
 
 SuperCollider/Bmc never sends processed output to OSCGroups. The final animation is synthesized and rendered locally. Because every workstation receives the shared source frames and uses the same session/composition and Godot scene, each workstation independently constructs and renders the same intended animation.
 
@@ -88,17 +87,11 @@ The diagrams show two workstations. Both synthesize the same scene: Ishidomaru l
 
 ## Workstation A
 
-<figure width="100%">
-<img src="diagrams/workstation-a-pipeline.png" />
-<figcaption>Workstation A shares PerformerA source frames, receives PerformerB source frames, and synthesizes the complete scene locally.</figcaption>
-</figure>
+![Workstation A shares PerformerA source frames, receives PerformerB source frames, and synthesizes the complete scene locally.](diagrams/workstation-a-pipeline.png)
 
 ## Workstation B
 
-<figure width="100%">
-<img src="diagrams/workstation-b-pipeline.png" />
-<figcaption>Workstation B shares PerformerB source frames, receives PerformerA source frames, and synthesizes the same complete scene locally.</figcaption>
-</figure>
+![Workstation B shares PerformerB source frames, receives PerformerA source frames, and synthesizes the same complete scene locally.](diagrams/workstation-b-pipeline.png)
 
 # Shared and unique settings
 
@@ -155,7 +148,7 @@ Bmc.start(57130);
 ## 4. Start one OscGroupClient
 
 ``` bash
-AppsAndCode/OSCGroups/bin/macos/OscGroupClient \
+HelperAppsAndExamples/OSCGroups/bin/macos/OscGroupClient \
   SERVER_ADDRESS 22242 LOCAL_TO_REMOTE_PORT 22244 57130 \
   USER_NAME USER_PASSWORD GROUP_NAME GROUP_PASSWORD
 ```

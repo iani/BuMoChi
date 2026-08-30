@@ -1,20 +1,41 @@
-#+title: Multi User With OSCGroups Setup
-
 This is the canonical collaborative setup. It follows BuMoChi's *distributed sources, local synthesis* model: OSCGroups distributes route-free motion-source frames; every workstation's SuperCollider/BuMoChi process receives all sources, independently constructs the complete animation scene, and sends the finished local result to its own decoder and Godot renderer.
 
 * Operational model
+:PROPERTIES:
+:CUSTOM_ID: operational-model
+:END:
+** Receiving and sharing animation data
+:PROPERTIES:
+:CUSTOM_ID: receiving-and-sharing-animation-data
+:END:
+*** Local animation sources
+:PROPERTIES:
+:CUSTOM_ID: local-animation-sources
+:END:
+Data from local motion-capture sources such as XR-Animator or Waidayo is converted from VMC into route-free Bunraku frames by [[../HelperApplications/BunrakuOSCEncoder.md][BunrakuOSCEncoder]]. The encoder sends an identical copy of every frame to two local destinations:
+
+1. Bmc on port =57130=, for immediate local synthesis.
+2. [[../HelperApplications/OSCGroupsClient.md][OscGroupClient]] on port =22244=, for distribution to remote workstations.
+
+*** Remote animation sources
+:PROPERTIES:
+:CUSTOM_ID: remote-animation-sources
+:END:
+Each remote workstation performs the same two-way encoder fan-out. OSCGroups transports its route-free source frames to the local =OscGroupClient=, which forwards them to Bmc on port =57130=. Remote frames therefore enter through the same Bmc input as the encoder's direct local copy, while their stable =--avatar= and =--source= identities distinguish one motion source from another.
 
 ** Animation data input
-
-Every workstation's Bmc receives two kinds of input on port =57130=:
+:PROPERTIES:
+:CUSTOM_ID: animation-data-input
+:END:
+Both input paths converge on every workstation's Bmc at port =57130=:
 
 1. Its own encoder's local source-frame copy. This is animation data from a local mocap system, such as XR-Animator with a webcam.
 2. Remote source frames delivered by its =OscGroupClient=. These are animation data from remote mocap systems on computers connected through OSCGroups.
 
 ** Animation data output
-
-The local encoder also sends an identical route-free copy of every local motion-source frame to =OscGroupClient= input port =22244=, which shares it with the remote workstations.
-
+:PROPERTIES:
+:CUSTOM_ID: animation-data-output
+:END:
 After combining, filtering, layering, and assigning motions to figures and avatars in SuperCollider, Bmc sends the completed animation frames to its local decoder on =39538=. Each frame is an OSC message containing the VMC destination port assigned to its avatar. The decoder reconstructs a VMC bundle, forwards it to the specified local Godot receiver, and Godot renders the avatar.
 
 SuperCollider/Bmc never sends processed output to OSCGroups. The final animation is synthesized and rendered locally. Because every workstation receives the shared source frames and uses the same session/composition and Godot scene, each workstation independently constructs and renders the same intended animation.
@@ -22,7 +43,9 @@ SuperCollider/Bmc never sends processed output to OSCGroups. The final animation
 This is analogous to networked sound synthesis in sc-hacks-redux: collaborators share source material, while every workstation performs the full synthesis locally.
 
 * One client per workstation
-
+:PROPERTIES:
+:CUSTOM_ID: one-client-per-workstation
+:END:
 One full-duplex (input/output) =OscGroupClient= handles both network directions:
 
 #+begin_example
@@ -33,24 +56,28 @@ OSCGroups network -> client output port 57130 -> local Bmc
 Do not start separate sending and receiving clients on an ordinary workstation.
 
 * Shared-scene rule
-
+:PROPERTIES:
+:CUSTOM_ID: shared-scene-rule
+:END:
 All workstations should load the same Bmc session/composition and run the same Godot scene, including the same avatar-to-VMC-port assignments:
 
 | Source stream | Completed avatar | Godot character | VMC port |
 |---------------+------------------+-----------------+----------|
-| =PerformerA=  | =Ishidomaru=     | Ishidomaru      |    39539 |
-| =PerformerB=  | =Mother=         | Mother          |    39540 |
+| =PerformerA=  | =Ishidomaru=     | Ishidomaru      | 39539    |
+| =PerformerB=  | =Mother=         | Mother          | 39540    |
 
 Both Bmc instances receive both source streams and synthesize both completed avatars locally. Both Godot instances therefore render the same defined scene. Network latency can cause small timing differences.
 
 The OSCGroups server normally does not echo a workstation's own message back. This is expected: the encoder supplies its local Bmc copy directly.
 
 * Signal path on every workstation
-
+:PROPERTIES:
+:CUSTOM_ID: signal-path-on-every-workstation
+:END:
 #+begin_example
 local XR-Animator
     -> VMC 127.0.0.1:39537
-local [[file:../HelperApplications/BunrakuOSCEncoder.md][BunrakuOSCEncoder]]
+local BunrakuOSCEncoder
     -> route-free v1 127.0.0.1:57130 (local Bmc)
     -> identical route-free v1 127.0.0.1:22244 (OscGroupClient)
 one local OscGroupClient
@@ -61,53 +88,63 @@ remote route-free v1 frames
 local Bmc
     -> synthesizes the complete scene from local and remote sources
     -> routed v2 frames 127.0.0.1:39538 (local decoder only)
-one local [[file:../HelperApplications/BunrakuOSCDecoder.md][BunrakuOSCDecoder]]
+one local BunrakuOSCDecoder
     -> local Godot VMC ports 39539, 39540, ...
 #+end_example
 
 Only route-free source frames cross the network. Clips, motions, figures, avatar assignments, final routing, decoding, and rendering remain local.
 
 * Complete workstation pipelines
-
+:PROPERTIES:
+:CUSTOM_ID: complete-workstation-pipelines
+:END:
 The diagrams show two workstations. Both synthesize the same scene: Ishidomaru listens on =39539= and Mother on =39540=.
 
 ** Workstation A
-
-#+CAPTION: Workstation A shares PerformerA source frames, receives PerformerB source frames, and synthesizes the complete scene locally.
-#+ATTR_HTML: :width 100%
-#+ATTR_LATEX: :width 1.0\linewidth
+:PROPERTIES:
+:CUSTOM_ID: workstation-a
+:END:
 [[file:diagrams/workstation-a-pipeline.png]]
 
 ** Workstation B
-
-#+CAPTION: Workstation B shares PerformerB source frames, receives PerformerA source frames, and synthesizes the same complete scene locally.
-#+ATTR_HTML: :width 100%
-#+ATTR_LATEX: :width 1.0\linewidth
+:PROPERTIES:
+:CUSTOM_ID: workstation-b
+:END:
 [[file:diagrams/workstation-b-pipeline.png]]
 
 * Shared and unique settings
-
+:PROPERTIES:
+:CUSTOM_ID: shared-and-unique-settings
+:END:
 All collaborators must agree on the OSCGroups server, group credentials, stable source identities, Bmc session/composition, Godot scene, and avatar-to-port map. Every workstation needs a unique OSCGroups username. Local application ports, including client input port =22244=, may use the same numbers on different computers because each port belongs to a different host.
 
 * Port map on each workstation
-
-| Port  | Listener                        | Sender                                |
-|-------+---------------------------------+---------------------------------------|
-| 39537 | local [[file:../HelperApplications/BunrakuOSCEncoder.md][BunrakuOSCEncoder]] | local XR-Animator |
-| 57130 | local Bmc/SuperCollider         | local encoder and =OscGroupClient= rx |
-| 22244 | local =OscGroupClient= tx input | local encoder                         |
-| 39538 | local shared decoder            | local Bmc synthesized outputs         |
-| 39539 | first local Godot VMC receiver  | local decoder                         |
-| 39540 | second local Godot VMC receiver | local decoder                         |
+:PROPERTIES:
+:CUSTOM_ID: port-map-on-each-workstation
+:END:
+| Port  | Listener                                                                | Sender                                |
+|-------+-------------------------------------------------------------------------+---------------------------------------|
+| 39537 | local [[../HelperApplications/BunrakuOSCEncoder.md][BunrakuOSCEncoder]] | local XR-Animator                     |
+| 57130 | local Bmc/SuperCollider                                                 | local encoder and =OscGroupClient= rx |
+| 22244 | local =OscGroupClient= tx input                                         | local encoder                         |
+| 39538 | local shared decoder                                                    | local Bmc synthesized outputs         |
+| 39539 | first local Godot VMC receiver                                          | local decoder                         |
+| 39540 | second local Godot VMC receiver                                         | local decoder                         |
 
 * Startup procedure
-
+:PROPERTIES:
+:CUSTOM_ID: startup-procedure
+:END:
 ** 1. Start Godot
-
+:PROPERTIES:
+:CUSTOM_ID: 1-start-godot
+:END:
 Run the agreed scene. In this example Ishidomaru listens on =39539= and Mother on =39540=.
 
 ** 2. Start the local decoder
-
+:PROPERTIES:
+:CUSTOM_ID: 2-start-the-local-decoder
+:END:
 #+begin_src sh
 BunrakuOSCDecoder \
   --listen-port 39538 \
@@ -119,7 +156,9 @@ BunrakuOSCDecoder \
 The allow-list is optional.
 
 ** 3. Configure and start Bmc
-
+:PROPERTIES:
+:CUSTOM_ID: 3-configure-and-start-bmc
+:END:
 Both workstations load the same session/composition. Minimal routing:
 
 #+begin_src supercollider
@@ -138,9 +177,11 @@ Bmc.start(57130);
 =Bmc.reset= restores decoder port =39538= and enables decoder forwarding.
 
 ** 4. Start one OscGroupClient
-
+:PROPERTIES:
+:CUSTOM_ID: 4-start-one-oscgroupclient
+:END:
 #+begin_src sh
-AppsAndCode/OSCGroups/bin/macos/OscGroupClient \
+HelperAppsAndExamples/OSCGroups/bin/macos/OscGroupClient \
   SERVER_ADDRESS 22242 LOCAL_TO_REMOTE_PORT 22244 57130 \
   USER_NAME USER_PASSWORD GROUP_NAME GROUP_PASSWORD
 #+end_src
@@ -148,7 +189,9 @@ AppsAndCode/OSCGroups/bin/macos/OscGroupClient \
 =22244= is the client's input port (=localTxPort= in the command-line interface), and =57130= is its output port (=localRxPort=). Remote route-free frames enter the same Bmc input as local frames.
 
 ** 5. Start the local encoder
-
+:PROPERTIES:
+:CUSTOM_ID: 5-start-the-local-encoder
+:END:
 Workstation A:
 
 #+begin_src sh
@@ -172,11 +215,15 @@ Optional controls:
 At least one output must remain enabled.
 
 ** 6. Enable XR-Animator
-
+:PROPERTIES:
+:CUSTOM_ID: 6-enable-xr-animator
+:END:
 Set its VMC destination to =127.0.0.1:39537=.
 
 * Verify
-
+:PROPERTIES:
+:CUSTOM_ID: verify
+:END:
 1. Each encoder's =received=, =sent=, =bmc_sent=, and =oscgroups_sent= counts increase.
 2. Each Bmc runs on =57130= and receives both source identities.
 3. Each client registers successfully.
@@ -184,7 +231,9 @@ Set its VMC destination to =127.0.0.1:39537=.
 5. Ishidomaru moves on =39539= and Mother on =39540= in both Godot scenes.
 
 * Avoid feedback and identity errors
-
+:PROPERTIES:
+:CUSTOM_ID: avoid-feedback-and-identity-errors
+:END:
 - Give each encoder a unique =--avatar= and =--source= pair.
 - Send only encoder-produced route-free source frames to =22244=.
 - Never send Bmc routed output, decoder output, or Godot VMC output to OSCGroups.
@@ -194,7 +243,9 @@ Set its VMC destination to =127.0.0.1:39537=.
 - Do not expect the server to echo local frames; the encoder provides the local copy.
 
 * Diagnose ports
-
+:PROPERTIES:
+:CUSTOM_ID: diagnose-ports
+:END:
 #+begin_src sh
 lsof -nP -iUDP:39537
 lsof -nP -iUDP:57130
@@ -203,12 +254,16 @@ lsof -nP -iUDP:39538
 #+end_src
 
 * Shutdown
-
+:PROPERTIES:
+:CUSTOM_ID: shutdown
+:END:
 Disable XR-Animator, evaluate =Bmc.stop=, stop the encoder/client/decoder with =Control-C=, and stop Godot.
 
 * Related detail
-
-- [[file:../OSCGroupsUseAndConfiguration.md][OscGroupClient Use and Configuration]]
-- [[file:../OSCEncoder-DecoderUseAndConfiguration.md][OSC Encoder and Decoder Use and Configuration]]
-- [[file:../Avatar_Port_Numbers.md][Avatar Port Numbers]]
-- [[file:../PortNumberSpecification.md][Port Number Specification]]
+:PROPERTIES:
+:CUSTOM_ID: related-detail
+:END:
+- [[../OSCGroupsUseAndConfiguration.md][OscGroupClient Use and Configuration]]
+- [[../OSCEncoder-DecoderUseAndConfiguration.md][OSC Encoder and Decoder Use and Configuration]]
+- [[../Avatar_Port_Numbers.md][Avatar Port Numbers]]
+- [[../PortNumberSpecification.md][Port Number Specification]]

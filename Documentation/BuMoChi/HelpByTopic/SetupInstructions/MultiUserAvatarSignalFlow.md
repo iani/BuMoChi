@@ -4,7 +4,7 @@ title: Multi User Avatar Signal Flow
 
 # Purpose
 
-This document explains how motion-capture sources become completed avatar motion on two collaborating BuMoChi workstations. It describes signal meaning and ownership rather than application startup commands. For the complete launch procedure, see [Multi User With OSCGroups Setup](MultiUserSetup.md).
+This document explains how motion-capture sources become completed avatar motion on two collaborating BuMoChi workstations. It describes signal meaning and ownership rather than application startup commands. For the complete launch procedure, see [Multi User Setup](MultiUserSetup.md).
 
 # Core principle: distributed sources, local synthesis
 
@@ -119,7 +119,7 @@ The two renderers synthesize the same defined scene, but they are not guaranteed
 
 # Related guides
 
-- [Multi User With OSCGroups Setup](MultiUserSetup.md)
+- [Multi User Setup](MultiUserSetup.md)
 - [OscGroupClient Use and Configuration](../OSCGroupsUseAndConfiguration.md)
 - [OSC Encoder and Decoder Use and Configuration](../OSCEncoder-DecoderUseAndConfiguration.md)
 - [Avatar Port Numbers](../Avatar_Port_Numbers.md)

@@ -20,7 +20,7 @@ Run terminal commands from the root of the BuMoChi repository. Evaluate SuperCol
 
 # Prepare the local test pipeline
 
-This preparation omits OSCGroups so that the first tests remain local and easy to diagnose.
+This preparation omits OSCGroups so that the first tests remain local and easy to diagnose. For the complete pipeline procedure, see [Setup](HelpByTopic/Setup.md).
 
 # Animate the Ishidomaru avatar from XR-Animator
 
