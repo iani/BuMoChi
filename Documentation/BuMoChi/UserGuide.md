@@ -98,6 +98,8 @@ Use the native Electron application for this pipeline because VMC output is a na
 
 ### Python encoder and decoder
 
+***The two Python command-line scripts described here can be started together with the one-command shell launcher described in [Setup](HelpByTopic/Setup.md#quick-start-one-command-pipeline-launcher).***
+
 The required Python command-line scripts are included in the BuMoChi distribution:
 
 ``` text
@@ -136,6 +138,8 @@ Upstream source and build instructions are available from:
 - <http://www.rossbencina.com/code/oscgroups>
 
 You do not need OSCGroups for the first local test. Introduce it after the encoder-to-BuMoChi-to-decoder path works on one computer. Detailed staged tests are in `PipelineApplications/Communication_Tests/`.
+
+***The `OscGroupClient` application can optionally be started by the same one-command shell launcher described in [Setup](HelpByTopic/Setup.md#quick-start-one-command-pipeline-launcher).***
 
 ### Godot
 
@@ -216,6 +220,10 @@ Bmc.status;
 The posted event should include `running: true` and `port: 57130`.
 
 ### Step 4: start the encoder
+
+See [Setup](HelpByTopic/Setup.md#quick-start-one-command-pipeline-launcher) for the easiest way to start the encoder.
+
+Manual procedure:
 
 In a second terminal, also opened in `PipelineApplications`, run:
 

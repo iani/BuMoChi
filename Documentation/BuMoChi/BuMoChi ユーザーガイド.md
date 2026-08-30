@@ -99,6 +99,8 @@ XR Animator は Web カメラを使ってパフォーマーを追跡し、ヒュ
 
 ### Python エンコーダーとデコーダー
 
+***ここで説明する2つの Python コマンドラインスクリプトは、[BuMoChi セットアップ](HelpByTopic/BuMoChi%20セットアップ.md#クイックスタートワンコマンドパイプラインランチャー)で説明している1コマンドのシェルランチャーを使って同時に起動できます。***
+
 必要な Python コマンドラインスクリプトは BuMoChi 配布物に含まれています。
 
 ```text
@@ -137,6 +139,8 @@ HelperAppsAndExamples/OSCGroups/
 - <http://www.rossbencina.com/code/oscgroups>
 
 最初のローカルテストでは OSCGroups は不要です。1台のコンピューターでエンコーダーから BuMoChi、デコーダーへの経路が動作した後に追加してください。段階的な詳しいテストは `PipelineApplications/Communication_Tests/` にあります。
+
+***`OscGroupClient` アプリケーションも、[BuMoChi セットアップ](HelpByTopic/BuMoChi%20セットアップ.md#クイックスタートワンコマンドパイプラインランチャー)で説明している同じ1コマンドのシェルランチャーを使って、必要に応じて起動できます。***
 
 ### Godot
 
@@ -217,6 +221,8 @@ Bmc.status;
 ポストされるイベントには `running: true` と `port: 57130` が含まれます。
 
 ### 手順4：エンコーダーを起動する
+
+[BuMoChi セットアップ](HelpByTopic/BuMoChi%20セットアップ.md#クイックスタートワンコマンドパイプラインランチャー)に、エンコーダーを最も簡単に起動する方法があります。
 
 同じく `PipelineApplications` で2つ目のターミナルを開き、次を実行します。
 
