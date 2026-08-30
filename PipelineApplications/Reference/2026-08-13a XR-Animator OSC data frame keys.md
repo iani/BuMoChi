@@ -5,9 +5,18 @@ The 147 numerical values are 21 consecutive bone transforms, each containing:
 x, y, z, qx, qy, qz, qw
 ```
 
-The bone identity is defined by its fixed position in the Bunraku Frame protocol. Bone-name strings are deliberately omitted from every frame to keep the OSC message below 1200 bytes.
+The 21 core-bone identities are defined by their fixed positions in the Bunraku Frame protocol. Legacy version-1 and routed version-2 frames end after these values.
 
-Do not insert bone names into the transmitted message: that would change protocol v1 and could exceed the packet limit. SuperCollider should associate names with the fixed positions.
+Extended route-free version-3 and routed version-4 frames append two counted sections. The first contains any additional named bone transforms, including finger joints. The second contains named facial blend values. The maximum packet size used by the encoder defaults to 8192 bytes.
+
+Extended route-free layout after index `152`:
+
+1. Extra-bone count.
+2. For each extra bone: name followed by `x, y, z, qx, qy, qz, qw`.
+3. Facial-blend count.
+4. For each facial blend: name followed by its weight.
+
+A routed version-4 message inserts its destination port at index `2`; all subsequent fixed and extended fields shift right by one position.
 
 ## Bunraku Frame key
 

@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Documentation/BuMoChi/HelpByTopic/PortNumberSetup.md",
+                "file": "Documentation/BuMoChi/HelpByTopic/Full Setup Procedure.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "PortNumberSetup"
+              "title": "Full Setup Procedure"
             }
           }
         ]
@@ -99,7 +99,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Documentation/BuMoChi/HelpByTopic/PortNumberSetup.md",
+                "file": "Documentation/BuMoChi/HelpByTopic/Full Setup Procedure.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -118,7 +118,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Documentation/BuMoChi/HelpByTopic/PortNumberSetup.md",
+                "file": "Documentation/BuMoChi/HelpByTopic/Full Setup Procedure.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
@@ -161,7 +161,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Documentation/BuMoChi/HelpByTopic/PortNumberSetup.md",
+                "file": "Documentation/BuMoChi/HelpByTopic/Full Setup Procedure.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
@@ -190,20 +190,25 @@
   },
   "active": "8058796946613262",
   "lastOpenFiles": [
-    "Documentation/BuMoChi/HelpByTopic/Full Setup Procedure.md",
+    "Documentation/BuMoChi/HelpByTopic/Full Setup Procedure.pdf",
     "Documentation/BuMoChi/Getting Started.md",
+    "Testing_sc-dance/260830_ExtendedFrameTests.scd",
+    "Documentation/BuMoChi/UserGuide.md",
+    "Documentation/BuMoChi/HelpByTopic/Scene composition and motion source combination.md",
+    "Documentation/BuMoChi/HelpByTopic/Bunraku pipeline tests.md",
+    "Documentation/BuMoChi/HelpByTopic/PortNumberSetup.md",
+    "start_bumochi_pipeline.sh",
+    "PipelineApplications/start_bumochi_pipeline.sh",
+    "Documentation/BuMoChi/HelpByTopic/Full Setup Procedure.md",
     "Documentation/BuMoChi/HelpByTopic/Component Applications and Sources.md",
     "Documentation/BuMoChi/HelpByTopic/Bunraku pipeline tests.org",
     "Documentation/BuMoChi/HelpByTopic/Component Applications and Sources.org",
     "Documentation/BuMoChi/Getting Started.org",
     "Documentation/BuMoChi/Installation.md",
-    "Documentation/BuMoChi/UserGuide.md",
-    "Documentation/BuMoChi/HelpByTopic/Bunraku pipeline tests.md",
     "PipelineApplications/Communication_Tests/01_XR_Animator_Godot.md",
     "Documentation/BuMoChi/Installation.org",
     "Documentation/BuMoChi/HelpByTopic/Avatar_Port_Numbers.md",
     "Documentation/BuMoChi/HelpByTopic/Full Setup Procedure.org",
-    "Documentation/BuMoChi/HelpByTopic/PortNumberSetup.md",
     "Documentation/BuMoChi/HelpByTopic/OSCGroupsUseAndConfiguration.md",
     "Documentation/BuMoChi/HelpByTopic/PortNumberSpecification.md",
     "Documentation/BuMoChi/HelpByTopic/RecordingAndPlayback.md",
@@ -212,7 +217,6 @@
     "Documentation/BuMoChi/HelpByTopic/Multi-Avatar project port number setting in godot - NOTES.md",
     "Documentation/BuMoChi/HelpByTopic/MonitoringOSC_VMC_Input.org",
     "Documentation/BuMoChi/HelpByTopic/images/mother-ishidomaru-vmc-trackers.png",
-    "Documentation/BuMoChi/HelpByTopic/images",
     "Pasted image 20260829125859.png",
     "Pasted image 20260829114448.png",
     "Pasted image 20260829114345.png",
@@ -224,16 +228,13 @@
     "Documentation/BuMoChi/HelpByTopic/MainApplications/Godot.md",
     "Documentation/BuMoChi/HelpByTopic/MainApplications/XR-Animator.md",
     "Documentation/BuMoChi/HelpByTopic/MainApplications/SuperCollider and BuMoChi library.md",
-    "Documentation/BuMoChi/HelpByTopic/MainApplications",
     "Documentation/BuMoChi/HelpByTopic/HelperApplications/BunrakuOSCEncoder.md",
     "Documentation/BuMoChi/HelpByTopic/HelperApplications/OSCGroupsClient.md",
     "Testing_BuMoChi/README.md",
-    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Thumbnail.png.import",
     "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Thumbnail.png",
     "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shoes.png",
     "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shirt.png",
     "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shader_NoneNormal.normal.png",
-    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shader_NoneBlack.png",
-    "PipelineApplications/Reference/SoftwareArchitecture.md"
+    "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shader_NoneBlack.png"
   ]
 }

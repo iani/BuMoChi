@@ -363,6 +363,18 @@ Stops clip playback, cancels an unfinished recording, and closes the BuMoChi OSC
 :END:
 Posts and returns an event containing receiver, recording, playback, clip, and wire statistics. Useful keys include =running=, =port=, =received=, =rejected=, =dropped=, =recording=, =playing=, =currentClip=, and =clipCount=.
 
+**** =Bmc.help=
+:PROPERTIES:
+:CUSTOM_ID: bmchelp
+:END:
+Posts and returns a compact port-configuration summary for XR-Animator, =BunrakuOSCEncoder=, SuperCollider/Bmc, =BunrakuOSCDecoder=, and every avatar that currently has a Godot VMC output port.
+
+#+begin_src supercollider
+Bmc.help;
+#+end_src
+
+The paired encoder/SuperCollider input lines reflect the dispatcher's current port. The paired SuperCollider output/decoder input lines reflect =Bmc.decoderPort=. Avatar output pairs reflect the current =BmcAvatar.vmcPort= settings, so the text updates after runtime configuration changes.
+
 **** =Bmc.showDispatcherStatus(updateInterval: 0.25)=
 :PROPERTIES:
 :CUSTOM_ID: bmcshowdispatcherstatus

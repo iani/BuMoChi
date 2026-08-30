@@ -1,13 +1,92 @@
+* Quick start: one-command pipeline launcher
+:PROPERTIES:
+:CUSTOM_ID: quick-start-one-command-pipeline-launcher
+:END:
+The launcher starts and supervises =BunrakuOSCEncoder= and =BunrakuOSCDecoder=. With no arguments it starts the local-only pipeline and does not start =OscGroupClient=:
+
+#+begin_src sh
+./PipelineApplications/start_bumochi_pipeline.sh
+#+end_src
+
+Run that command from the root of the BuMoChi repository. It uses the standard local ports automatically:
+
+#+begin_src text
+XR-Animator -> encoder 39537 -> Bmc 57130 -> decoder 39538 -> Godot 39539
+#+end_src
+
+The launcher does not start XR-Animator, SuperCollider, or Godot. Start those three applications separately. Recompile the SuperCollider class library so that Bmc listens on =57130=, configure XR-Animator to send to =39537=, and run a Godot avatar receiver on =39539=.
+
+To include OSCGroups, supply an OSC server address and a unique username:
+
+#+begin_src sh
+./PipelineApplications/start_bumochi_pipeline.sh \
+  --oscserver SERVER_ADDRESS \
+  --username PerformerA
+#+end_src
+
+OSCGroups mode uses these additional defaults:
+
+| Setting                   | Default   | Override             |
+|---------------------------+-----------+----------------------|
+| Group name                | =bumochi= | =--groupname NAME=   |
+| User and group password   | =bmc123=  | =--password PASSWORD= |
+| Server port               | =22242=   | =--server-port PORT= |
+| Local network-facing port | =22243=   | =--local-port PORT=  |
+
+The password =bmc123= is a convenient rehearsal default, not a secure public-network credential. Set a different password for an exposed OSCGroups server.
+
+Inspect every available launcher option without starting anything:
+
+#+begin_src sh
+./PipelineApplications/start_bumochi_pipeline.sh --help
+#+end_src
+
+Stop all helper processes started by the launcher with =Control-C= in its terminal.
+
+When the launcher is started with =--verbose=, follow the live encoder and decoder output in another terminal:
+
+#+begin_src sh
+tail -f "$TMPDIR/bumochi-pipeline-$USER/encoder.log" \
+        "$TMPDIR/bumochi-pipeline-$USER/decoder.log"
+#+end_src
+
+The launcher starts Python in unbuffered mode, so new log lines appear immediately.
+
+* Cheatsheet! Check the active Bmc port configuration
+:PROPERTIES:
+:CUSTOM_ID: check-the-active-bmc-port-configuration
+:END:
+Your VMC mocap applications (XR-Animator, Waidayo, or other) and Godot should be configured to send/receive animation data at the ports required by the pipeline. To check these port numbers, after recompiling the SuperCollider class library, evaluate:
+
+#+begin_src supercollider
+Bmc.help;
+#+end_src
+
+The default summary is equivalent to:
+
+#+begin_src text
+XR-Animator output port: 39537
+BunrakuOSCEncoder output port: 57130
+SuperCollider VMC/OSC input port: 57130
+SuperCollider VMC/OSC output port: 39538
+BunrakuOSCDecoder input port: 39538
+BunrakuOSCDecoder output ports:
+  Ishidomaru: 39539
+#+end_src
+
+The final list is generated from the avatars currently configured in Bmc, so it expands when additional avatar routes are added. Run =Bmc.help;= again after changing any ports.
+
 * Overview
 :PROPERTIES:
 :CUSTOM_ID: overview
 :END:
 This guide starts and configures the six applications in the following downstream order:
 
+#+ATTR_LATEX: :align @{}r p{0.15\textwidth} p{0.15\textwidth} p{0.18\textwidth} p{0.38\textwidth}@{}
 | No. | Application         | Input/listening port | Output/destination port | Required configuration                                                                                                                                                                                                 |
 |-----+---------------------+----------------------+-------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | 1   | XR-Animator         | ---                  | =39537=                 | Send standard VMC to =BunrakuOSCEncoder= on =127.0.0.1:39537=.                                                                                                                                                         |
-| 2   | =BunrakuOSCEncoder= | =39537=              | =57130=, =22244=        | Listen for XR-Animator; send identical route-free frames to local Bmc on =57130= and local =OscGroupClient= on =22244=.                                                                                                |
+| 2   | =BunrakuOSCEncoder= | =39537=              | =57130=; optionally =22244= | Listen for XR-Animator; always send route-free frames to local Bmc on =57130=; in OSCGroups mode, send an identical copy to local =OscGroupClient= on =22244=.                                                       |
 | 3   | =OscGroupClient=    | =22244=              | =57130=                 | Receive local encoder frames on =22244=; deliver remote collaborators' frames to local Bmc on =57130=. The client also connects to =OscGroupServer= port =22242= through a client-specific local port such as =22243=. |
 | 4   | SuperCollider / Bmc | =57130=              | =39538=                 | Receive local and remote route-free frames; synthesize the local scene; send routed frames to =BunrakuOSCDecoder= on =39538=. Ishidomaru's default routed frames embed Godot destination =39539=.                      |
 | 5   | =BunrakuOSCDecoder= | =39538=              | =39539=                 | Receive routed Bmc frames, reconstruct standard VMC, and forward Ishidomaru to the embedded Godot port =39539=.                                                                                                        |
@@ -30,6 +109,8 @@ Run all terminal commands from the root of the BuMoChi repository unless the com
 
 Only the receiving application owns a UDP listening port. Several applications may send packets to Bmc on =57130= without conflict because Bmc is the single listener.
 
+The following sections are only necessary if you want to customize the pipeline or check for errors.
+
 * Before starting
 :PROPERTIES:
 :CUSTOM_ID: before-starting
@@ -40,9 +121,9 @@ Only the receiving application owns a UDP listening port. Several applications m
 python3 --version
 #+end_src
 
-2. [@2] Obtain the =OscGroupServer= address, user credentials, group name, and group password from the session organiser.
+2. [@2] For OSCGroups collaboration only, obtain the =OscGroupServer= address and a unique username from the session organiser. Confirm whether the session uses the default group =bumochi= and password =bmc123= or overrides them.
 
-3. Give this workstation a unique OSCGroups username, unique encoder =--source= identity, and a free =LOCAL_TO_REMOTE_PORT=.
+3. For OSCGroups collaboration only, give this workstation a unique OSCGroups username and encoder =--source= identity. The launcher uses local network-facing port =22243= unless it is overridden.
 
 4. Stop older encoder, decoder, and =OscGroupClient= processes. If needed, inspect the local receiving ports:
 

@@ -9,7 +9,7 @@ Bmc {
 	classvar <boneNames;
 	classvar <dispatcher, <recorder, <player, <library, <avatars, <wires;
 	classvar <defaultAvatar, recordingName, recordingFormat, recorderPublisher;
-	classvar <defaultInputPort, <defaultDecoderPort;
+	classvar <defaultXrAnimatorOutputPort, <defaultInputPort, <defaultDecoderPort;
 	classvar <defaultAvatarID, <defaultAvatarName, <defaultAvatarVmcPort;
 	classvar <sessions, <currentSession;
 	classvar <decoderPort, <forwardDecoder;
@@ -22,6 +22,7 @@ Bmc {
 			\LeftUpperLeg, \LeftLowerLeg, \LeftFoot, \LeftToes,
 			\RightUpperLeg, \RightLowerLeg, \RightFoot, \RightToes
 		];
+		defaultXrAnimatorOutputPort = 39537;
 		defaultInputPort = 57130;
 		defaultDecoderPort = 39538;
 		defaultAvatarID = \Ishidomaru;
@@ -78,6 +79,35 @@ Bmc {
 		));
 		result.postln;
 		^result
+	}
+
+	*help {
+		var configuredAvatars = avatars.values.asSet.select { |avatar|
+			avatar.vmcPort.notNil
+		}.asArray.sort { |left, right|
+			left.avatarName.asString < right.avatarName.asString
+		};
+		var avatarRoutes = if(configuredAvatars.isEmpty) {
+			"  (none)"
+		} {
+			configuredAvatars.collect { |avatar|
+				"  %: %".format(avatar.avatarName, avatar.vmcPort)
+			}.join("\n")
+		};
+		var inputPort = dispatcher.port;
+		var text = [
+			"XR-Animator output port: %".format(defaultXrAnimatorOutputPort),
+			"BunrakuOSCEncoder output port: %".format(inputPort),
+			"SuperCollider VMC/OSC input port: %".format(inputPort),
+			"SuperCollider VMC/OSC output port: %".format(decoderPort),
+			"BunrakuOSCDecoder input port: %".format(decoderPort),
+			"BunrakuOSCDecoder output ports:",
+			avatarRoutes
+		].join("\n");
+		"-----------------------------".postln;
+		text.postln;
+		"-----------------------------".postln;
+		^text
 	}
 
 	*showDispatcherStatus { |updateInterval = 0.25|
@@ -484,13 +514,14 @@ Bmc {
 	}
 
 	*messageHeaderSize { |message|
-		^if(message[1].asInteger == 2) { 7 } { 6 }
+		^if(this.messageIsRouted(message)) { 7 } { 6 }
 	}
 
-	*messageAvatarIndex { |message| ^if(message[1].asInteger == 2) { 3 } { 2 } }
-	*messageSourceIndex { |message| ^if(message[1].asInteger == 2) { 4 } { 3 } }
-	*messageFrameIDIndex { |message| ^if(message[1].asInteger == 2) { 5 } { 4 } }
-	*messageTimestampIndex { |message| ^if(message[1].asInteger == 2) { 6 } { 5 } }
+	*messageIsRouted { |message| ^[2, 4].includes(message[1].asInteger) }
+	*messageAvatarIndex { |message| ^if(this.messageIsRouted(message)) { 3 } { 2 } }
+	*messageSourceIndex { |message| ^if(this.messageIsRouted(message)) { 4 } { 3 } }
+	*messageFrameIDIndex { |message| ^if(this.messageIsRouted(message)) { 5 } { 4 } }
+	*messageTimestampIndex { |message| ^if(this.messageIsRouted(message)) { 6 } { 5 } }
 
 	*normalizeBones { |bones|
 		if(bones.isNil) { Error("Bmc: bones cannot be nil").throw };
@@ -522,7 +553,7 @@ Bmc {
 			Error("Bmc: % has OSC address %, expected /bunraku/vmc/frame"
 				.format(role, message[0])).throw;
 		};
-		if([1, 2].includes(message[1].asInteger).not) {
+		if([1, 2, 3, 4].includes(message[1].asInteger).not) {
 			Error("Bmc: % uses unsupported protocol version %"
 				.format(role, message[1])).throw;
 		};
@@ -539,6 +570,36 @@ Bmc {
 				Error("Bmc: % has invalid routed target port %"
 					.format(role, message[2])).throw;
 			};
+		};
+		if(message[1].asInteger == 3) {
+			this.validateExtendedMessage(message, role, 153);
+		};
+		if(message[1].asInteger == 4) {
+			if((message[2].asInteger < 1) or: { message[2].asInteger > 65535 }) {
+				Error("Bmc: % has invalid routed target port %"
+					.format(role, message[2])).throw;
+			};
+			this.validateExtendedMessage(message, role, 154);
+		};
+	}
+
+	*validateExtendedMessage { |message, role, start|
+		var index = start, extraCount, blendCount;
+		if(message.size < (start + 2)) {
+			Error("Bmc: % extended frame is truncated".format(role)).throw;
+		};
+		extraCount = message[index].asInteger;
+		if(extraCount < 0) { Error("Bmc: % has a negative extra-bone count".format(role)).throw };
+		index = index + 1 + (extraCount * 8);
+		if(index >= message.size) {
+			Error("Bmc: % extended bone data is truncated".format(role)).throw;
+		};
+		blendCount = message[index].asInteger;
+		if(blendCount < 0) { Error("Bmc: % has a negative blend count".format(role)).throw };
+		index = index + 1 + (blendCount * 2);
+		if(index != message.size) {
+			Error("Bmc: % extended payload has % elements; counts require %"
+				.format(role, message.size, index)).throw;
 		};
 	}
 

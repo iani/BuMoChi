@@ -11,6 +11,7 @@ from bunraku_protocol import (
     ProtocolError,
     build_frame,
     extract_vmc_bones,
+    extract_vmc_blends,
 )
 
 @dataclass
@@ -71,6 +72,7 @@ def run(args: argparse.Namespace) -> int:
     print(f"  avatar={args.avatar!r} source={source!r} maximum={args.max_packet_size} bytes")
     frame_id, started, last_status = 0, time.monotonic(), time.monotonic()
     bone_cache: dict[str, tuple[float, ...]] = {}
+    blend_cache: dict[str, float] = {}
     updated_bones: set[str] = set()
     try:
         while True:
@@ -82,8 +84,12 @@ def run(args: argparse.Namespace) -> int:
                 missing = []
                 try:
                     packet_bones = extract_vmc_bones(packet)
+                    packet_blends = extract_vmc_blends(packet)
+                    if packet_blends:
+                        blend_cache.update(packet_blends)
                     if not packet_bones:
-                        stats.non_skeleton += 1
+                        if not packet_blends:
+                            stats.non_skeleton += 1
                         continue
                     bone_cache.update(packet_bones)
                     updated_bones.update(packet_bones)
@@ -99,9 +105,17 @@ def run(args: argparse.Namespace) -> int:
                                 file=sys.stderr,
                             )
                         continue
+                    canonical_inputs = {
+                        alias for _canonical, aliases in BONES for alias in aliases
+                    }
+                    extra_transforms = tuple(
+                        (name, transform) for name, transform in bone_cache.items()
+                        if name not in canonical_inputs
+                    )
                     frame = BunrakuFrame(
                         args.avatar, source, frame_id,
                         time.monotonic() - started, transforms,
+                        None, extra_transforms, tuple(blend_cache.items()),
                     )
                     output = build_frame(frame)
                     if len(output) > args.max_packet_size:
@@ -150,7 +164,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--no-oscgroups", action="store_true", help="disable the OSCGroups source-frame copy")
     p.add_argument("--avatar", default="Ishidomaru", help="avatar name included in every frame")
     p.add_argument("--source", help="stable sender ID; default is random per run")
-    p.add_argument("--max-packet-size", type=int, default=1200); p.add_argument("--stats-interval", type=float, default=5.0)
+    p.add_argument("--max-packet-size", type=int, default=8192); p.add_argument("--stats-interval", type=float, default=5.0)
     p.add_argument("--verbose", action="store_true")
     p.add_argument(
         "--log-partial", action="store_true",

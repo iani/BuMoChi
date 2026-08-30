@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regression tests for the fixed Bunraku Frame wire representation."""
+"""Regression tests for legacy and extended Bunraku Frame representations."""
 
 import unittest
 from dataclasses import replace
@@ -16,6 +16,7 @@ from bunraku_protocol import (
     ProtocolError,
     build_frame,
     extract_vmc_bones,
+    extract_vmc_blends,
     frame_from_vmc,
     parse_frame,
     vmc_bundle_from_frame,
@@ -32,12 +33,30 @@ def sample_frame() -> BunrakuFrame:
     return BunrakuFrame("Test Avatar", "unit-test", 42, 1.25, transforms)
 
 
+def sample_extended_frame() -> BunrakuFrame:
+    return replace(
+        sample_frame(),
+        extra_transforms=(
+            ("LeftIndexProximal", (0.01, 0.02, 0.03, 0.0, 0.0, 0.1, 0.995)),
+            ("RightIndexProximal", (-0.01, 0.02, 0.03, 0.0, 0.0, -0.1, 0.995)),
+        ),
+        blends=(("Blink", 0.75), ("Joy", 0.25)),
+    )
+
+
 class BunrakuProtocolTests(unittest.TestCase):
     def assert_transforms_almost_equal(self, actual, expected):
         self.assertEqual(len(actual), len(expected))
         for actual_bone, expected_bone in zip(actual, expected):
             for actual_value, expected_value in zip(actual_bone, expected_bone):
                 self.assertAlmostEqual(actual_value, expected_value, places=6)
+
+    def assert_named_transforms_almost_equal(self, actual, expected):
+        self.assertEqual(tuple(name for name, _ in actual), tuple(name for name, _ in expected))
+        self.assert_transforms_almost_equal(
+            tuple(transform for _, transform in actual),
+            tuple(transform for _, transform in expected),
+        )
 
     def test_bunraku_message_is_below_transport_limit(self):
         self.assertLessEqual(len(build_frame(sample_frame())), 1200)
@@ -60,6 +79,22 @@ class BunrakuProtocolTests(unittest.TestCase):
         self.assertEqual(actual.target_port, 39540)
         self.assertEqual(actual.avatar, expected.avatar)
         self.assert_transforms_almost_equal(actual.transforms, expected.transforms)
+
+    def test_extended_round_trip_preserves_fingers_and_face(self):
+        expected = sample_extended_frame()
+        packet = build_frame(expected)
+        self.assertLessEqual(len(packet), 8192)
+        actual = parse_frame(packet)
+        self.assert_named_transforms_almost_equal(actual.extra_transforms, expected.extra_transforms)
+        self.assertEqual(tuple(name for name, _ in actual.blends), ("Blink", "Joy"))
+        self.assertAlmostEqual(actual.blends[0][1], 0.75)
+        self.assertAlmostEqual(actual.blends[1][1], 0.25)
+
+    def test_extended_routed_round_trip_preserves_destination(self):
+        expected = replace(sample_extended_frame(), target_port=39539)
+        actual = parse_frame(build_frame(expected))
+        self.assertEqual(actual.target_port, 39539)
+        self.assert_named_transforms_almost_equal(actual.extra_transforms, expected.extra_transforms)
 
     def test_routed_destination_wins_over_legacy_fallback(self):
         frame = replace(sample_frame(), target_port=39540)
@@ -88,6 +123,16 @@ class BunrakuProtocolTests(unittest.TestCase):
         self.assertEqual(tuple(bones), BONE_NAMES)
         actual = frame_from_vmc(vmc, expected.avatar, expected.source, 43, 2.0)
         self.assert_transforms_almost_equal(actual.transforms, expected.transforms)
+
+    def test_vmc_round_trip_preserves_extra_bones_and_face(self):
+        expected = sample_extended_frame()
+        vmc = vmc_bundle_from_frame(expected)
+        actual = frame_from_vmc(vmc, expected.avatar, expected.source, 43, 2.0)
+        self.assert_named_transforms_almost_equal(actual.extra_transforms, expected.extra_transforms)
+        actual_blends = dict(actual.blends)
+        self.assertAlmostEqual(actual_blends["Blink"], 0.75)
+        self.assertAlmostEqual(actual_blends["Joy"], 0.25)
+        self.assertEqual(extract_vmc_blends(vmc), actual_blends)
 
     def test_missing_bone_is_rejected(self):
         frame = sample_frame()
@@ -149,7 +194,7 @@ class BunrakuProtocolTests(unittest.TestCase):
             )
             time.sleep(0.15)
             sender.sendto(
-                vmc_bundle_from_frame(sample_frame()),
+                vmc_bundle_from_frame(sample_extended_frame()),
                 ("127.0.0.1", ingress_port),
             )
 
@@ -157,6 +202,10 @@ class BunrakuProtocolTests(unittest.TestCase):
             self.assertEqual(received[0].avatar, "Ishidomaru")
             self.assertEqual(received[1].avatar, "Ishidomaru")
             self.assert_transforms_almost_equal(received[0].transforms, received[1].transforms)
+            self.assert_named_transforms_almost_equal(
+                received[0].extra_transforms, sample_extended_frame().extra_transforms
+            )
+            self.assertEqual(dict(received[0].blends), dict(sample_extended_frame().blends))
         finally:
             if process is not None:
                 process.terminate()
@@ -199,7 +248,7 @@ class BunrakuProtocolTests(unittest.TestCase):
 
             for index, port in enumerate(target_ports):
                 frame = replace(
-                    sample_frame(), avatar=f"Avatar{index}",
+                    sample_extended_frame(), avatar=f"Avatar{index}",
                     frame_id=index, target_port=port,
                 )
                 sender.sendto(build_frame(frame), ("127.0.0.1", ingress_port))
@@ -207,7 +256,9 @@ class BunrakuProtocolTests(unittest.TestCase):
             for index, receiver in enumerate(receivers):
                 packet, _ = receiver.recvfrom(65507)
                 bones = extract_vmc_bones(packet)
-                self.assertEqual(tuple(bones), BONE_NAMES)
+                self.assertEqual(tuple(bones)[:len(BONE_NAMES)], BONE_NAMES)
+                self.assertIn("LeftIndexProximal", bones)
+                self.assertAlmostEqual(extract_vmc_blends(packet)["Blink"], 0.75)
         finally:
             if process is not None:
                 process.terminate()

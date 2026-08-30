@@ -26,9 +26,7 @@ Output: VMC OSC messages, principally `/VMC/Ext/Bone/Pos` skeletal updates.
 
 ### 2. BunrakuOSCEncoder.py
 
-The encoder receives standard VMC packets and accumulates the required bone
-updates. It converts a complete pose into one protocol-version-1 message at
-`/bunraku/vmc/frame`. Each frame carries:
+The encoder receives standard VMC packets and accumulates the required bone updates. It converts a complete pose into one `/bunraku/vmc/frame` message. Body-only input remains protocol version 1; input containing extra bones or facial values uses extended version 3. Each frame carries:
 
 - Protocol version
 - Avatar name
@@ -37,13 +35,13 @@ updates. It converts a complete pose into one protocol-version-1 message at
 - Timestamp
 - 21 ordered bone transforms
 - Seven values per bone: `x, y, z, qx, qy, qz, qw`
+- Any additional named bone transforms, including finger joints
+- Named facial blend-shape values
 
 In the complete test it listens on UDP `39538` and sends Bunraku frames to the
 local OSCGroups sender client on UDP `22244`.
 
-The fixed representation preserves frame identity and avoids dividing one
-animation frame into unrelated network messages. A normal Bunraku Frame is
-designed to remain below the OSCGroups packet-size limit.
+The atomic representation preserves frame identity and avoids dividing one animation frame into unrelated network messages. The encoder's default maximum frame size is 8192 bytes.
 
 ### 3. OSCGroups clients and server
 
@@ -94,16 +92,12 @@ library inside the SuperCollider stage rather than as a separate network hop.
 
 ### 6. BunrakuOSCDecoder.py
 
-The decoder receives one complete `/bunraku/vmc/frame` message and reconstructs
-a standard VMC OSC bundle. The output contains 21 `/VMC/Ext/Bone/Pos` messages
-plus Bunraku avatar/source/frame metadata.
+The decoder receives one complete `/bunraku/vmc/frame` message and reconstructs a standard VMC OSC bundle. Legacy output contains the 21 core `/VMC/Ext/Bone/Pos` messages. Extended output also contains additional bone messages, `/VMC/Ext/Blend/Val` facial values, and `/VMC/Ext/Blend/Apply`, plus Bunraku avatar/source/frame metadata.
 
 In the complete single-Mac test it listens on UDP `39537` and sends VMC to
 Godot on UDP `39539`.
 
-The decoder validates the protocol version, OSC type signature, payload size,
-and complete 21-bone frame before producing VMC. It can also filter by avatar
-name or override the emitted avatar metadata.
+The decoder validates the protocol version, OSC type signature, payload structure, and complete 21-bone core before producing VMC. It can also filter by avatar name or override the emitted avatar metadata.
 
 ### 7. Godot VMC project
 
@@ -122,11 +116,11 @@ Output: real-time rendered avatar animation.
 | From | To | Format | Destination |
 |---|---|---|---:|
 | XR Animator | BunrakuOSCEncoder | Standard VMC OSC | UDP `39538` |
-| BunrakuOSCEncoder | OSCGroups sender client | Bunraku Frame v1 | UDP `22244` |
-| OSCGroups sender client | OSCGroups server | Bunraku Frame v1 | Internet |
-| OSCGroups server | OSCGroups receiver client | Bunraku Frame v1 | Internet |
-| OSCGroups receiver client | SuperCollider + BuMoChi | Bunraku Frame v1 | UDP `57130` |
-| SuperCollider + BuMoChi | BunrakuOSCDecoder | Bunraku Frame v1 | UDP `39537` |
+| BunrakuOSCEncoder | OSCGroups sender client | Bunraku Frame v1/v3 | UDP `22244` |
+| OSCGroups sender client | OSCGroups server | Bunraku Frame v1/v3 | Internet |
+| OSCGroups server | OSCGroups receiver client | Bunraku Frame v1/v3 | Internet |
+| OSCGroups receiver client | SuperCollider + BuMoChi | Bunraku Frame v1/v3 | UDP `57130` |
+| SuperCollider + BuMoChi | BunrakuOSCDecoder | Routed Bunraku Frame v2/v4 | UDP `39537` |
 | BunrakuOSCDecoder | Godot | Standard VMC OSC bundle | UDP `39539` |
 
 Two programs on one computer cannot normally listen on the same UDP address
@@ -140,12 +134,9 @@ complete test.
 XR Animator and Godot use standard VMC. A pose may arrive as several OSC
 messages or bundles, with one `/VMC/Ext/Bone/Pos` message per bone.
 
-### Bunraku Frame protocol version 1
+### Bunraku Frame protocol versions
 
-The network and SuperCollider stages use one `/bunraku/vmc/frame` OSC message
-per complete skeletal frame. The fixed bone order makes every group of seven
-numbers unambiguous while avatar, source, frame number, and timestamp preserve
-identity and sequence.
+The network and SuperCollider stages use one `/bunraku/vmc/frame` OSC message per complete motion frame. Versions 1 and 2 contain the fixed 21-bone body representation; version 2 additionally contains the final target port. Versions 3 and 4 append counted extra-bone and facial-blend sections; version 4 additionally contains the final target port. The fixed core bone order makes every group of seven core values unambiguous while avatar, source, frame number, and timestamp preserve identity and sequence.
 
 ## Diagnostic paths
 
@@ -158,4 +149,3 @@ The basic troubleshooting suite introduces the components incrementally:
 
 Godot remains the visible endpoint in every test, making it easier to identify
 which newly introduced component causes a failure.
-

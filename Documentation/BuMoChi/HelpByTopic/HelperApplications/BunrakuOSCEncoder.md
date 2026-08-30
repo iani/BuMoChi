@@ -1,6 +1,6 @@
 # What is BunrakuOSCEncoder?
 
-`BunrakuOSCEncoder` is an open-source Python application included with BuMoChi. It is a bridge between motion-capture applications that use VMC, such as XR-Animator and Waidayo, and synthesis and network applications that use OSC. It converts VMC bundles into individual OSC frame messages and sends them to SuperCollider and [OSCGroupsClient](OSCGroupsClient.md). More specifically, it listens for standard VMC bundles, collects the required 21 humanoid bones into complete frames, and converts each complete pose into one route-free protocol-version-1 `/bunraku/vmc/frame` OSC message. Route-free means that the message does not yet contain the destination port of the avatar that will render the frame in Godot.
+`BunrakuOSCEncoder` is an open-source Python application included with BuMoChi. It is a bridge between motion-capture applications that use VMC, such as XR-Animator and Waidayo, and synthesis and network applications that use OSC. It converts VMC bundles into individual OSC frame messages and sends them to SuperCollider and [OSCGroupsClient](OSCGroupsClient.md). It collects the 21 core humanoid bones required for a complete pose and also retains additional bones, including finger joints, plus `/VMC/Ext/Blend/Val` facial-expression values. A body-only source produces a backward-compatible route-free protocol-version-1 frame. A source containing additional bones or facial values produces an extended route-free protocol-version-3 frame. Route-free means that the message does not yet contain the destination port of the avatar that will render the frame in Godot.
 
 By default, the encoder sends an identical copy of every source frame to two local destinations:
 
@@ -124,6 +124,7 @@ BunrakuOSCEncoder \
 | `--no-oscgroups` | Disable the OSCGroups copy | disabled |
 | `--avatar NAME` | Source avatar metadata included in each frame | `Ishidomaru` |
 | `--source NAME` | Stable sender/source identity | random per run if omitted |
+| `--max-packet-size` | Maximum encoded frame size in bytes | `8192` |
 | `--verbose` | Print frame and statistics information | disabled |
 | `--log-partial` | With `--verbose`, show bones still awaited while assembling a frame | disabled |
 
@@ -140,6 +141,8 @@ lsof -nP -iUDP:22244
 ```
 
 While the encoder is running, it should own `39537`; Bmc should own `57130`; and `OscGroupClient` should own `22244`. If `--verbose` repeatedly reports partial frames, XR-Animator is not providing all required bones or its VMC stream is not reaching the encoder.
+
+Extended frames remain atomic: body, finger, and currently cached facial values travel in the same `/bunraku/vmc/frame` message. The decoder reconstructs the extra `/VMC/Ext/Bone/Pos` messages, all `/VMC/Ext/Blend/Val` values, and the terminating `/VMC/Ext/Blend/Apply` message expected by Godot.
 
 # Cheat-sheet
 

@@ -3,7 +3,7 @@
 (
 var check, makeFrame, take1, take2, combined, typed, savedPath, scdPath, wire, composite;
 var recordedTake1Path, recordedTake2Path;
-var defaultOutputMessage, defaultOutputFrame, calibrationFrame;
+var defaultOutputMessage, defaultOutputFrame, calibrationFrame, helpText;
 
 check = { |condition, failureMessage|
 	if(condition.not) { Error("FAIL: " ++ failureMessage).throw };
@@ -23,6 +23,26 @@ check.(Bmc.defaultAvatar.vmcPort == 39539, "Bmc default Ishidomaru VMC port is n
 check.(Bmc.avatar === Bmc.defaultAvatar, "Bmc.avatar did not return the default Ishidomaru avatar");
 check.(Bmc.decoderPort == 39538, "Bmc default decoder port is not 39538");
 check.(Bmc.forwardDecoder, "Bmc decoder forwarding is not enabled by default");
+check.(Bmc.defaultXrAnimatorOutputPort == 39537,
+	"Bmc default XR-Animator output port is not 39537");
+helpText = Bmc.help;
+check.(helpText.find("XR-Animator output port: 39537").notNil,
+	"Bmc.help omitted the XR-Animator output port");
+check.(helpText.find("BunrakuOSCEncoder output port: 57130").notNil,
+	"Bmc.help omitted the encoder output port");
+check.(helpText.find("SuperCollider VMC/OSC input port: 57130").notNil,
+	"Bmc.help omitted the SuperCollider input port");
+check.(helpText.find("SuperCollider VMC/OSC output port: 39538").notNil,
+	"Bmc.help omitted the SuperCollider output port");
+check.(helpText.find("BunrakuOSCDecoder input port: 39538").notNil,
+	"Bmc.help omitted the decoder input port");
+check.(helpText.find("Ishidomaru: 39539").notNil,
+	"Bmc.help omitted the default Ishidomaru output route");
+Bmc.addAvatar(\Mother, "Mother").vmcPort_(39540);
+helpText = Bmc.help;
+check.(helpText.find("Mother: 39540").notNil,
+	"Bmc.help omitted a newly configured avatar output route");
+Bmc.avatar(\Mother).vmcPort_(nil);
 calibrationFrame = Bmc.calibrationFrame;
 check.(calibrationFrame.avatar == "Ishidomaru", "calibration frame did not use the selected avatar");
 check.(calibrationFrame.source == "bmc-calibration", "calibration frame source is wrong");

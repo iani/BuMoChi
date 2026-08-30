@@ -1,6 +1,6 @@
 # What is BunrakuOSCDecoder?
 
-`BunrakuOSCDecoder` is an open-source Python application included with BuMoChi. It is a bridge between synthesis applications that use BuMoChi's OSC frame format and animation applications that use VMC, such as Godot with the VMC Tracker plugin. It converts individual OSC frame messages received from SuperCollider/Bmc into standard VMC bundles and sends them to Godot. More specifically, it receives complete, locally synthesized, routed protocol-version-2 `/bunraku/vmc/frame` messages, reconstructs the corresponding VMC data, and forwards each result to the destination port embedded in its frame.
+`BunrakuOSCDecoder` is an open-source Python application included with BuMoChi. It is a bridge between synthesis applications that use BuMoChi's OSC frame format and animation applications that use VMC, such as Godot with the VMC Tracker plugin. It converts individual OSC frame messages received from SuperCollider/Bmc into standard VMC bundles and sends them to Godot. It accepts legacy routed protocol-version-2 frames and extended routed protocol-version-4 frames. Extended frames reconstruct the 21 core bones, additional bones such as finger joints, facial `/VMC/Ext/Blend/Val` messages, and `/VMC/Ext/Blend/Apply`, then forward the complete VMC bundle to the destination port embedded in the frame.
 
 Each routed frame contains the destination VMC port assigned to its avatar. One decoder can therefore receive every locally synthesized avatar on input port `39538` and forward each one to its own local Godot port. In the default configuration, Ishidomaru is forwarded to `39539`.
 
@@ -104,7 +104,7 @@ BunrakuOSCDecoder \
 | `--avatar NAME` | Override the avatar name in emitted VMC metadata | unchanged |
 | `--verbose` | Print detailed activity | disabled |
 
-Normal Bmc operation does not require `--target-port`, because routed version-2 frames already contain the Godot destination.
+Normal Bmc operation does not require `--target-port`, because routed version-2 and version-4 frames already contain the Godot destination.
 
 # Test and diagnose
 
@@ -137,7 +137,7 @@ This starts `BunrakuOSCDecoder` with these defaults:
 - Bunraku frame input from Bmc: `127.0.0.1:39538`
 - VMC destination host: `127.0.0.1`
 - Avatar-name override: none; the decoder preserves the avatar name carried by each Bmc frame
-- VMC destination port: read from each routed version-2 frame; default Bmc startup frames for Ishidomaru carry port `39539`
+- VMC destination port: read from each routed version-2 or version-4 frame; default Bmc startup frames for Ishidomaru carry port `39539`
 - Legacy version-1 fallback port: none
 
 This works if you have installed a globally accessible script according to the instructions above.

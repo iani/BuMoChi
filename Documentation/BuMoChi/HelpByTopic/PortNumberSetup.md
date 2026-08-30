@@ -202,7 +202,7 @@ The screenshot shows `IshidomaruVMCTracker` selected and its **UDP Listener Port
 
 #### Note: Avoid duplicate port numbers
 
-This port is different from the `BunrakuOSCDecoder` input port, `39538`. Bmc sends a routed frame to the decoder on `39538`, with the avatar’s destination port embedded in the frame. The decoder reads that value, reconstructs the VMC messages, and forwards them to the specified Godot port.
+This port (the Ishidomaru port) is different from the `BunrakuOSCDecoder` input port, `39538`. Bmc sends a routed frame to the decoder on `39538`, with the avatar’s destination port embedded in the frame. The decoder reads that value, reconstructs the VMC messages, and forwards them to the specified Godot port.
 
 ```
 Bmc

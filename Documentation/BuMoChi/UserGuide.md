@@ -1,6 +1,6 @@
 # BuMoChi User Guide
 
-> [!note] This is a user guide draft for the current Bmc interface. It outlines the purpose of the BuMoChi library, the applications it works with, and gives examples of commands for doing basic tasks with this library like recording, playback and composition of animation clips. For installation and getting started see files [[Documentation/BuMoChi/Installation|Installation]] and [[Getting Started]]. 
+> [!note] This is a user guide draft for the current Bmc interface. It outlines the purpose of the BuMoChi library, the applications it works with, and gives examples of commands for doing basic tasks with this library like recording, playback and composition of animation clips. For installation and getting started see files [[Documentation/BuMoChi/Installation|Installation]] and [[Getting Started]].
 
 ## 1. What BuMoChi is
 
@@ -307,7 +307,17 @@ After the SuperCollider class library compiles, Bmc automatically listens for ro
 
     Posts and returns an event containing receiver, recording, playback, clip, and wire statistics. Useful keys include `running`, `port`, `received`, `rejected`, `dropped`, `recording`, `playing`, `currentClip`, and `clipCount`.
 
-4.  `Bmc.showDispatcherStatus(updateInterval: 0.25)`
+4.  `Bmc.help`
+
+    Posts and returns a compact port-configuration summary for XR-Animator, `BunrakuOSCEncoder`, SuperCollider/Bmc, `BunrakuOSCDecoder`, and every avatar that currently has a Godot VMC output port.
+
+    ``` supercollider
+    Bmc.help;
+    ```
+
+    The paired encoder/SuperCollider input lines reflect the dispatcher's current port. The paired SuperCollider output/decoder input lines reflect `Bmc.decoderPort`. Avatar output pairs reflect the current `BmcAvatar.vmcPort` settings, so the text updates after runtime configuration changes.
+
+5.  `Bmc.showDispatcherStatus(updateInterval: 0.25)`
 
     Opens the OSC/VMC input monitor window. A static field identifies the monitored OSC address and the dispatcher's configured UDP port. A dynamic field displays the latest `BmcDispatcher.status` dictionary and refreshes every `0.25` seconds by default. Supply another interval in seconds to change the refresh rate. Closing the window stops its update routine.
 
@@ -316,7 +326,7 @@ After the SuperCollider class library compiles, Bmc automatically listens for ro
     Bmc.showDispatcherStatus(1.0); // refresh once per second
     ```
 
-5.  `Bmc.reset`
+6.  `Bmc.reset`
 
     Stops the current session, replaces the working clip library, avatars, recorder, player, dispatcher, and wires with fresh objects, restores the Ishidomaru/`39539` default route, and restarts the receiver on `57130`. Unsaved in-memory clips are lost, so use it deliberately.
 
