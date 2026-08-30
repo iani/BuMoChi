@@ -1,4 +1,4 @@
-This detailed step-by-step guide is superseded by [[Full Setup Procedure#Quick start one-command pipeline launcher||The simplifide setup procedure]].  The instructions are provided here for testing and troubleshooting if needed. 
+This detailed step-by-step guide is superseded by [the simplified setup procedure](Setup.md#quick-start-one-command-pipeline-launcher). The instructions are provided here for testing and troubleshooting if needed.
 
 ## 1. Start Godot
 

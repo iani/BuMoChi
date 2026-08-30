@@ -1,11 +1,15 @@
 For installation instructions, see [[file:Documentation/BuMoChi/Installation.md][Installation]].
 
-For setting up the system pipeline to enable animation, see [[file:Documentation/BuMoChi/Getting%20Started.md][Getting Started]].
+For setting up the system pipeline to enable animation, see [[file:Documentation/BuMoChi/HelpByTopic/Setup.md][Setup]].
 
-For introductory examples and first steps, see [[file:Documentation/BuMoChi/UserGuide.md][User Guide]].
+For introductory examples and first steps, see [[file:Documentation/BuMoChi/Getting%20Started.md][Getting Started]].
+
+For more extensive introduction, see [[file:Documentation/BuMoChi/UserGuide.md][User Guide]].
 
 インストール手順については、[[file:Documentation/BuMoChi/インストール.md][インストール]]を参照してください。
 
-システムパイプラインを設定してアニメーションを有効にする方法については、[[file:Documentation/BuMoChi/はじめに.md][はじめに]]を参照してください。
+システムパイプラインを設定してアニメーションを有効にする方法については、[[file:Documentation/BuMoChi/HelpByTopic/BuMoChi%20セットアップ.md][BuMoChi セットアップ]]を参照してください。
 
-入門例と最初の手順については、[[file:Documentation/BuMoChi/BuMoChi%20ユーザーガイド.md][BuMoChi ユーザーガイド]]を参照してください。
+入門例と最初の手順については、[[file:Documentation/BuMoChi/はじめに.md][はじめに]]を参照してください。
+
+より詳しい紹介については、[[file:Documentation/BuMoChi/BuMoChi%20ユーザーガイド.md][BuMoChi ユーザーガイド]]を参照してください。

@@ -26,12 +26,12 @@ To include OSCGroups, supply an OSC server address and a unique username:
 
 OSCGroups mode uses these additional defaults:
 
-| Setting                   | Default   | Override             |
-|---------------------------+-----------+----------------------|
-| Group name                | =bumochi= | =--groupname NAME=   |
+| Setting                   | Default   | Override              |
+|---------------------------+-----------+-----------------------|
+| Group name                | =bumochi= | =--groupname NAME=    |
 | User and group password   | =bmc123=  | =--password PASSWORD= |
-| Server port               | =22242=   | =--server-port PORT= |
-| Local network-facing port | =22243=   | =--local-port PORT=  |
+| Server port               | =22242=   | =--server-port PORT=  |
+| Local network-facing port | =22243=   | =--local-port PORT=   |
 
 The password =bmc123= is a convenient rehearsal default, not a secure public-network credential. Set a different password for an exposed OSCGroups server.
 
@@ -54,7 +54,7 @@ The launcher starts Python in unbuffered mode, so new log lines appear immediate
 
 * Cheatsheet! Check the active Bmc port configuration
 :PROPERTIES:
-:CUSTOM_ID: check-the-active-bmc-port-configuration
+:CUSTOM_ID: cheatsheet-check-the-active-bmc-port-configuration
 :END:
 Your VMC mocap applications (XR-Animator, Waidayo, or other) and Godot should be configured to send/receive animation data at the ports required by the pipeline. To check these port numbers, after recompiling the SuperCollider class library, evaluate:
 
@@ -84,15 +84,14 @@ The following sections are only necessary if you want to customize the pipeline 
 :END:
 This guide provides information to troubleshoot or tweak the internal port numbers of all applications of the pipeline. It shows how to start and configure the six applications in the following downstream order:
 
-#+ATTR_LATEX: :align @{}r p{0.15\textwidth} p{0.15\textwidth} p{0.18\textwidth} p{0.38\textwidth}@{}
-| No. | Application         | Input/listening port | Output/destination port | Required configuration                                                                                                                                                                                                 |
-|-----+---------------------+----------------------+-------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 1   | XR-Animator         | ---                  | =39537=                 | Send standard VMC to =BunrakuOSCEncoder= on =127.0.0.1:39537=.                                                                                                                                                         |
-| 2   | =BunrakuOSCEncoder= | =39537=              | =57130=; optionally =22244= | Listen for XR-Animator; always send route-free frames to local Bmc on =57130=; in OSCGroups mode, send an identical copy to local =OscGroupClient= on =22244=.                                                       |
-| 3   | =OscGroupClient=    | =22244=              | =57130=                 | Receive local encoder frames on =22244=; deliver remote collaborators' frames to local Bmc on =57130=. The client also connects to =OscGroupServer= port =22242= through a client-specific local port such as =22243=. |
-| 4   | SuperCollider / Bmc | =57130=              | =39538=                 | Receive local and remote route-free frames; synthesize the local scene; send routed frames to =BunrakuOSCDecoder= on =39538=. Ishidomaru's default routed frames embed Godot destination =39539=.                      |
-| 5   | =BunrakuOSCDecoder= | =39538=              | =39539=                 | Receive routed Bmc frames, reconstruct standard VMC, and forward Ishidomaru to the embedded Godot port =39539=.                                                                                                        |
-| 6   | Godot               | =39539=              | ---                     | Run an Ishidomaru VMC receiver listening on =39539= and render the animation locally.                                                                                                                                  |
+| No. | Application         | Input/listening port | Output/destination port     | Required configuration                                                                                                                                                                                                 |
+|-----+---------------------+----------------------+-----------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1   | XR-Animator         | ---                  | =39537=                     | Send standard VMC to =BunrakuOSCEncoder= on =127.0.0.1:39537=.                                                                                                                                                         |
+| 2   | =BunrakuOSCEncoder= | =39537=              | =57130=; optionally =22244= | Listen for XR-Animator; always send route-free frames to local Bmc on =57130=; in OSCGroups mode, send an identical copy to local =OscGroupClient= on =22244=.                                                         |
+| 3   | =OscGroupClient=    | =22244=              | =57130=                     | Receive local encoder frames on =22244=; deliver remote collaborators' frames to local Bmc on =57130=. The client also connects to =OscGroupServer= port =22242= through a client-specific local port such as =22243=. |
+| 4   | SuperCollider / Bmc | =57130=              | =39538=                     | Receive local and remote route-free frames; synthesize the local scene; send routed frames to =BunrakuOSCDecoder= on =39538=. Ishidomaru's default routed frames embed Godot destination =39539=.                      |
+| 5   | =BunrakuOSCDecoder= | =39538=              | =39539=                     | Receive routed Bmc frames, reconstruct standard VMC, and forward Ishidomaru to the embedded Godot port =39539=.                                                                                                        |
+| 6   | Godot               | =39539=              | ---                         | Run an Ishidomaru VMC receiver listening on =39539= and render the animation locally.                                                                                                                                  |
 
 The resulting application and port sequence is:
 

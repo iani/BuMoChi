@@ -53,7 +53,7 @@ XR-Animator captures body and face motion from a webcam and transmits it as VMC.
 
 Use the native desktop application for the BuMoChi pipeline. The browser version is useful for experimentation, but native VMC output is required here.
 
-Do not configure its port yet. The complete startup and port procedure is in [[file:HelpByTopic/Full%20Setup%20Procedure.md][Full Setup Procedure]] and [[file:HelpByTopic/PortNumberSetup.md][Port Number Setup]].
+Do not configure its port yet. The complete startup and port procedure is in [[file:HelpByTopic/Setup.md][Setup]] and [[file:HelpByTopic/PortNumberSetup.md][Port Number Setup]].
 
 * Python 3
 :PROPERTIES:
@@ -257,4 +257,4 @@ Bmc.status;
 
 In Godot, confirm that the selected project opens without missing-addon or script errors.
 
-Installation is then complete. Continue with [[file:Getting%20Started.md][Getting Started]] for a small sequence of user tests, or use [[file:HelpByTopic/Full%20Setup%20Procedure.md][Full Setup Procedure]] to start and connect the complete XR-Animator--BuMoChi--Godot pipeline.
+Installation is then complete. Continue with [[file:Getting%20Started.md][Getting Started]] for a small sequence of user tests, or use [[file:HelpByTopic/Setup.md][Setup]] to start and connect the complete XR-Animator--BuMoChi--Godot pipeline.

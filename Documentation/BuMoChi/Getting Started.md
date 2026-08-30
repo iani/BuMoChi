@@ -3,7 +3,7 @@
 This guide introduces BuMoChi through a sequence of small tests. Perform them in order. Each step reuses the working pipeline and material created by the previous step.
 
 If the software is not installed yet, follow [Installation](Installation.md). 
-To set up the system to receive animation data and run animations on Godot, see: [Full Setup Procedure](HelpByTopic/Full%20Setup%20Procedure.md).
+To set up the system to receive animation data and run animations on Godot, see: [Setup](HelpByTopic/Setup.md).
 
 The first five exercises use the current default configuration:
 
