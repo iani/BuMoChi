@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Documentation/BuMoChi/Getting Started.md",
+                "file": "README.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Getting Started"
+              "title": "README"
             }
           }
         ]
@@ -99,7 +99,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Documentation/BuMoChi/Getting Started.md",
+                "file": "README.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -118,7 +118,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Documentation/BuMoChi/Getting Started.md",
+                "file": "README.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
@@ -161,7 +161,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Documentation/BuMoChi/Getting Started.md",
+                "file": "README.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
@@ -190,33 +190,36 @@
   },
   "active": "8058796946613262",
   "lastOpenFiles": [
-    "Documentation/BuMoChi/HelpByTopic/Full Setup Procedure.md",
-    "Documentation/BuMoChi/Getting Started.md",
+    "README-sc-dance.org",
+    "Documentation/BuMoChi/HelpByTopic/Step-by-step startup of pipeline components.pdf",
+    "Documentation/BuMoChi/Getting Started.pdf",
+    "Documentation/BuMoChi/UserGuide.pdf",
+    "README.pdf",
+    "Documentation/BuMoChi/HelpByTopic/Step-by-step startup of pipeline components.org",
+    "Documentation/BuMoChi/Installation.md",
     "Documentation/BuMoChi/UserGuide.md",
-    "Documentation/BuMoChi/HelpByTopic/Component Applications and Sources.md",
+    "README.md",
+    "Documentation/BuMoChi/HelpByTopic/PortNumberSetup.md",
+    "Documentation/BuMoChi/HelpByTopic/Full Setup Procedure.md",
     "Documentation/BuMoChi/HelpByTopic/Bunraku pipeline tests.md",
+    "Documentation/BuMoChi/HelpByTopic/PortNumberSpecification.md",
+    "Documentation/BuMoChi/HelpByTopic/Step-by-step startup of pipeline components.md",
+    "Documentation/BuMoChi/Getting Started.md",
+    "Documentation/BuMoChi/HelpByTopic/Component Applications and Sources.md",
     "Documentation/BuMoChi/HelpByTopic/BuMoChi フルセットアップ手順.md",
     "Documentation/BuMoChi/はじめに.pdf",
     "Documentation/BuMoChi/インストール.pdf",
     "Documentation/BuMoChi/BuMoChi ユーザーガイド.pdf",
     "Documentation/BuMoChi/はじめに.org",
     "Documentation/BuMoChi/インストール.org",
-    "Documentation/BuMoChi/BuMoChi ユーザーガイド.org",
-    "Documentation/BuMoChi/HelpByTopic/BuMoChi フルセットアップ手順.pdf",
-    "Documentation/BuMoChi/HelpByTopic/BuMoChi フルセットアップ手順.org",
     "Documentation/BuMoChi/BuMoChi ユーザーガイド.md",
     "Documentation/BuMoChi/はじめに.md",
     "Documentation/BuMoChi/インストール.md",
-    "Documentation/BuMoChi/HelpByTopic/Full Setup Procedure_jp.pdf",
-    "Documentation/BuMoChi/HelpByTopic/Full Setup Procedure_jp.org",
     "Documentation/BuMoChi/HelpByTopic/Full Setup Procedure_jp.md",
     "Documentation/BuMoChi/HelpByTopic/Scene composition and motion source combination.md",
-    "Documentation/BuMoChi/HelpByTopic/PortNumberSetup.md",
-    "Documentation/BuMoChi/Installation.md",
     "PipelineApplications/Communication_Tests/01_XR_Animator_Godot.md",
     "Documentation/BuMoChi/HelpByTopic/Avatar_Port_Numbers.md",
     "Documentation/BuMoChi/HelpByTopic/OSCGroupsUseAndConfiguration.md",
-    "Documentation/BuMoChi/HelpByTopic/PortNumberSpecification.md",
     "Documentation/BuMoChi/HelpByTopic/RecordingAndPlayback.md",
     "Documentation/BuMoChi/HelpByTopic/SessionDataObjectsAndTerminology.md",
     "Documentation/BuMoChi/HelpByTopic/Multi-Avatar project port number setting in godot - NOTES.md",
@@ -228,8 +231,6 @@
     "Documentation/BuMoChi/HelpByTopic/HelperApplications/BunrakuOSCDecoder.md",
     "Documentation/BuMoChi/HelpByTopic/MainApplications/Alternative free Mocap Systems for future reference.md",
     "Documentation/BuMoChi/HelpByTopic/MainApplications/Planned - Unity, Unity Face Capture.md",
-    "Documentation/BuMoChi/HelpByTopic/MainApplications/WaiDayo.md",
-    "Documentation/BuMoChi/HelpByTopic/MainApplications/Godot.md",
     "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Thumbnail.png",
     "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shoes.png",
     "PipelineApplications/GodotVMCReference/assets/test_kun/Tex/Shirt.png",

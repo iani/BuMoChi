@@ -2,10 +2,9 @@
 :PROPERTIES:
 :CUSTOM_ID: bumochi-user-guide
 :END:
+This is a user guide draft for the current Bmc interface. It outlines the purpose of the BuMoChi library, the applications it works with, and gives examples of commands for doing basic tasks with this library like recording, playback and composition of animation clips.
 
-#+begin_quote
-Draft user guide for the current Bmc interface.
-#+end_quote
+/*For installation and getting started see files [[Documentation/BuMoChi/Installation|Installation]] and [[Getting Started]].*/
 
 ** 1. What BuMoChi is
 :PROPERTIES:
@@ -15,8 +14,7 @@ BuMoChi is a SuperCollider library for performing with motion-capture data and a
 
 The library is intended for networked dance, theatre, music, animation, and other performance situations in which movement should remain open to live intervention. A performer can be captured in one place while collaborators process the movement or render the avatar somewhere else.
 
-The main user interface is the =Bmc= class. Common actions are deliberately
-short enough for live coding:
+The main user interface is the =Bmc= class. Common actions are deliberately short enough for live coding:
 
 #+begin_src supercollider
 Bmc.record(\entrance);
@@ -72,7 +70,9 @@ XR Animator → encoder → BuMoChi → decoder → Godot
 The components have different jobs. XR Animator observes a person, and the encoder packages one complete route-free skeleton frame. It sends identical copies to local BuMoChi and to OSCGroups. OSCGroups distributes these source frames to the other workstations, where they also enter BuMoChi. Each local BuMoChi records, combines, transforms, and assigns all available sources to figures and avatars, then sends its completed scene only to its own decoder and Godot renderer.
 
 *** Distributed sources, local synthesis
-
+:PROPERTIES:
+:CUSTOM_ID: distributed-sources-local-synthesis
+:END:
 BuMoChi uses a distributed-sources, local-synthesis model. What travels between collaborators is motion source material, not a finished rendered animation. Every workstation receives its own motion source directly and remote motion sources through OSCGroups. Its local SuperCollider/BuMoChi process then creates the complete animation scene from those inputs, using the same session definition as the other workstations. Finally, it routes the completed avatars through its local decoder to its local Godot scene.
 
 This separation is fundamental. OSCGroups is the shared source-data layer; BuMoChi is the local animation synthesis layer; Godot is the local renderer. Bmc's processed routed frames never return to OSCGroups. When collaborators load the same session and Godot scene, they synthesize and render the same defined performance independently, in the same way that sc-hacks-redux shared control sources while each workstation synthesized sound locally.
@@ -81,14 +81,11 @@ This separation is fundamental. OSCGroups is the shared source-data layer; BuMoC
 :PROPERTIES:
 :CUSTOM_ID: supercollider-and-bumochi
 :END:
-SuperCollider is the live-coding environment in which BuMoChi runs. Download
-SuperCollider from its official site:
+SuperCollider is the live-coding environment in which BuMoChi runs. Download SuperCollider from its official site:
 
 - [[https://supercollider.github.io/downloads]]
 
-The BuMoChi repository contains the library itself. Place or link the BuMoChi
-repository folder inside your SuperCollider user extensions directory. To see
-that directory, evaluate:
+The BuMoChi repository contains the library itself. Place or link the BuMoChi repository folder inside your SuperCollider user extensions directory. To see that directory, evaluate:
 
 #+begin_src supercollider
 Platform.userExtensionDir;
@@ -137,8 +134,7 @@ An additional, more general VMC packet-preserving bridge is included under:
 HelperAppsAndExamples/VMC_Converter_Scripts/
 #+end_src
 
-The Bmc classes documented here currently use the fixed Bunraku Frame
-protocol-v1 encoder and decoder in =PipelineApplications=.
+The Bmc classes documented here currently use the fixed Bunraku Frame protocol-v1 encoder and decoder in =PipelineApplications=.
 
 *** OSCGroups
 :PROPERTIES:
@@ -345,379 +341,304 @@ Then disable XR Animator output, press *Control-C* in the encoder and decoder te
 :END:
 After the SuperCollider class library compiles, Bmc automatically listens for route-free Bunraku frames on input port =57130=. Its selected default avatar is =Ishidomaru=; completed frames for that identity are rewritten as =Ishidomaru=, assigned Godot VMC destination port =39539=, and forwarded to the local Bunraku decoder on port =39538=. Decoder forwarding is enabled. This ready state supports immediate live monitoring and =Bmc.record= without a separate initialization block when the encoder uses =--avatar "Ishidomaru"= and Godot listens on =39539=.
 
-**** =Bmc.start(port: 57130)=
-:PROPERTIES:
-:CUSTOM_ID: bmcstartport-57130
-:END:
-Starts or restarts the Bunraku Frame OSC receiver. The receiver starts automatically on =57130= after class-library compilation; call this method to restart it after =Bmc.stop= or to select another input port. The port must match both the local encoder output and =OscGroupClient.localRxPort=.
+1. =Bmc.start(port: 57130)=
 
-**** =Bmc.stop=
-:PROPERTIES:
-:CUSTOM_ID: bmcstop
-:END:
-Stops clip playback, cancels an unfinished recording, and closes the BuMoChi OSC receiver. It does not stop XR Animator, Python, OSCGroups, or Godot.
+   Starts or restarts the Bunraku Frame OSC receiver. The receiver starts automatically on =57130= after class-library compilation; call this method to restart it after =Bmc.stop= or to select another input port. The port must match both the local encoder output and =OscGroupClient.localRxPort=.
 
-**** =Bmc.status=
-:PROPERTIES:
-:CUSTOM_ID: bmcstatus
-:END:
-Posts and returns an event containing receiver, recording, playback, clip, and wire statistics. Useful keys include =running=, =port=, =received=, =rejected=, =dropped=, =recording=, =playing=, =currentClip=, and =clipCount=.
+2. =Bmc.stop=
 
-**** =Bmc.help=
-:PROPERTIES:
-:CUSTOM_ID: bmchelp
-:END:
-Posts and returns a compact port-configuration summary for XR-Animator, =BunrakuOSCEncoder=, SuperCollider/Bmc, =BunrakuOSCDecoder=, and every avatar that currently has a Godot VMC output port.
+   Stops clip playback, cancels an unfinished recording, and closes the BuMoChi OSC receiver. It does not stop XR Animator, Python, OSCGroups, or Godot.
 
-#+begin_src supercollider
-Bmc.help;
-#+end_src
+3. =Bmc.status=
 
-The paired encoder/SuperCollider input lines reflect the dispatcher's current port. The paired SuperCollider output/decoder input lines reflect =Bmc.decoderPort=. Avatar output pairs reflect the current =BmcAvatar.vmcPort= settings, so the text updates after runtime configuration changes.
+   Posts and returns an event containing receiver, recording, playback, clip, and wire statistics. Useful keys include =running=, =port=, =received=, =rejected=, =dropped=, =recording=, =playing=, =currentClip=, and =clipCount=.
 
-**** =Bmc.showDispatcherStatus(updateInterval: 0.25)=
-:PROPERTIES:
-:CUSTOM_ID: bmcshowdispatcherstatus
-:END:
-Opens the OSC/VMC input monitor window. A static field identifies the monitored OSC address and the dispatcher's configured UDP port. A dynamic field displays the latest =BmcDispatcher.status= dictionary and refreshes every =0.25= seconds by default. Supply another interval in seconds to change the refresh rate. Closing the window stops its update routine.
+4. =Bmc.help=
 
-#+begin_src supercollider
-Bmc.showDispatcherStatus;      // refresh four times per second
-Bmc.showDispatcherStatus(1.0); // refresh once per second
-#+end_src
+   Posts and returns a compact port-configuration summary for XR-Animator, =BunrakuOSCEncoder=, SuperCollider/Bmc, =BunrakuOSCDecoder=, and every avatar that currently has a Godot VMC output port.
 
-**** =Bmc.reset=
-:PROPERTIES:
-:CUSTOM_ID: bmcreset
-:END:
-Stops the current session, replaces the working clip library, avatars, recorder, player, dispatcher, and wires with fresh objects, restores the Ishidomaru/=39539= default route, and restarts the receiver on =57130=. Unsaved in-memory clips are lost, so use it deliberately.
+   #+begin_src supercollider
+   Bmc.help;
+   #+end_src
+
+   The paired encoder/SuperCollider input lines reflect the dispatcher's current port. The paired SuperCollider output/decoder input lines reflect =Bmc.decoderPort=. Avatar output pairs reflect the current =BmcAvatar.vmcPort= settings, so the text updates after runtime configuration changes.
+
+5. =Bmc.showDispatcherStatus(updateInterval: 0.25)=
+
+   Opens the OSC/VMC input monitor window. A static field identifies the monitored OSC address and the dispatcher's configured UDP port. A dynamic field displays the latest =BmcDispatcher.status= dictionary and refreshes every =0.25= seconds by default. Supply another interval in seconds to change the refresh rate. Closing the window stops its update routine.
+
+   #+begin_src supercollider
+   Bmc.showDispatcherStatus;      // refresh four times per second
+   Bmc.showDispatcherStatus(1.0); // refresh once per second
+   #+end_src
+
+6. =Bmc.reset=
+
+   Stops the current session, replaces the working clip library, avatars, recorder, player, dispatcher, and wires with fresh objects, restores the Ishidomaru/=39539= default route, and restarts the receiver on =57130=. Unsaved in-memory clips are lost, so use it deliberately.
 
 *** Avatars and output
 :PROPERTIES:
 :CUSTOM_ID: avatars-and-output
 :END:
-**** =Bmc.addAvatar(name, displayName)=
-:PROPERTIES:
-:CUSTOM_ID: bmcaddavatarname-displayname
-:END:
-Creates an avatar destination. Its name should match the avatar name carried by incoming frames when it is intended to receive that stream directly.
+1. =Bmc.addAvatar(name, displayName)=
 
-**** =Bmc.avatar(name)=
-:PROPERTIES:
-:CUSTOM_ID: bmcavatarname
-:END:
-Returns a registered =BmcAvatar=. With no argument it returns the default avatar, =Ishidomaru=.
+   Creates an avatar destination. Its name should match the avatar name carried by incoming frames when it is intended to receive that stream directly.
 
-**** =Bmc.selectAvatar(name)=
-:PROPERTIES:
-:CUSTOM_ID: bmcselectavatarname
-:END:
-Makes an avatar the destination for subsequent playback and completed-frame recording.
+2. =Bmc.avatar(name)=
 
-**** =Bmc.output(destination)=
-:PROPERTIES:
-:CUSTOM_ID: bmcoutputdestination
-:END:
-Replaces the selected avatar's default local-decoder output function with a custom destination. This is an advanced escape hatch.
+   Returns a registered =BmcAvatar=. With no argument it returns the default avatar, =Ishidomaru=.
 
-#+begin_src supercollider
-Bmc.output(NetAddr("127.0.0.1", 39538));
-#+end_src
+3. =Bmc.selectAvatar(name)=
 
-A function may also be used as an output for inspection or custom processing.
+   Makes an avatar the destination for subsequent playback and completed-frame recording.
 
-**** =Bmc.decoderPort_(port)=
-Sets the local decoder destination for all avatars using the default output. Default: =39538=.
+4. =Bmc.output(destination)=
 
-**** =Bmc.forwardDecoder_(flag)=
-Enables or disables forwarding to the local decoder. Default: =true=.
+   Replaces the selected avatar's default local-decoder output function with a custom destination. This is an advanced escape hatch.
 
-These are Bmc's only class-wide network-output controls. Source distribution to OSCGroups belongs to [[file:HelpByTopic/HelperApplications/BunrakuOSCEncoder.md][BunrakuOSCEncoder]], not Bmc.
+   #+begin_src supercollider
+   Bmc.output(NetAddr("127.0.0.1", 39538));
+   #+end_src
 
-**** =Bmc.sendCalibrationFrame(port)=
-Sends one approximate upright T-pose for the selected avatar to a local decoder input. If =port= is omitted, Bmc uses its currently configured decoder port, which defaults to =39538=. The routed frame separately embeds the selected avatar's Godot VMC destination, which defaults to =39539= for Ishidomaru.
+   A function may also be used as an output for inspection or custom processing.
 
-#+begin_src supercollider
-Bmc.sendCalibrationFrame;        // decoder input 39538 by default
-Bmc.sendCalibrationFrame(39548); // explicitly use another decoder input
-#+end_src
+5. =Bmc.decoderPort_(port)=
 
-This is a pipeline-connectivity test, not a calibrated reference pose for a particular VRM model.
+   Sets the local decoder destination for all avatars using the default output. Default: =39538=.
+
+6. =Bmc.forwardDecoder_(flag)=
+
+   Enables or disables forwarding to the local decoder. Default: =true=.
+
+   These are Bmc's only class-wide network-output controls. Source distribution to OSCGroups belongs to [[file:HelpByTopic/HelperApplications/BunrakuOSCEncoder.md][BunrakuOSCEncoder]], not Bmc.
+
+7. =Bmc.sendCalibrationFrame(port)=
+
+   Sends one approximate upright T-pose for the selected avatar to a local decoder input. If =port= is omitted, Bmc uses its currently configured decoder port, which defaults to =39538=. The routed frame separately embeds the selected avatar's Godot VMC destination, which defaults to =39539= for Ishidomaru.
+
+   #+begin_src supercollider
+   Bmc.sendCalibrationFrame;       // decoder input 39538 by default
+   Bmc.sendCalibrationFrame(39548); // explicitly use another decoder input
+   #+end_src
+
+   This is a pipeline-connectivity test, not a calibrated reference pose for a particular VRM model.
 
 *** Recording
 :PROPERTIES:
 :CUSTOM_ID: recording
 :END:
-**** =Bmc.record(name, avatar, source, capturePoint, metadata)=
-:PROPERTIES:
-:CUSTOM_ID: bmcrecordname-avatar-source-capturepoint-metadata
-:END:
-Begins a recording. Every argument is optional. SCD is the default recording format: when =Bmc.stopRecording= is called, the completed clip is retained in memory and automatically saved as =name.scd= in =BmcClipLibrary.defaultDirectory=.
+1. =Bmc.record(name, avatar, source, capturePoint, metadata)=
 
-#+begin_src supercollider
-Bmc.record;                         // record all incoming frames
-Bmc.record(\take1);                 // record all frames as \take1
-Bmc.record(\take1, "actor", "camA");
-#+end_src
+   Begins a recording. Every argument is optional. SCD is the default recording format: when =Bmc.stopRecording= is called, the completed clip is retained in memory and automatically saved as =name.scd= in =BmcClipLibrary.defaultDirectory=.
 
-=capturePoint= is =\rawFrame= by default. Use =\completedFrame= to record the selected avatar after reference-pose completion and live wiring.
+   #+begin_src supercollider
+   Bmc.record;                         // record all incoming frames
+   Bmc.record(\take1);                 // record all frames as \take1
+   Bmc.record(\take1, "actor", "camA");
+   #+end_src
 
-**** =Bmc.recordScd(name, avatar, source, capturePoint, metadata)=
+   =capturePoint= is =\rawFrame= by default. Use =\completedFrame= to record the selected avatar after reference-pose completion and live wiring.
 
-Explicit alias for the default =Bmc.record= behavior.
+2. =Bmc.recordScd(name, avatar, source, capturePoint, metadata)=
 
-**** =Bmc.recordBmc(name, avatar, source, capturePoint, metadata)=
+   Explicit alias for the default =Bmc.record= behavior.
 
-Begins a recording that will be saved in the legacy =.bmc= archive format when stopped. Use this only when that format is specifically required.
+3. =Bmc.recordBmc(name, avatar, source, capturePoint, metadata)=
 
-**** =Bmc.stopRecording=
-:PROPERTIES:
-:CUSTOM_ID: bmcstoprecording
-:END:
-Stops recording, returns a =BmcMocapClip=, adds it to the in-memory clip library, makes it the current clip, and saves it to disk in the format selected when recording began. Ordinary =Bmc.record= and =Bmc.recordScd= calls save =.scd=; =Bmc.recordBmc= saves =.bmc=.
+   Begins a recording that will be saved in the legacy =.bmc= archive format when stopped. Use this only when that format is specifically required.
 
-**** =Bmc.cancelRecording=
-:PROPERTIES:
-:CUSTOM_ID: bmccancelrecording
-:END:
-Stops recording and discards the frames collected in that take.
+4. =Bmc.stopRecording=
 
-**** =Bmc.isRecording=
-:PROPERTIES:
-:CUSTOM_ID: bmcisrecording
-:END:
-Returns =true= or =false=.
+   Stops recording, returns a =BmcMocapClip=, adds it to the in-memory clip library, makes it the current clip, and saves it to disk in the format selected when recording began. Ordinary =Bmc.record= and =Bmc.recordScd= calls save =.scd=; =Bmc.recordBmc= saves =.bmc=.
+
+5. =Bmc.cancelRecording=
+
+   Stops recording and discards the frames collected in that take.
+
+6. =Bmc.isRecording=
+
+   Returns =true= or =false=.
 
 *** Clip library
 :PROPERTIES:
 :CUSTOM_ID: clip-library
 :END:
-**** =Bmc.clips=
-:PROPERTIES:
-:CUSTOM_ID: bmcclips
-:END:
-Returns the dictionary of all in-memory named clips.
+1. =Bmc.clips=
 
-**** =Bmc.clip(name)=
-:PROPERTIES:
-:CUSTOM_ID: bmcclipname
-:END:
-Returns a named clip. With =nil=, it returns the current clip.
+   Returns the dictionary of all in-memory named clips.
 
-**** =Bmc.selectClip(name)=
-:PROPERTIES:
-:CUSTOM_ID: bmcselectclipname
-:END:
-Makes a named clip current and returns it.
+2. =Bmc.clip(name)=
 
-**** =Bmc.currentClip=
-:PROPERTIES:
-:CUSTOM_ID: bmccurrentclip
-:END:
-Returns the currently selected clip.
+   Returns a named clip. With =nil=, it returns the current clip.
 
-**** =Bmc.listClips=
-:PROPERTIES:
-:CUSTOM_ID: bmclistclips
-:END:
-Posts clip names, frame counts, and durations in the SuperCollider post window. The current clip is marked with =*=.
+3. =Bmc.selectClip(name)=
 
-**** =Bmc.showClips=
-:PROPERTIES:
-:CUSTOM_ID: bmcshowclips
-:END:
-Opens the clip window. Initially it shows clips currently loaded in memory. The buttons above the list provide two disk and playback operations:
+   Makes a named clip current and returns it.
 
-- =List saved= scans =BmcClipLibrary.defaultDirectory= for =.scd= and =.bmc= files and displays their names without loading their contents into memory.
-- =Play selected= loads the selected saved clip if necessary, then begins playback. A clip already in memory is played directly.
+4. =Bmc.currentClip=
 
-Selecting a row for an in-memory clip also makes it the current clip. Saved clips shown by =List saved= remain unloaded until =Play selected= is pressed.
+   Returns the currently selected clip.
 
-**** =Bmc.renameClip(oldName, newName)=
-:PROPERTIES:
-:CUSTOM_ID: bmcrenameclipoldname-newname
-:END:
-Renames a clip in the in-memory library.
+5. =Bmc.listClips=
 
-**** =Bmc.removeClip(name)=
-:PROPERTIES:
-:CUSTOM_ID: bmcremoveclipname
-:END:
-Removes a clip from memory. This does not delete a separately saved file.
+   Posts clip names, frame counts, and durations in the SuperCollider post window. The current clip is marked with =*=.
 
-**** =Bmc.saveClip(name, path)= / =Bmc.save(name, path)=
-:PROPERTIES:
-:CUSTOM_ID: bmcsaveclipname-path--bmcsavename-path
-:END:
-Writes a clip archive. If the path is omitted, BuMoChi uses a =BmcClips= directory inside =Platform.userAppSupportDir= and the =.bmc= extension.
+6. =Bmc.showClips=
 
-**** =Bmc.loadClip(path, name)= / =Bmc.load(path, name)=
-:PROPERTIES:
-:CUSTOM_ID: bmcloadclippath-name--bmcloadpath-name
-:END:
-Loads a saved =.bmc= or =.scd= clip; the extension selects the reader. If =name= is omitted, the filename becomes the clip name.
+   Opens the clip window. Initially it shows clips currently loaded in memory. The buttons above the list provide two disk and playback operations:
 
-**** =Bmc.saveClipScd(name, path)=
+   - =List saved= scans =BmcClipLibrary.defaultDirectory= for =.scd= and =.bmc= files and displays their names without loading their contents into memory.
+   - =Play selected= loads the selected saved clip if necessary, then begins playback. A clip already in memory is played directly.
 
-Explicitly saves or resaves an in-memory clip in the complete, human-readable timestamp/message format. When =path= is omitted, the file is saved as =name.scd= in the default =BmcClips= directory. Ordinary =Bmc.record= already performs this save automatically when =Bmc.stopRecording= is called; use =Bmc.saveClipScd= when an explicit path is required or an existing in-memory clip must be written again.
+   Selecting a row for an in-memory clip also makes it the current clip. Saved clips shown by =List saved= remain unloaded until =Play selected= is pressed.
 
-#+begin_src supercollider
-Bmc.record(\take1);
-// perform the motion
-Bmc.stopRecording;
-// take1.scd now exists in BmcClipLibrary.defaultDirectory
-#+end_src
+7. =Bmc.renameClip(oldName, newName)=
 
-**** =Bmc.loadClipScd(path, name)=
+   Renames a clip in the in-memory library.
 
-Loads a readable =.scd= clip explicitly. The first stored timestamp is normalized to zero while all frame intervals are preserved. Load only trusted =.scd= files because their message lines are interpreted as SuperCollider code.
+8. =Bmc.removeClip(name)=
 
-#+begin_src supercollider
-Bmc.loadClipScd(
-	BmcClipLibrary.defaultDirectory +/+ "take1.scd",
-	\take1
-);
-#+end_src
+   Removes a clip from memory. This does not delete a separately saved file.
 
-**** =Bmc.clipToScd(name)= / =Bmc.convertClipToScd(name)=
-:PROPERTIES:
-:CUSTOM_ID: bmccliptoscdname--bmcconvertcliptoscdname
-:END:
-Exports a recorded clip as a human-readable SuperCollider =.scd= file. The file is placed beside the clip's =.bmc= archive and uses the same base name; for example, =take1.bmc= becomes =take1.scd=. The returned value is the full path of the exported file.
+9. =Bmc.saveClip(name, path)= / =Bmc.save(name, path)=
 
-#+begin_src supercollider
-~scdPath = Bmc.clipToScd(\take1);
-~scdPath.postln;
-#+end_src
+   Writes a clip archive. If the path is omitted, BuMoChi uses a =BmcClips= directory inside =Platform.userAppSupportDir= and the =.bmc= extension.
 
-If the named clip is not currently loaded, this method automatically looks for its =.bmc= file in =BmcClipLibrary.defaultDirectory= and loads it. Clips loaded or saved at a custom path are exported beside that remembered path.
+10. =Bmc.loadClip(path, name)= / =Bmc.load(path, name)=
 
-Each frame is written as an OscRecorder-style commented clip-relative timestamp followed by the message's sclang representation:
+    Loads a saved =.bmc= or =.scd= clip; the extension selects the reader. If =name= is omitted, the filename becomes the clip name.
 
-#+begin_src supercollider
-//:--[0.125]
-[ '/bunraku/vmc/frame', 1, 'Avatar', 'source', 2 ]
-#+end_src
+11. =Bmc.saveClipScd(name, path)=
 
-The entire clip is stored in one =.scd= file; it is not divided into groups of 1,000 messages. Exporting again replaces an existing =.scd= file of the same name. The exported file can be restored with =Bmc.loadClip= or =Bmc.loadClipScd=.
+    Explicitly saves or resaves an in-memory clip in the complete, human-readable timestamp/message format. When =path= is omitted, the file is saved as =name.scd= in the default =BmcClips= directory. Ordinary =Bmc.record= already performs this save automatically when =Bmc.stopRecording= is called; use =Bmc.saveClipScd= when an explicit path is required or an existing in-memory clip must be written again.
+
+    #+begin_src supercollider
+    Bmc.record(\take1);
+    // perform the motion
+    Bmc.stopRecording;
+    // take1.scd now exists in BmcClipLibrary.defaultDirectory
+    #+end_src
+
+12. =Bmc.loadClipScd(path, name)=
+
+    Loads a readable =.scd= clip explicitly. The first stored timestamp is normalized to zero while all frame intervals are preserved. Load only trusted =.scd= files because their message lines are interpreted as SuperCollider code.
+
+    #+begin_src supercollider
+    Bmc.loadClipScd(
+        BmcClipLibrary.defaultDirectory +/+ "take1.scd",
+        \take1
+    );
+    #+end_src
+
+13. =Bmc.clipToScd(name)= / =Bmc.convertClipToScd(name)=
+
+    Exports a recorded clip as a human-readable SuperCollider =.scd= file. The file is placed beside the clip's =.bmc= archive and uses the same base name; for example, =take1.bmc= becomes =take1.scd=. The returned value is the full path of the exported file.
+
+    #+begin_src supercollider
+    ~scdPath = Bmc.clipToScd(\take1);
+    ~scdPath.postln;
+    #+end_src
+
+    If the named clip is not currently loaded, this method automatically looks for its =.bmc= file in =BmcClipLibrary.defaultDirectory= and loads it. Clips loaded or saved at a custom path are exported beside that remembered path.
+
+    Each frame is written as an OscRecorder-style commented clip-relative timestamp followed by the message's sclang representation:
+
+    #+begin_src supercollider
+    //:--[0.125]
+    [ '/bunraku/vmc/frame', 1, 'Avatar', 'source', 2 ]
+    #+end_src
+
+    The entire clip is stored in one =.scd= file; it is not divided into groups of 1,000 messages. Exporting again replaces an existing =.scd= file of the same name. The exported file can be restored with =Bmc.loadClip= or =Bmc.loadClipScd=.
 
 *** Playback
 :PROPERTIES:
 :CUSTOM_ID: playback
 :END:
-**** =Bmc.play(name)= / =Bmc.playClip(name)=
-:PROPERTIES:
-:CUSTOM_ID: bmcplayname--bmcplayclipname
-:END:
-Plays a named clip. With no name, it plays the current clip.
+1. =Bmc.play(name)= / =Bmc.playClip(name)=
 
-**** =Bmc.pause= and =Bmc.resume=
-:PROPERTIES:
-:CUSTOM_ID: bmcpause-and-bmcresume
-:END:
-Pause and resume the current player task.
+   Plays a named clip. With no name, it plays the current clip.
 
-**** =Bmc.stopPlayback=
-:PROPERTIES:
-:CUSTOM_ID: bmcstopplayback
-:END:
-Stops playback without shutting down the receiver or other Bmc services.
+2. =Bmc.pause= and =Bmc.resume=
 
-**** =Bmc.seek(seconds)=
-:PROPERTIES:
-:CUSTOM_ID: bmcseekseconds
-:END:
-Moves the player's next frame position to the closest frame at or before the requested time.
+   Pause and resume the current player task.
 
-**** =Bmc.rate(value)=
-:PROPERTIES:
-:CUSTOM_ID: bmcratevalue
-:END:
-Sets playback speed. =1.0= is original timing, =0.5= is half speed, and =2.0= is double speed. The value must be greater than zero.
+3. =Bmc.stopPlayback=
 
-**** =Bmc.loop(flag)=
-:PROPERTIES:
-:CUSTOM_ID: bmcloopflag
-:END:
-Turns repeated playback on or off.
+   Stops playback without shutting down the receiver or other Bmc services.
+
+4. =Bmc.seek(seconds)=
+
+   Moves the player's next frame position to the closest frame at or before the requested time.
+
+5. =Bmc.rate(value)=
+
+   Sets playback speed. =1.0= is original timing, =0.5= is half speed, and =2.0= is double speed. The value must be greater than zero.
+
+6. =Bmc.loop(flag)=
+
+   Turns repeated playback on or off.
 
 *** Combining recordings
 :PROPERTIES:
 :CUSTOM_ID: combining-recordings
 :END:
-**** =Bmc.combineClips(target, source, bones, result, startIndex)=
-:PROPERTIES:
-:CUSTOM_ID: bmccombineclipstarget-source-bones-result-startindex
-:END:
-Copies selected bones from one clip into another and stores the result as a new =BmcAnimationClip=.
+1. =Bmc.combineClips(target, source, bones, result, startIndex)=
 
-#+begin_src supercollider
-Bmc.combineClips(
-    \baseTake,
-    \armTake,
-    \leftArm,
-    \combined
-);
-#+end_src
+   Copies selected bones from one clip into another and stores the result as a new =BmcAnimationClip=.
 
-Built-in body groups include =\leftArm=, =\rightArm=, =\arms=, =\leftLeg=, =\rightLeg=, =\legs=, =\torso=, =\upperBody=, and =\all=. An array of exact bone names can also be supplied.
+   #+begin_src supercollider
+   Bmc.combineClips(
+       \baseTake,
+       \armTake,
+       \leftArm,
+       \combined
+   );
+   #+end_src
 
-**** =Bmc.combine(targetFrame, sourceFrame, bones)=
-:PROPERTIES:
-:CUSTOM_ID: bmccombinetargetframe-sourceframe-bones
-:END:
-Lower-level operation that copies selected bones between two individual Bunraku frames.
+   Built-in body groups include =\leftArm=, =\rightArm=, =\arms=, =\leftLeg=, =\rightLeg=, =\legs=, =\torso=, =\upperBody=, and =\all=. An array of exact bone names can also be supplied.
 
-**** =Bmc.rseq(targetSequence, sourceSequence, bones, startIndex)=
-:PROPERTIES:
-:CUSTOM_ID: bmcrseqtargetsequence-sourcesequence-bones-startindex
-:END:
-Lower-level sequence operation that replaces selected bones over a range of frames.
+2. =Bmc.combine(targetFrame, sourceFrame, bones)=
 
-**** =Bmc.bone(frame, boneName)=
-:PROPERTIES:
-:CUSTOM_ID: bmcboneframe-bonename
-:END:
-Returns the seven transform values for one named bone in a frame.
+   Lower-level operation that copies selected bones between two individual Bunraku frames.
+
+3. =Bmc.rseq(targetSequence, sourceSequence, bones, startIndex)=
+
+   Lower-level sequence operation that replaces selected bones over a range of frames.
+
+4. =Bmc.bone(frame, boneName)=
+
+   Returns the seven transform values for one named bone in a frame.
 
 *** Live composition
 :PROPERTIES:
 :CUSTOM_ID: live-composition
 :END:
-**** =Bmc.wire(source, bones, target, sourceAvatar, priority)=
-:PROPERTIES:
-:CUSTOM_ID: bmcwiresource-bones-target-sourceavatar-priority
-:END:
-Creates a persistent live routing rule. For example:
+1. =Bmc.wire(source, bones, target, sourceAvatar, priority)=
 
-#+begin_src supercollider
-~armWire = Bmc.wire(
-    "camera-a",
-    \leftArm,
-    \composite,
-    "performer-a"
-);
-#+end_src
+   Creates a persistent live routing rule. For example:
 
-Matching left-arm transforms are copied into the =\composite= avatar. Other bones retain the avatar's current or reference pose.
+   #+begin_src supercollider
+   ~armWire = Bmc.wire(
+       "camera-a",
+       \leftArm,
+       \composite,
+       "performer-a"
+   );
+   #+end_src
 
-**** =Bmc.unwire(wire)=
-:PROPERTIES:
-:CUSTOM_ID: bmcunwirewire
-:END:
-Removes one wire object.
+   Matching left-arm transforms are copied into the =\composite= avatar. Other bones retain the avatar's current or reference pose.
 
-**** =Bmc.listWires=
-:PROPERTIES:
-:CUSTOM_ID: bmclistwires
-:END:
-Posts and returns the active wires.
+2. =Bmc.unwire(wire)=
 
-**** =Bmc.clearWires=
-:PROPERTIES:
-:CUSTOM_ID: bmcclearwires
-:END:
-Removes every live wire from every Bmc avatar.
+   Removes one wire object.
+
+3. =Bmc.listWires=
+
+   Posts and returns the active wires.
+
+4. =Bmc.clearWires=
+
+   Removes every live wire from every Bmc avatar.
 
 ** 5. Bmc class overview
 :PROPERTIES:
@@ -759,8 +680,7 @@ The spatial state of a skeleton: a collection mapping standardized bone names to
 :PROPERTIES:
 :CUSTOM_ID: bmcbonetransform
 :END:
-The position and rotation of one bone, stored as seven values:
-=x, y, z, qx, qy, qz, qw=.
+The position and rotation of one bone, stored as seven values: =x, y, z, qx, qy, qz, qw=.
 
 *** =BmcBoneSets=
 :PROPERTIES:
@@ -784,8 +704,7 @@ A =BmcClip= produced by recording motion-capture input. It can retain capture me
 :PROPERTIES:
 :CUSTOM_ID: bmcanimationclip
 :END:
-A =BmcClip= produced through editing, body-part combination, or future
-algorithmic generation rather than direct capture.
+A =BmcClip= produced through editing, body-part combination, or future algorithmic generation rather than direct capture.
 
 *** =BmcClipRecorder=
 :PROPERTIES:

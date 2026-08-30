@@ -1,7 +1,8 @@
 # BuMoChi User Guide
 
-> [!note] This is a user guide draft for the current Bmc interface. It outlines the purpose of the BuMoChi library, the applications it works with, and gives examples of commands for doing basic tasks with this library like recording, playback and composition of animation clips. For installation and getting started see files [[Documentation/BuMoChi/Installation|Installation]] and [[Getting Started]].
+This is a user guide draft for the current Bmc interface. It outlines the purpose of the BuMoChi library, the applications it works with, and gives examples of commands for doing basic tasks with this library like recording, playback and composition of animation clips.
 
+***For installation and getting started see files [[Documentation/BuMoChi/Installation|Installation]] and [[Getting Started]].***
 ## 1. What BuMoChi is
 
 BuMoChi is a SuperCollider library for performing with motion-capture data and animated characters. It lets a live coder treat movement as material: receive it from a camera, record it, replay it, change its timing, combine selected body parts, and send the result to an animated character. BuMoChi also supports live collaboration among separate performance workstations, each with its own motion-capture tracking, computer, sound-generation, and animation systems. By sharing motion-capture data as OSC through OSCGroups, it makes it possible to rehearse and perform together from different locations over the network.

@@ -2,13 +2,11 @@
 :PROPERTIES:
 :CUSTOM_ID: 概要
 :END:
-このガイドでは、小さなテストを順番に行いながら、BuMoChi とそのパイプラインを詳しく紹介します。前の手順で動作を確認したパイプラインと作成した素材を、次の手順でも引き続き使用します。
+このガイドでは、小さなテストを順番に行いながら BuMoChi を紹介します。各手順では、前の手順で動作を確認したパイプラインと作成した素材を引き続き使用します。
 
 ソフトウェアをまだインストールしていない場合は、[[file:インストール.md][インストール]]に従ってください。
 
-#+begin_quote
-[!tip] 完全なマルチユーザー起動手順については、[[file:HelpByTopic/BuMoChi%20フルセットアップ手順.md][BuMoChi フルセットアップ手順]]を参照してください。
-#+end_quote
+システムをセットアップしてアニメーションデータを受信し、Godot でアニメーションを実行する方法については、[[file:HelpByTopic/BuMoChi%20フルセットアップ手順.md][BuMoChi フルセットアップ手順]]を参照してください。
 
 最初の5つの演習では、現在のデフォルト設定を使用します。
 
@@ -22,93 +20,6 @@
 | Godot プロジェクト           | =Seed_2_Ishidomaru_C= |
 
 ターミナルコマンドは BuMoChi リポジトリのルートから実行してください。SuperCollider コードは、括弧で囲まれたブロックまたは1つの文を単位として評価します。
-
-* ローカルテスト用パイプラインを準備する
-:PROPERTIES:
-:CUSTOM_ID: ローカルテスト用パイプラインを準備する
-:END:
-最初のテストをローカルかつ診断しやすい状態に保つため、この準備では OSCGroups を使用しません。
-
-** 1. Godot を起動する
-:PROPERTIES:
-:CUSTOM_ID: 1-godot-を起動する
-:END:
-次のプロジェクトを開いて実行します。
-
-#+begin_src text
-AppsAndCode/GodotProjects/Seed_2_Ishidomaru_C/project.godot
-#+end_src
-
-上のパスは、完全版 ICLC27 ワークスペースのルートを基準とした相対パスです。プロジェクトには Ishidomaru が表示され、UDP ポート =39539= で VMC を待ち受けます。
-
-** 2. BunrakuOSCDecoder を起動する
-:PROPERTIES:
-:CUSTOM_ID: 2-bunrakuoscdecoder-を起動する
-:END:
-BuMoChi リポジトリのルートでターミナルを開き、次を実行します。
-
-#+begin_src sh
-python3 PipelineApplications/BunrakuOSCDecoder.py \
-  --listen-port 39538 \
-  --allow-target-port 39539 \
-  --verbose
-#+end_src
-
-このターミナルは開いたままにします。
-
-** 3. SuperCollider と BuMoChi を起動する
-:PROPERTIES:
-:CUSTOM_ID: 3-supercollider-と-bumochi-を起動する
-:END:
-SuperCollider を起動し、*Language → Recompile Class Library* を選択してクラスライブラリを再コンパイルします。Bmc は Ishidomaru を選択し、デコーダーへの転送を有効にした状態で、ポート =57130= の待受を自動的に開始します。
-
-デフォルト値を確認します。
-
-#+begin_src supercollider
-Bmc.status;
-Bmc.defaultAvatar.avatarName;
-Bmc.defaultAvatar.vmcPort;
-Bmc.decoderPort;
-#+end_src
-
-アバター名は =Ishidomaru=、アバターの VMC ポートは =39539=、デコーダーポートは =39538= である必要があります。
-
-入力モニターを開きます。
-
-#+begin_src supercollider
-Bmc.showDispatcherStatus;
-#+end_src
-
-静的な行には、Bmc がポート =57130= で =/bunraku/vmc/frame= を待ち受けていることが表示されます。
-
-** 4. BunrakuOSCEncoder を起動する
-:PROPERTIES:
-:CUSTOM_ID: 4-bunrakuoscencoder-を起動する
-:END:
-BuMoChi リポジトリのルートで別のターミナルを開き、次を実行します。
-
-#+begin_src sh
-python3 PipelineApplications/BunrakuOSCEncoder.py \
-  --no-oscgroups \
-  --avatar "Ishidomaru" \
-  --source "getting-started-xr" \
-  --verbose
-#+end_src
-
-このターミナルは開いたままにします。以下の録画例では、安定したソース名 =getting-started-xr= を使用します。
-
-** 5. XR-Animator を起動する
-:PROPERTIES:
-:CUSTOM_ID: 5-xr-animator-を起動する
-:END:
-XR-Animator を起動し、Web カメラを選択して、VMC の送信先を設定します。
-
-#+begin_src text
-Host: 127.0.0.1
-Port: 39537
-#+end_src
-
-VMC 出力を有効にし、カメラから身体が見える位置に立ちます。
 
 * XR-Animator から Ishidomaru を動かす
 :PROPERTIES:
