@@ -10,6 +10,34 @@ var clip = BmcMocapClip([
 	[0.03, BmcFrame("test", "clip", 3, 0.03, BmcPose.neutral).asOSCMessage]
 ]);
 var player = BmcClipPlayer(clip, { |message| message });
+var cacheAvatar = BmcAvatar(\cacheTest, "cacheTest");
+var cachePlayer = BmcClipPlayer(clip, cacheAvatar, \cachePlayer);
+
+cachePlayer.send(clip.frameAt(0));
+check.(cacheAvatar.sources.any { |source| source.name == \cachePlayer },
+	"player frame did not create an avatar cache");
+cachePlayer.stop;
+check.(cacheAvatar.sources.any { |source| source.name == \cachePlayer }.not,
+	"stopping the player did not remove its avatar cache");
+cachePlayer.send(clip.frameAt(0));
+check.(cacheAvatar.sources.any { |source| source.name == \cachePlayer },
+	"a stopped player could not recreate its cache");
+cachePlayer.loop_(true);
+cachePlayer.play;
+cachePlayer.mute;
+check.(cachePlayer.isPlaying, "muting stopped the player's playback clock");
+check.(cachePlayer.isMuted, "mute did not set the player's muted state");
+check.(cacheAvatar.sources.any { |source| source.name == \cachePlayer }.not,
+	"muting did not remove the player's avatar cache");
+cachePlayer.send(clip.frameAt(0));
+check.(cacheAvatar.sources.any { |source| source.name == \cachePlayer }.not,
+	"a muted player recreated its avatar cache");
+cachePlayer.unmute;
+check.(cachePlayer.isMuted.not, "unmute left the player muted");
+cachePlayer.send(clip.frameAt(0));
+check.(cacheAvatar.sources.any { |source| source.name == \cachePlayer },
+	"an unmuted player did not recreate its cache");
+cachePlayer.stop;
 
 check.(player.startFrame == 0, "constructor did not set startFrame");
 check.(player.endFrame == 3, "constructor did not set the default endFrame");
@@ -48,6 +76,10 @@ check.(Bmc.player.startFrame == 1, "Bmc.play did not set startFrame");
 check.(Bmc.player.endFrame == 2, "Bmc.play did not set endFrame");
 Bmc.freeze;
 Bmc.resume;
+Bmc.mutePlayback;
+check.(Bmc.player.isMuted, "Bmc.mutePlayback did not target the default player");
+Bmc.unmutePlayback;
+check.(Bmc.player.isMuted.not, "Bmc.unmutePlayback did not target the default player");
 Bmc.stopPlayback;
 Bmc.restartPlayback;
 Bmc.resetPlayback;

@@ -227,19 +227,15 @@ This project uses:
 
 | Avatar     | VMC port |
 |------------|---------:|
-| Mother     |  `39539` |
-| Ishidomaru |  `39540` |
+| Ishidomaru |  `39539` |
+| Mother     |  `39540` |
 
-## 2. Restart the decoder for both avatars
+## 2. Keep the decoder running
 
-Stop the existing decoder with **Control-C**, then run:
+The standard pipeline decoder accepts every valid embedded target port. Do not restart it when changing between the one-avatar and two-avatar projects.
 
 ``` bash
-python3 PipelineApplications/BunrakuOSCDecoder.py \
-  --listen-port 39538 \
-  --allow-target-port 39539 \
-  --allow-target-port 39540 \
-  --verbose
+./start_bumochi_pipeline.sh
 ```
 
 ## 3. Register the two Bmc avatar outputs
@@ -249,13 +245,13 @@ Evaluate:
 ``` supercollider
 (
 ~ishidomaru = Bmc.avatar(\Ishidomaru);
-~ishidomaru.vmcPort_(39540);
+~ishidomaru.vmcPort_(39539);
 
 ~mother = Bmc.avatar(\Mother);
 if(~mother.isNil) {
     ~mother = Bmc.addAvatar(\Mother, "Mother");
 };
-~mother.vmcPort_(39539);
+~mother.vmcPort_(39540);
 )
 ```
 

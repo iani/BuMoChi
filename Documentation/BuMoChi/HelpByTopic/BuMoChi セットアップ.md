@@ -14,6 +14,34 @@ XR-Animator -> encoder 39537 -> Bmc 57130 -> decoder 39538 -> Godot 39539
 
 ランチャーは XR-Animator、SuperCollider、Godot を起動しません。この3つのアプリケーションは個別に起動してください。SuperCollider のクラスライブラリを再コンパイルして Bmc が `57130` で待ち受けるようにし、XR-Animator の送信先を `39537` に設定し、Godot のアバターレシーバーを `39539` で実行します。
 
+## ランチャーの `--avatar` オプションの意味
+
+`--avatar` オプションは、`BunrakuOSCEncoder` が受信するローカルのモーションキャプチャーストリームによって、どのアニメーションフィギュアを制御するかを指定します。このオプションは XR-Animator の UDP 送信先を変更しません。XR-Animator は引き続きエンコーダーの待受ポート（デフォルトでは `127.0.0.1:39537`）へ VMC を送ります。エンコーダーはそのポートで受信した各フレームに指定されたアバター名を付け、Bmc はその名前を使って対応する登録済み `BmcAvatar` を選択します。
+
+例えば：
+
+```bash
+./start_bumochi_pipeline.sh --avatar Mother
+```
+
+は次の流れを意味します。
+
+```text
+XR-Animator のカメラモーション
+    -> UDP 39537
+    -> BunrakuOSCEncoder が各フレームを "Mother" として識別
+    -> Bmc.avatar(\Mother)
+    -> Mother に設定された vmcPort
+```
+
+これは、Godot 内で Mother が UDP ポート `39537` を使用するという意味ではありません。ポート `39537` は、ローカルの XR-Animator からエンコーダーへの接続専用です。Mother の Godot 送信先は SuperCollider で別に設定します。例えば：
+
+```supercollider
+Bmc.addAvatar(\Mother, "Mother").vmcPort_(39540);
+```
+
+エンコーダーのアバター名と Bmc の登録キーは完全に一致する必要があります。ランチャーのデフォルトは `--avatar Ishidomaru` です。ローカルの XR-Animator カメラで Mother を制御する場合は `--avatar Mother` を使用してください。このオプションはプロセス起動時の設定なので、変更するにはエンコーダーを再起動する必要があります。
+
 OSCGroups を使用するには、OSC サーバーのアドレスと一意のユーザー名を指定します。
 
 ```bash
@@ -162,6 +190,8 @@ python3 PipelineApplications/BunrakuOSCEncoder.py \
 
 `workstation-a-xr-animator` を、このワークステーション固有の安定したソース識別子に置き換えてください。このターミナルは開いたままにします。
 
+ここで `--avatar "Ishidomaru"` は、`39537` に到着するローカル XR-Animator ストリームを Ishidomaru のモーションとして識別するという意味です。カメラで Bmc に `\Mother` として登録されたアバターを制御する場合は、`--avatar "Mother"` に置き換えてください。この識別設定は、エンコーダーの待受ポートと、アバターの最終的な Godot `vmcPort` の両方から独立しています。
+
 エンコーダーは、ルート情報を持たない同一のソースフレームを2つ生成します。
 
 ```text
@@ -269,7 +299,6 @@ python3 PipelineApplications/BunrakuOSCDecoder.py \
   --listen-ip 127.0.0.1 \
   --listen-port 39538 \
   --target-ip 127.0.0.1 \
-  --allow-target-port 39539 \
   --verbose
 ```
 
@@ -282,19 +311,16 @@ BunrakuOSCDecoder \
   --listen-ip 127.0.0.1 \
   --listen-port 39538 \
   --target-ip 127.0.0.1 \
-  --allow-target-port 39539 \
   --verbose
 ```
 
-複数アバターの Godot シーンでは、そのシーンが使用するすべての送信先を許可します。例：
+同じデコーダーが Bmc によって埋め込まれたすべての有効な送信先を受け入れるため、複数アバターのシーンでもデコーダーコマンドを変更する必要はありません。
 
 ```bash
 python3 PipelineApplications/BunrakuOSCDecoder.py \
   --listen-ip 127.0.0.1 \
   --listen-port 39538 \
   --target-ip 127.0.0.1 \
-  --allow-target-port 39539 \
-  --allow-target-port 39540 \
   --verbose
 ```
 
@@ -315,14 +341,14 @@ Godot は最後に起動してもかまいません。レシーバーが起動�
 
 | アバター | レシーバーノード | UDP ポート | ボディトラッカー名 | フェイストラッカー名 |
 |---|---|---:|---|---|
-| Mother | `MotherVMCTracker` | `39539` | `/vmc/mother_body_tracker` | `/vmc/mother_face_tracker` |
-| Ishidomaru | `IshidomaruVMCTracker` | `39540` | `/vmc/ishidomaru_body_tracker` | `/vmc/ishidomaru_face_tracker` |
+| Ishidomaru | `IshidomaruVMCTracker` | `39539` | `/vmc/ishidomaru_body_tracker` | `/vmc/ishidomaru_face_tracker` |
+| Mother | `MotherVMCTracker` | `39540` | `/vmc/mother_body_tracker` | `/vmc/mother_face_tracker` |
 
-このシーンを使用する場合は、Bmc のアバタールートも対応するように設定し、両方のポートを許可してデコーダーを起動します。
+このシーンを使用する場合は、Bmc のアバター送信先を対応するように設定します。制限のないルート付きフレーム用デコーダーには、アバター固有の許可リストは不要です。
 
 ```supercollider
-Bmc.avatar(\Ishidomaru).vmcPort_(39540);
-Bmc.addAvatar(\Mother, "Mother").vmcPort_(39539);
+Bmc.avatar(\Ishidomaru).vmcPort_(39539);
+Bmc.addAvatar(\Mother, "Mother").vmcPort_(39540);
 ```
 
 明示的レシーバー構成については、[Godot における複数アバタープロジェクトのポート番号設定](Multi-Avatar%20project%20port%20number%20setting%20in%20godot%20-%20NOTES.md#set-the-vmc-port-numbers-for-mother-and-ishidomaru)を参照してください。

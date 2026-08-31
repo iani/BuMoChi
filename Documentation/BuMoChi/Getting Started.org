@@ -2,9 +2,14 @@
 :PROPERTIES:
 :CUSTOM_ID: overview
 :END:
-This guide introduces BuMoChi through a sequence of small tests. Perform them in order. Each step reuses the working pipeline and material created by the previous step.
+This guide introduces BuMoChi through a sequence of small tests. Perform
+them in order. Each step reuses the working pipeline and material
+created by the previous step.
 
-If the software is not installed yet, follow [[file:Installation.md][Installation]]. To set up the system to receive animation data and run animations on Godot, see: [[file:HelpByTopic/Setup.md][Setup]].
+If the software is not installed yet, follow
+[[file:Installation.md][Installation]]. To set up the system to receive
+animation data and run animations on Godot, see:
+[[file:HelpByTopic/Setup.md][Setup]].
 
 The first five exercises use the current default configuration:
 
@@ -17,23 +22,30 @@ The first five exercises use the current default configuration:
 | Ishidomaru Godot VMC input | =39539=               |
 | Godot project              | =Seed_2_Ishidomaru_C= |
 
-Run terminal commands from the root of the BuMoChi repository. Evaluate SuperCollider code one parenthesized block or one statement at a time.
+Run terminal commands from the root of the BuMoChi repository. Evaluate
+SuperCollider code one parenthesized block or one statement at a time.
 
 * Prepare the local test pipeline
 :PROPERTIES:
 :CUSTOM_ID: prepare-the-local-test-pipeline
 :END:
-This preparation omits OSCGroups so that the first tests remain local and easy to diagnose. For the complete pipeline procedure, see [[file:HelpByTopic/Setup.md][Setup]].
+This preparation omits OSCGroups so that the first tests remain local
+and easy to diagnose. For the complete pipeline procedure, see
+[[file:HelpByTopic/Setup.md][Setup]].
 
 * Animate the Ishidomaru avatar from XR-Animator
 :PROPERTIES:
 :CUSTOM_ID: animate-the-ishidomaru-avatar-from-xr-animator
 :END:
-Move in front of the webcam. Ishidomaru should follow the movement in Godot.
+Move in front of the webcam. Ishidomaru should follow the movement in
+Godot.
 
-Confirm in the Bmc monitor that the dynamic =received= count is increasing. The encoder terminal should also report received VMC data and frames sent to Bmc.
+Confirm in the Bmc monitor that the dynamic =received= count is
+increasing. The encoder terminal should also report received VMC data
+and frames sent to Bmc.
 
-If the avatar does not move, check the pipeline from downstream to upstream:
+If the avatar does not move, check the pipeline from downstream to
+upstream:
 
 1. Godot is running =Seed_2_Ishidomaru_C= and listening on =39539=.
 2. The decoder is listening on =39538= and allows target port =39539=.
@@ -41,15 +53,20 @@ If the avatar does not move, check the pipeline from downstream to upstream:
 4. The encoder is listening on =39537= and sending to Bmc on =57130=.
 5. XR-Animator is sending VMC to =127.0.0.1:39537=.
 
-For deeper diagnosis, see [[file:HelpByTopic/PortNumberSetup.md][Port Number Setup]].
+For deeper diagnosis, see
+[[file:HelpByTopic/PortNumberSetup.md][Port Number Setup]].
 
 * Animate the Ishidomaru avatar from an algorithmic clip
 :PROPERTIES:
 :CUSTOM_ID: animate-the-ishidomaru-avatar-from-an-algorithmic-clip
 :END:
-This example captures the latest valid live pose as a model-compatible reference, then generates a four-second clip in which the hips move gently from side to side. Using a valid received pose preserves Ishidomaru's bone proportions and VMC coordinate conventions.
+This example captures the latest valid live pose as a model-compatible
+reference, then generates a four-second clip in which the hips move
+gently from side to side. Using a valid received pose preserves
+Ishidomaru's bone proportions and VMC coordinate conventions.
 
-First move into a comfortable upright pose and confirm that Ishidomaru is visible. Then evaluate:
+First move into a comfortable upright pose and confirm that Ishidomaru
+is visible. Then evaluate:
 
 #+begin_src supercollider
 (
@@ -97,7 +114,8 @@ Bmc.saveClipScd(\algorithmicSway);
 )
 #+end_src
 
-Disable VMC output in XR-Animator temporarily so the live stream does not compete with playback. Then play the generated clip:
+Disable VMC output in XR-Animator temporarily so the live stream does
+not compete with playback. Then play the generated clip:
 
 #+begin_src supercollider
 Bmc.loop(true);
@@ -138,15 +156,20 @@ Bmc.listClips;
 BmcClipLibrary.defaultDirectory;
 #+end_src
 
-=take1= is retained in memory and, because SCD is the default recording format, is also saved as =take1.scd= in =BmcClipLibrary.defaultDirectory=.
+=take1= is retained in memory and, because SCD is the default recording
+format, is also saved as =take1.scd= in
+=BmcClipLibrary.defaultDirectory=.
 
-If the returned clip has zero frames, verify that the Bmc monitor's =received= count was increasing while recording and that the encoder used the same avatar and source strings shown above.
+If the returned clip has zero frames, verify that the Bmc monitor's
+=received= count was increasing while recording and that the encoder
+used the same avatar and source strings shown above.
 
 * Play back a clip
 :PROPERTIES:
 :CUSTOM_ID: play-back-a-clip
 :END:
-Disable XR-Animator VMC output so that live data does not compete with the recording. Play the clip:
+Disable XR-Animator VMC output so that live data does not compete with
+the recording. Play the clip:
 
 #+begin_src supercollider
 Bmc.play(\take1);
@@ -176,7 +199,8 @@ Bmc.rate(1.0);
 Bmc.loop(false);
 #+end_src
 
-To prove that the disk copy can be restored after recompilation, recompile the class library and load it explicitly:
+To prove that the disk copy can be restored after recompilation,
+recompile the class library and load it explicitly:
 
 #+begin_src supercollider
 Bmc.loadClipScd(
@@ -190,9 +214,11 @@ Bmc.play(\take1);
 :PROPERTIES:
 :CUSTOM_ID: combine-two-clips-on-one-avatar
 :END:
-This exercise uses =take1= as the base motion and takes both arms from a second recording.
+This exercise uses =take1= as the base motion and takes both arms from a
+second recording.
 
-Re-enable XR-Animator VMC output and record a second take containing distinctive arm movement:
+Re-enable XR-Animator VMC output and record a second take containing
+distinctive arm movement:
 
 #+begin_src supercollider
 Bmc.record(\armTake, "Ishidomaru", "getting-started-xr");
@@ -204,7 +230,8 @@ Move the arms for several seconds, then stop:
 Bmc.stopRecording;
 #+end_src
 
-Create a new clip whose timing and lower body come from =take1=, while its left and right arms come from =armTake=:
+Create a new clip whose timing and lower body come from =take1=, while
+its left and right arms come from =armTake=:
 
 #+begin_src supercollider
 Bmc.combineClips(
@@ -222,13 +249,17 @@ Disable XR-Animator VMC output and play the result:
 Bmc.play(\combinedTake);
 #+end_src
 
-The combined clip lasts as long as =take1=. Arm data is replaced only for the number of frames available in both clips; any remaining base frames stay unchanged.
+The combined clip lasts as long as =take1=. Arm data is replaced only
+for the number of frames available in both clips; any remaining base
+frames stay unchanged.
 
 * Drive two avatars from a clip and XR-Animator
 :PROPERTIES:
 :CUSTOM_ID: drive-two-avatars-from-a-clip-and-xr-animator
 :END:
-This exercise uses the uniform two-avatar project. Ishidomaru follows the live XR-Animator source while Mother plays a saved clip independently.
+This exercise uses the uniform two-avatar project. Ishidomaru follows
+the live XR-Animator source while Mother plays a saved clip
+independently.
 
 ** 1. Change the Godot project
 :PROPERTIES:
@@ -244,21 +275,19 @@ This project uses:
 
 | Avatar     | VMC port |
 |------------+----------|
-| Mother     | =39539=  |
-| Ishidomaru | =39540=  |
+| Ishidomaru | =39539=  |
+| Mother     | =39540=  |
 
-** 2. Restart the decoder for both avatars
+** 2. Keep the decoder running
 :PROPERTIES:
-:CUSTOM_ID: 2-restart-the-decoder-for-both-avatars
+:CUSTOM_ID: 2-keep-the-decoder-running
 :END:
-Stop the existing decoder with *Control-C*, then run:
+The standard pipeline decoder accepts every valid embedded target port.
+Do not restart it when changing between the one-avatar and two-avatar
+projects.
 
 #+begin_src sh
-python3 PipelineApplications/BunrakuOSCDecoder.py \
-  --listen-port 39538 \
-  --allow-target-port 39539 \
-  --allow-target-port 39540 \
-  --verbose
+./start_bumochi_pipeline.sh
 #+end_src
 
 ** 3. Register the two Bmc avatar outputs
@@ -270,13 +299,13 @@ Evaluate:
 #+begin_src supercollider
 (
 ~ishidomaru = Bmc.avatar(\Ishidomaru);
-~ishidomaru.vmcPort_(39540);
+~ishidomaru.vmcPort_(39539);
 
 ~mother = Bmc.avatar(\Mother);
 if(~mother.isNil) {
     ~mother = Bmc.addAvatar(\Mother, "Mother");
 };
-~mother.vmcPort_(39539);
+~mother.vmcPort_(39540);
 )
 #+end_src
 
@@ -284,7 +313,9 @@ if(~mother.isNil) {
 :PROPERTIES:
 :CUSTOM_ID: 4-play-a-clip-on-mother
 :END:
-Create an independent player for Mother. This is separate from Bmc's single convenience player, allowing live Ishidomaru input and Mother playback to occur at the same time:
+Create an independent player for Mother. This is separate from Bmc's
+single convenience player, allowing live Ishidomaru input and Mother
+playback to occur at the same time:
 
 #+begin_src supercollider
 ~motherPlayer = BmcClipPlayer(Bmc.clip(\combinedTake), ~mother);
@@ -303,7 +334,8 @@ Avatar: Ishidomaru
 Source: getting-started-xr
 #+end_src
 
-Ishidomaru should now follow the webcam while Mother repeats =combinedTake=.
+Ishidomaru should now follow the webcam while Mother repeats
+=combinedTake=.
 
 Stop Mother's independent playback with:
 
@@ -311,7 +343,9 @@ Stop Mother's independent playback with:
 ~motherPlayer.stop;
 #+end_src
 
-This example establishes two independent motion paths. Session definitions and the figure-composition system will later provide a higher-level way to save and coordinate several such assignments.
+This example establishes two independent motion paths. Session
+definitions and the figure-composition system will later provide a
+higher-level way to save and coordinate several such assignments.
 
 * Shut down
 :PROPERTIES:
@@ -325,4 +359,5 @@ Bmc.stopPlayback;
 Bmc.stop;
 #+end_src
 
-Then disable XR-Animator VMC output, stop the encoder and decoder with *Control-C*, and stop the Godot scene.
+Then disable XR-Animator VMC output, stop the encoder and decoder with
+*Control-C*, and stop the Godot scene.

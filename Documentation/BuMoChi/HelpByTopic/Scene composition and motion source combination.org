@@ -107,11 +107,12 @@ than returning to the pose that existed when the clip began. This makes
 the transition back to live control responsive to what the performer is
 doing now.
 
-Freezing or stopping a player currently leaves its last cached pose
-active. Artistically, this can hold one body region while the rest of
-the avatar continues moving. To return that region to the sources
-underneath, remove or disable the player cache, change its selection
-rule, or add a newer source.
+Freezing a player leaves its last cached pose active. Artistically, this
+can hold one body region while the rest of the avatar continues moving.
+Stopping removes the player's cache and reveals the sources underneath.
+Muting also removes the cache, but unlike stopping it lets the clip's
+playback clock continue advancing invisibly; unmuting lets its next
+frame return to the top of the stack.
 
 None of these operations alters the original live frames or recorded
 clips. They only change which cached sources contribute to the avatar's
@@ -473,8 +474,10 @@ Bmc.restartPlayback(\rightHandPlayer);
 Bmc.stopPlayback(\rightHandPlayer);
 #+end_src
 
-Stopping or freezing leaves the player's last cache active. Its pose
-remains in the composition until updated, disabled, removed, or cleared.
+Freezing leaves the player's last cache active, so its pose remains in
+the composition. Stopping removes that cache. Muting removes and
+suppresses the cache while playback continues; unmuting permits the next
+clip frame to recreate it as the newest source.
 
 ** BmcWire compatibility
 :PROPERTIES:
@@ -883,4 +886,3 @@ frames. Playback rate and looping remain functions of elapsed clip time.
 The constant-rate compositor described above is the authoritative output
 path. The stale-cache policies and interpolation discussed here remain
 future extensions.
-

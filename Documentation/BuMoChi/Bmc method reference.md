@@ -96,6 +96,26 @@ After the SuperCollider class library compiles, Bmc automatically listens for ro
 
     This is a pipeline-connectivity test, not a calibrated reference pose for a particular VRM model.
 
+8.  `Bmc.cameraSource_(sourceName)` and `Bmc.cameraSource`
+
+    Select or return the exact incoming motion-source identity used by the camera convenience route. Set it explicitly in collaborative sessions; otherwise `Bmc.cameraTarget_` can infer the latest source received under the default Ishidomaru identity.
+
+9.  `Bmc.cameraTarget_(avatarName)` and `Bmc.cameraTarget`
+
+    Retarget the current camera source to a registered avatar without restarting the encoder or decoder. Retargeting removes the source cache from its previous avatar. Subsequent frames enter only the selected avatar's compositor and are emitted with that avatar's `vmcPort`.
+
+10. `Bmc.routeMotionSource(sourceName, avatarName)`
+
+    Install or replace an exact source-specific route. This is the general operation underlying `cameraTarget_`.
+
+11. `Bmc.removeMotionSourceRoute(sourceName)`
+
+    Remove an explicit route and its current compositor cache. Later frames return to ordinary encoder-avatar-name dispatch.
+
+12. `Bmc.motionSourceRoutes`
+
+    Return a copy of the current source-to-avatar routing dictionary. See [Controlling avatars from a camera](HelpByTopic/ControllingAvatarsFromCamera.md) for the complete flow and examples.
+
 ## Recording
 
 1.  `Bmc.record(name, avatar, source, capturePoint, metadata)`
@@ -134,11 +154,11 @@ After the SuperCollider class library compiles, Bmc automatically listens for ro
 
 1.  `Bmc.clips`
 
-    Returns the dictionary of all in-memory named clips.
+    Returns the unified dictionary of all known named clips. Every value is a `BmcClip`. A clip discovered on disk but not yet loaded has a path and `frames == nil`; a loaded, recorded, or generated clip has non-nil frames.
 
 2.  `Bmc.clip(name)`
 
-    Returns a named clip. With `nil`, it returns the current clip.
+    Returns a named clip. With `nil`, it returns the current clip. If the named clip was discovered on disk but has not been read, this method loads it on first access and retains the loaded object in `Bmc.clips`.
 
 3.  `Bmc.selectClip(name)`
 
@@ -150,34 +170,63 @@ After the SuperCollider class library compiles, Bmc automatically listens for ro
 
 5.  `Bmc.listClips`
 
-    Posts clip names, frame counts, and durations in the SuperCollider post window. The current clip is marked with `*`.
+    Posts every catalogued clip. Loaded clips show frame counts and durations; disk clips whose frames have not yet been read are marked `unloaded`. The current clip is marked with `*`.
 
-6.  `Bmc.showClips`
+6.  `Bmc.savedClips`
 
-    Opens the clip window. Initially it shows clips currently loaded in memory. The buttons above the list provide two disk and playback operations:
+    Returns the unique names registered from `.scd` and `.bmc` files as a sorted array of symbols. The default directory is scanned automatically when `Bmc` initializes. This method does not load frame data. If both `take1.scd` and `take1.bmc` exist, `\take1` appears only once and `.scd` is preferred.
+
+7.  `Bmc.listSavedClips`
+
+    Posts the names of clips available on disk and returns the same array as `Bmc.savedClips`. If the directory does not exist or contains no supported clip files, it posts `Bmc: no clips saved on disk` and returns an empty array.
+
+    ``` supercollider
+    Bmc.listSavedClips;
+    ```
+
+8.  `Bmc.clipDirectory` / `Bmc.clipDirectory_(path)`
+
+    Gets or sets the directory scanned for clips and used for default clip saves. Setting it standardizes the path and immediately refreshes the disk catalog; it does not load frame data. Loaded or generated clips already in the catalog are preserved.
+
+    ``` supercollider
+    Bmc.clipDirectory.postln;
+    Bmc.clipDirectory_("~/MyBmcClips");
+    ```
+
+9.  `Bmc.postClipDirectory`
+
+    Posts and returns the current default clip directory.
+
+10. `Bmc.refreshSavedClips`
+
+    Rescans `Bmc.clipDirectory`, registers new `.scd` and `.bmc` files as unloaded `BmcClip` objects, removes obsolete unloaded entries, preserves loaded or generated clips, and returns all catalog names. Use this after files are added or removed outside BuMoChi.
+
+11. `Bmc.showClips`
+
+    Opens the clip window and shows the unified clip catalog. Loaded clips show frame counts and durations; unloaded clips show `saved on disk`. The buttons above the list provide disk and playback operations:
 
     - `List saved` scans `BmcClipLibrary.defaultDirectory` for `.scd` and `.bmc` files and displays their names without loading their contents into memory.
     - `Play selected` loads the selected saved clip if necessary, then begins playback. A clip already in memory is played directly.
 
-    Selecting a row for an in-memory clip also makes it the current clip. Saved clips shown by `List saved` remain unloaded until `Play selected` is pressed.
+    Selecting a loaded row makes it the current clip. Saved clips remain unloaded until accessed or played.
 
-7.  `Bmc.renameClip(oldName, newName)`
+12. `Bmc.renameClip(oldName, newName)`
 
     Renames a clip in the in-memory library.
 
-8.  `Bmc.removeClip(name)`
+13. `Bmc.removeClip(name)`
 
     Removes a clip from memory. This does not delete a separately saved file.
 
-9.  `Bmc.saveClip(name, path)` / `Bmc.save(name, path)`
+14. `Bmc.saveClip(name, path)` / `Bmc.save(name, path)`
 
     Writes a clip archive. If the path is omitted, BuMoChi uses a `BmcClips` directory inside `Platform.userAppSupportDir` and the `.bmc` extension.
 
-10. `Bmc.loadClip(path, name)` / `Bmc.load(path, name)`
+15. `Bmc.loadClip(path, name)` / `Bmc.load(path, name)`
 
     Loads a saved `.bmc` or `.scd` clip; the extension selects the reader. If `name` is omitted, the filename becomes the clip name.
 
-11. `Bmc.saveClipScd(name, path)`
+16. `Bmc.saveClipScd(name, path)`
 
     Explicitly saves or resaves an in-memory clip in the complete, human-readable timestamp/message format. When `path` is omitted, the file is saved as `name.scd` in the default `BmcClips` directory. Ordinary `Bmc.record` already performs this save automatically when `Bmc.stopRecording` is called; use `Bmc.saveClipScd` when an explicit path is required or an existing in-memory clip must be written again.
 
@@ -188,7 +237,7 @@ After the SuperCollider class library compiles, Bmc automatically listens for ro
     // take1.scd now exists in BmcClipLibrary.defaultDirectory
     ```
 
-12. `Bmc.loadClipScd(path, name)`
+17. `Bmc.loadClipScd(path, name)`
 
     Loads a readable `.scd` clip explicitly. The first stored timestamp is normalized to zero while all frame intervals are preserved. Load only trusted `.scd` files because their message lines are interpreted as SuperCollider code.
 
@@ -199,7 +248,7 @@ After the SuperCollider class library compiles, Bmc automatically listens for ro
     );
     ```
 
-13. `Bmc.clipToScd(name)` / `Bmc.convertClipToScd(name)`
+18. `Bmc.clipToScd(name)` / `Bmc.convertClipToScd(name)`
 
     Exports a recorded clip as a human-readable SuperCollider `.scd` file. The file is placed beside the clip's `.bmc` archive and uses the same base name; for example, `take1.bmc` becomes `take1.scd`. The returned value is the full path of the exported file.
 
@@ -240,29 +289,41 @@ After the SuperCollider class library compiles, Bmc automatically listens for ro
 
 3.  `Bmc.freeze(playerName)` / `Bmc.pause(playerName)` and `Bmc.resume(playerName)`
 
-    Freeze and resume playback at the current frame. `Bmc.pause` remains as a compatibility alias for `Bmc.freeze`.
+    Freeze and resume playback at the current frame. Freezing retains the player's last cached frame and its composition authority, so it continues to hold or modify the avatar pose. `Bmc.pause` remains as a compatibility alias for `Bmc.freeze`.
 
 4.  `Bmc.stopPlayback(playerName)`
 
-    Stops playback at its current position without shutting down the receiver or other Bmc services.
+    Stops playback and removes that player's frame cache from its target avatar's compositor stack. Underlying sources, such as XR Animator, become visible again at the next compositor tick. The `BmcClipPlayer` remains registered and retains its clip and settings, so it can be restarted later. Other players, the receiver, and other Bmc services continue running.
 
-5.  `Bmc.restartPlayback(playerName)`
+5.  `Bmc.mutePlayback(playerName)` / `Bmc.unmutePlayback(playerName)`
 
-    Stops any current playback and starts the configured frame range again from `startFrame`.
+    Muting removes the player's cache from its target avatar and suppresses further cache writes, but does not stop or pause its playback clock. The clip continues advancing invisibly while underlying sources such as XR Animator control the avatar. Unmuting permits the next emitted clip frame to recreate the player's cache at the top of the compositor stack. Muting persists across stop and restart until explicitly unmuted.
 
-6.  `Bmc.resetPlayback(playerName)`
+    ``` supercollider
+    Bmc.play(\zoom_test, loop: true);
+    Bmc.mutePlayback;    // XR Animator becomes visible; zoom_test keeps advancing
+    Bmc.unmutePlayback;  // zoom_test returns at its current playback position
+    ```
 
-    Stops playback and rewinds the player to `startFrame` without changing its clip, output, range, rate, or loop setting. This is intentionally separate from `Bmc.reset`, which rebuilds the entire Bmc environment.
+    The same operations are available on a player instance as `mute` and `unmute`; its state is reported by `isMuted`.
 
-7.  `Bmc.seek(seconds, playerName)`
+6.  `Bmc.restartPlayback(playerName)`
+
+    Stops any current playback, removes its old cache, and starts the configured frame range again from `startFrame`. Its first new frame recreates the cache at the top of the target avatar's compositor stack.
+
+7.  `Bmc.resetPlayback(playerName)`
+
+    Stops playback, removes its compositor cache, and rewinds the player to `startFrame` without changing its clip, output, range, rate, or loop setting. This is intentionally separate from `Bmc.reset`, which rebuilds the entire Bmc environment.
+
+8.  `Bmc.seek(seconds, playerName)`
 
     Moves the player's next frame position to the closest frame at or before the requested time.
 
-8.  `Bmc.rate(value, playerName)`
+9.  `Bmc.rate(value, playerName)`
 
     Sets playback speed. `1.0` is original timing, `0.5` is half speed, and `2.0` is double speed. The value must be greater than zero.
 
-9.  `Bmc.loop(flag, playerName)`
+10. `Bmc.loop(flag, playerName)`
 
     Turns repeated playback on or off.
 

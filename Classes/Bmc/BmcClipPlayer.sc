@@ -2,6 +2,7 @@ BmcClipPlayer {
 	var <clip, <output, <avatar, <compositionRule = \overwrite;
 	var <task, <currentIndex = 0, <name;
 	var <rate = 1.0, <looping = false, <isPlaying = false, <isPaused = false;
+	var <isMuted = false;
 	var <startFrame = 0, <endFrame;
 
 	*new { |clip, output, name| ^super.new.init(clip, output, name) }
@@ -96,6 +97,7 @@ BmcClipPlayer {
 	}
 
 	send { |message|
+		if(isMuted) { ^this };
 		if(output.isNil) { ^this };
 		if(output.isKindOf(Function)) { output.value(message); ^this };
 		if(output.isKindOf(NetAddr)) { output.sendMsg(*message); ^this };
@@ -121,10 +123,24 @@ BmcClipPlayer {
 		};
 		^this
 	}
+	mute {
+		isMuted = true;
+		if(avatar.notNil and: { name.notNil }) {
+			avatar.removeSourceNamed(name)
+		};
+		^this
+	}
+	unmute { isMuted = false; ^this }
 	stop {
 		isPlaying = false;
 		isPaused = false;
 		if(task.notNil) { task.stop; task = nil };
+		// Stopping relinquishes this player's composition authority. The player
+		// remains registered and reusable; its next frame recreates a newest-first
+		// cache. Freeze is the operation that deliberately retains the held cache.
+		if(avatar.notNil and: { name.notNil }) {
+			avatar.removeSourceNamed(name)
+		};
 		^this
 	}
 	restart { ^this.play(startFrame) }
@@ -137,7 +153,7 @@ BmcClipPlayer {
 	seek { |seconds|
 		var found = 0;
 		if(clip.isNil or: { clip.isEmpty }) { ^this };
-		clip.entries.do { |entry, index| if(entry[0] <= seconds) { found = index } };
+		clip.frames.do { |frame, index| if(frame[0] <= seconds) { found = index } };
 		currentIndex = found;
 		^this
 	}

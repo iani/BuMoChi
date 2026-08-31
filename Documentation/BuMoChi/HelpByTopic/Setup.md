@@ -14,6 +14,34 @@ XR-Animator -> encoder 39537 -> Bmc 57130 -> decoder 39538 -> Godot 39539
 
 The launcher does not start XR-Animator, SuperCollider, or Godot. Start those three applications separately. Recompile the SuperCollider class library so that Bmc listens on `57130`, configure XR-Animator to send to `39537`, and run a Godot avatar receiver on `39539`.
 
+## Meaning of the launcher `--avatar` option
+
+The `--avatar` option identifies which animation figure is controlled by the local motion-capture stream received by `BunrakuOSCEncoder`. It does not change XR-Animator's UDP destination. XR-Animator still sends VMC to the encoder's listen port, `127.0.0.1:39537` by default. The encoder adds the selected avatar name to every frame received on that port, and Bmc uses that name to select the matching registered `BmcAvatar`.
+
+For example:
+
+```bash
+./start_bumochi_pipeline.sh --avatar Mother
+```
+
+means:
+
+```text
+XR-Animator camera motion
+    -> UDP 39537
+    -> BunrakuOSCEncoder labels each frame "Mother"
+    -> Bmc.avatar(\Mother)
+    -> Mother's configured vmcPort
+```
+
+It does **not** mean that Mother uses UDP port `39537` in Godot. Port `39537` is only the local XR-Animator-to-encoder connection. Mother's Godot destination is set separately in SuperCollider, for example:
+
+```supercollider
+Bmc.addAvatar(\Mother, "Mother").vmcPort_(39540);
+```
+
+The encoder avatar name and the Bmc registration key must match exactly. The launcher's default is `--avatar Ishidomaru`; use `--avatar Mother` when the local XR-Animator camera should control Mother. Changing this option requires restarting the encoder because it is a process startup setting.
+
 To include OSCGroups, supply an OSC server address and a unique username:
 
 ```bash
@@ -162,6 +190,8 @@ python3 PipelineApplications/BunrakuOSCEncoder.py \
 
 Replace `workstation-a-xr-animator` with a stable source identity unique to this workstation. Leave this terminal open.
 
+Here `--avatar "Ishidomaru"` means that the local XR-Animator stream arriving on `39537` is labelled as Ishidomaru motion. Replace it with `--avatar "Mother"` if the camera should control the Bmc avatar registered as `\Mother`. This identity setting is independent of both the encoder listen port and the avatar's final Godot `vmcPort`.
+
 The encoder produces two identical route-free source-frame copies:
 
 ```text
@@ -269,7 +299,6 @@ python3 PipelineApplications/BunrakuOSCDecoder.py \
   --listen-ip 127.0.0.1 \
   --listen-port 39538 \
   --target-ip 127.0.0.1 \
-  --allow-target-port 39539 \
   --verbose
 ```
 
@@ -282,19 +311,16 @@ BunrakuOSCDecoder \
   --listen-ip 127.0.0.1 \
   --listen-port 39538 \
   --target-ip 127.0.0.1 \
-  --allow-target-port 39539 \
   --verbose
 ```
 
-For a multi-avatar Godot scene, permit every destination used by that scene. For example:
+The same decoder accepts every valid destination embedded by Bmc, so a multi-avatar scene requires no different decoder command:
 
 ```bash
 python3 PipelineApplications/BunrakuOSCDecoder.py \
   --listen-ip 127.0.0.1 \
   --listen-port 39538 \
   --target-ip 127.0.0.1 \
-  --allow-target-port 39539 \
-  --allow-target-port 39540 \
   --verbose
 ```
 
@@ -315,14 +341,14 @@ For the uniform two-avatar E project, use two explicit receiver nodes:
 
 | Avatar | Receiver node | UDP port | Body tracker name | Face tracker name |
 |---|---|---:|---|---|
-| Mother | `MotherVMCTracker` | `39539` | `/vmc/mother_body_tracker` | `/vmc/mother_face_tracker` |
-| Ishidomaru | `IshidomaruVMCTracker` | `39540` | `/vmc/ishidomaru_body_tracker` | `/vmc/ishidomaru_face_tracker` |
+| Ishidomaru | `IshidomaruVMCTracker` | `39539` | `/vmc/ishidomaru_body_tracker` | `/vmc/ishidomaru_face_tracker` |
+| Mother | `MotherVMCTracker` | `39540` | `/vmc/mother_body_tracker` | `/vmc/mother_face_tracker` |
 
-When using that scene, also set Bmc's avatar routes accordingly and start the decoder with both allowed ports:
+When using that scene, set Bmc's avatar destinations accordingly. The unrestricted routed-frame decoder does not need an avatar-specific allow-list:
 
 ```supercollider
-Bmc.avatar(\Ishidomaru).vmcPort_(39540);
-Bmc.addAvatar(\Mother, "Mother").vmcPort_(39539);
+Bmc.avatar(\Ishidomaru).vmcPort_(39539);
+Bmc.addAvatar(\Mother, "Mother").vmcPort_(39540);
 ```
 
 See [Multi-Avatar project port number setting in Godot](Multi-Avatar%20project%20port%20number%20setting%20in%20godot%20-%20NOTES.md#set-the-vmc-port-numbers-for-mother-and-ishidomaru) for the explicit-receiver arrangement.

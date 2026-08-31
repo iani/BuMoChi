@@ -21,7 +21,6 @@ BMC_IP=127.0.0.1
 BMC_PORT=57130
 DECODER_PORT=39538
 GODOT_IP=127.0.0.1
-GODOT_PORT=39539
 OSCGROUPS_INPUT_PORT=22244
 SERVER_PORT=22242
 SERVER_ADDRESS=
@@ -67,7 +66,6 @@ Pipeline options:
   --encoder-port PORT    XR-Animator input (default: 39537)
   --bmc-port PORT        Local Bmc input (default: 57130)
   --decoder-port PORT    Routed Bmc input (default: 39538)
-  --godot-port PORT      Allowed Godot destination (default: 39539)
   --oscgroups-port PORT  Encoder-to-client input (default: 22244)
   --log-dir PATH         Process log directory
   --verbose              Enable verbose encoder and decoder output
@@ -178,7 +176,6 @@ while [ "$#" -gt 0 ]; do
     --encoder-port) need_value "$@"; ENCODER_PORT=$2; shift 2 ;;
     --bmc-port) need_value "$@"; BMC_PORT=$2; shift 2 ;;
     --decoder-port) need_value "$@"; DECODER_PORT=$2; shift 2 ;;
-    --godot-port) need_value "$@"; GODOT_PORT=$2; shift 2 ;;
     --oscgroups-port) need_value "$@"; OSCGROUPS_INPUT_PORT=$2; shift 2 ;;
     --log-dir) need_value "$@"; LOG_DIR=$2; shift 2 ;;
     --no-oscgroups) USE_OSCGROUPS=0; shift ;;
@@ -196,7 +193,6 @@ command -v "$PYTHON" >/dev/null 2>&1 || die "Python command not found: $PYTHON"
 check_port "encoder port" "$ENCODER_PORT"
 check_port "Bmc port" "$BMC_PORT"
 check_port "decoder port" "$DECODER_PORT"
-check_port "Godot port" "$GODOT_PORT"
 check_port "OSCGroups input port" "$OSCGROUPS_INPUT_PORT"
 
 ENCODER_ARGS=""
@@ -226,8 +222,8 @@ if [ "$DRY_RUN" -eq 0 ]; then
 fi
 
 set -- "$PYTHON" -u "$APP_DIR/BunrakuOSCDecoder.py" \
-  --listen-ip "$LISTEN_IP" --listen-port "$DECODER_PORT" \
-  --target-ip "$GODOT_IP" --allow-target-port "$GODOT_PORT"
+	--listen-ip "$LISTEN_IP" --listen-port "$DECODER_PORT" \
+	--target-ip "$GODOT_IP"
 [ "$VERBOSE" -eq 0 ] || set -- "$@" --verbose
 if [ "$DRY_RUN" -eq 1 ]; then
   print_command BunrakuOSCDecoder "$@"

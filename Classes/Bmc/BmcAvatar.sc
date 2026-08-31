@@ -45,6 +45,13 @@ BmcAvatar {
 		if(cache.notNil) { this.removeWire(cache) };
 		^cache
 	}
+	removeSourcesFor { |sourceName|
+		var removed = wires.select { |item|
+			item.source.notNil and: { item.source.asString == sourceName.asString }
+		};
+		removed.do { |item| this.removeWire(item) };
+		^removed
+	}
 
 	receiveFrame { |frame, time, sourceObject, compositionRule = \overwrite|
 		var typed = if(frame.isKindOf(BmcFrame)) { frame } { BmcFrame.fromOSC(frame) };

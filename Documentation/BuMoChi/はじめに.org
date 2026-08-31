@@ -2,11 +2,13 @@
 :PROPERTIES:
 :CUSTOM_ID: 概要
 :END:
-このガイドでは、小さなテストを順番に行いながら BuMoChi を紹介します。各手順では、前の手順で動作を確認したパイプラインと作成した素材を引き続き使用します。
+このガイドでは、小さなテストを順番に行いながら BuMoChi
+を紹介します。各手順では、前の手順で動作を確認したパイプラインと作成した素材を引き続き使用します。
 
 ソフトウェアをまだインストールしていない場合は、[[file:インストール.md][インストール]]に従ってください。
 
-システムをセットアップしてアニメーションデータを受信し、Godot でアニメーションを実行する方法については、[[file:HelpByTopic/BuMoChi%20セットアップ.md][BuMoChi セットアップ]]を参照してください。
+システムをセットアップしてアニメーションデータを受信し、Godot
+でアニメーションを実行する方法については、[[file:HelpByTopic/BuMoChi%20セットアップ.md][BuMoChi セットアップ]]を参照してください。
 
 最初の5つの演習では、現在のデフォルト設定を使用します。
 
@@ -19,20 +21,26 @@
 | Ishidomaru の Godot VMC 入力 | =39539=               |
 | Godot プロジェクト           | =Seed_2_Ishidomaru_C= |
 
-ターミナルコマンドは BuMoChi リポジトリのルートから実行してください。SuperCollider コードは、括弧で囲まれたブロックまたは1つの文を単位として評価します。
+ターミナルコマンドは BuMoChi
+リポジトリのルートから実行してください。SuperCollider
+コードは、括弧で囲まれたブロックまたは1つの文を単位として評価します。
 
 * XR-Animator から Ishidomaru を動かす
 :PROPERTIES:
 :CUSTOM_ID: xr-animator-から-ishidomaru-を動かす
 :END:
-Web カメラの前で動いてください。Godot 内の Ishidomaru がその動きに追従するはずです。
+Web カメラの前で動いてください。Godot 内の Ishidomaru
+がその動きに追従するはずです。
 
-Bmc モニターで、動的な =received= カウントが増加していることを確認します。エンコーダーのターミナルにも、受信した VMC データと Bmc に送信したフレームが表示されます。
+Bmc モニターで、動的な =received=
+カウントが増加していることを確認します。エンコーダーのターミナルにも、受信した
+VMC データと Bmc に送信したフレームが表示されます。
 
 アバターが動かない場合は、下流から上流の順にパイプラインを確認します。
 
 1. Godot が =Seed_2_Ishidomaru_C= を実行し、=39539= で待ち受けている。
-2. デコーダーが =39538= で待ち受け、送信先ポート =39539= を許可している。
+2. デコーダーが =39538= で待ち受け、送信先ポート =39539=
+   を許可している。
 3. Bmc が =57130= で待ち受け、デコーダーへ転送している。
 4. エンコーダーが =39537= で待ち受け、=57130= の Bmc に送信している。
 5. XR-Animator が VMC を =127.0.0.1:39537= に送信している。
@@ -43,9 +51,11 @@ Bmc モニターで、動的な =received= カウントが増加しているこ�
 :PROPERTIES:
 :CUSTOM_ID: アルゴリズムで生成したクリップから-ishidomaru-を動かす
 :END:
-この例では、最後に受信した有効なライブポーズをモデル互換の参照として取得し、腰が左右へゆっくり動く4秒間のクリップを生成します。有効な受信ポーズを使うことで、Ishidomaru のボーン比率と VMC 座標規則が保たれます。
+この例では、最後に受信した有効なライブポーズをモデル互換の参照として取得し、腰が左右へゆっくり動く4秒間のクリップを生成します。有効な受信ポーズを使うことで、Ishidomaru
+のボーン比率と VMC 座標規則が保たれます。
 
-まず、楽な直立姿勢を取り、Ishidomaru が表示されていることを確認します。その後、次を評価します。
+まず、楽な直立姿勢を取り、Ishidomaru
+が表示されていることを確認します。その後、次を評価します。
 
 #+begin_src supercollider
 (
@@ -93,14 +103,16 @@ Bmc.saveClipScd(\algorithmicSway);
 )
 #+end_src
 
-ライブストリームと再生が競合しないように、XR-Animator の VMC 出力を一時的に無効にします。その後、生成したクリップを再生します。
+ライブストリームと再生が競合しないように、XR-Animator の VMC
+出力を一時的に無効にします。その後、生成したクリップを再生します。
 
 #+begin_src supercollider
 Bmc.loop(true);
 Bmc.play(\algorithmicSway);
 #+end_src
 
-Ishidomaru がゆっくりした左右運動を繰り返します。次のコードで停止します。
+Ishidomaru
+がゆっくりした左右運動を繰り返します。次のコードで停止します。
 
 #+begin_src supercollider
 Bmc.stopPlayback;
@@ -113,7 +125,8 @@ Bmc.loop(false);
 :PROPERTIES:
 :CUSTOM_ID: クリップを録画する
 :END:
-XR-Animator のライブアニメーションが動作している状態で、名前を付けて録画を開始します。
+XR-Animator
+のライブアニメーションが動作している状態で、名前を付けて録画を開始します。
 
 #+begin_src supercollider
 Bmc.record(\take1, "Ishidomaru", "getting-started-xr");
@@ -134,15 +147,20 @@ Bmc.listClips;
 BmcClipLibrary.defaultDirectory;
 #+end_src
 
-=take1= はメモリー内に保持されます。また、SCD がデフォルトの録画形式であるため、=BmcClipLibrary.defaultDirectory= に =take1.scd= として保存されます。
+=take1= はメモリー内に保持されます。また、SCD
+がデフォルトの録画形式であるため、=BmcClipLibrary.defaultDirectory= に
+=take1.scd= として保存されます。
 
-返されたクリップのフレーム数がゼロの場合は、録画中に Bmc モニターの =received= カウントが増加していたか、エンコーダーが上記と同じアバター名とソース文字列を使用していたか確認してください。
+返されたクリップのフレーム数がゼロの場合は、録画中に Bmc モニターの
+=received=
+カウントが増加していたか、エンコーダーが上記と同じアバター名とソース文字列を使用していたか確認してください。
 
 * クリップを再生する
 :PROPERTIES:
 :CUSTOM_ID: クリップを再生する
 :END:
-ライブデータが録画と競合しないように、XR-Animator の VMC 出力を無効にします。クリップを再生します。
+ライブデータが録画と競合しないように、XR-Animator の VMC
+出力を無効にします。クリップを再生します。
 
 #+begin_src supercollider
 Bmc.play(\take1);
@@ -186,9 +204,11 @@ Bmc.play(\take1);
 :PROPERTIES:
 :CUSTOM_ID: 1体のアバター上で2つのクリップを合成する
 :END:
-この演習では =take1= を基礎モーションとして使用し、両腕のデータを2つ目の録画から取得します。
+この演習では =take1=
+を基礎モーションとして使用し、両腕のデータを2つ目の録画から取得します。
 
-XR-Animator の VMC 出力を再び有効にし、特徴的な腕の動きを含む2つ目のテイクを録画します。
+XR-Animator の VMC
+出力を再び有効にし、特徴的な腕の動きを含む2つ目のテイクを録画します。
 
 #+begin_src supercollider
 Bmc.record(\armTake, "Ishidomaru", "getting-started-xr");
@@ -200,7 +220,8 @@ Bmc.record(\armTake, "Ishidomaru", "getting-started-xr");
 Bmc.stopRecording;
 #+end_src
 
-タイミングと下半身には =take1= を使用し、左右の腕には =armTake= を使用する新しいクリップを作成します。
+タイミングと下半身には =take1= を使用し、左右の腕には =armTake=
+を使用する新しいクリップを作成します。
 
 #+begin_src supercollider
 Bmc.combineClips(
@@ -218,13 +239,16 @@ XR-Animator の VMC 出力を無効にし、結果を再生します。
 Bmc.play(\combinedTake);
 #+end_src
 
-合成クリップの長さは =take1= と同じです。腕のデータが置き換えられるのは両方のクリップに存在するフレーム数までで、それ以降の基礎フレームは変更されません。
+合成クリップの長さは =take1=
+と同じです。腕のデータが置き換えられるのは両方のクリップに存在するフレーム数までで、それ以降の基礎フレームは変更されません。
 
 * クリップと XR-Animator から2体のアバターを動かす
 :PROPERTIES:
 :CUSTOM_ID: クリップと-xr-animator-から2体のアバターを動かす
 :END:
-この演習では、2体を均一に扱うプロジェクトを使用します。Ishidomaru は XR-Animator のライブソースに追従し、Mother は保存済みクリップを独立して再生します。
+この演習では、2体を均一に扱うプロジェクトを使用します。Ishidomaru は
+XR-Animator のライブソースに追従し、Mother
+は保存済みクリップを独立して再生します。
 
 ** 1. Godot プロジェクトを変更する
 :PROPERTIES:
@@ -240,21 +264,17 @@ AppsAndCode/GodotProjects/Seed_4_Mother_Ishidomaru_E/project.godot
 
 | アバター   | VMC ポート |
 |------------+------------|
-| Mother     | =39539=    |
-| Ishidomaru | =39540=    |
+| Ishidomaru | =39539=    |
+| Mother     | =39540=    |
 
-** 2. 2体のアバター用にデコーダーを再起動する
+** 2. デコーダーをそのまま実行する
 :PROPERTIES:
-:CUSTOM_ID: 2-2体のアバター用にデコーダーを再起動する
+:CUSTOM_ID: 2-デコーダーをそのまま実行する
 :END:
-*Control-C* で既存のデコーダーを停止し、次を実行します。
+標準パイプラインのデコーダーは、埋め込まれたすべての有効な送信先ポートを受け入れます。1体用と2体用のプロジェクトを切り替える際にデコーダーを再起動しないでください。新しくパイプラインを起動する場合は次を使用します。
 
 #+begin_src sh
-python3 PipelineApplications/BunrakuOSCDecoder.py \
-  --listen-port 39538 \
-  --allow-target-port 39539 \
-  --allow-target-port 39540 \
-  --verbose
+./start_bumochi_pipeline.sh
 #+end_src
 
 ** 3. Bmc に2つのアバター出力を登録する
@@ -266,13 +286,13 @@ python3 PipelineApplications/BunrakuOSCDecoder.py \
 #+begin_src supercollider
 (
 ~ishidomaru = Bmc.avatar(\Ishidomaru);
-~ishidomaru.vmcPort_(39540);
+~ishidomaru.vmcPort_(39539);
 
 ~mother = Bmc.avatar(\Mother);
 if(~mother.isNil) {
     ~mother = Bmc.addAvatar(\Mother, "Mother");
 };
-~mother.vmcPort_(39539);
+~mother.vmcPort_(39540);
 )
 #+end_src
 
@@ -280,7 +300,9 @@ if(~mother.isNil) {
 :PROPERTIES:
 :CUSTOM_ID: 4-mother-でクリップを再生する
 :END:
-Mother 用の独立したプレイヤーを作成します。これは Bmc の単一の簡易プレイヤーとは別のため、Ishidomaru のライブ入力と Mother のクリップ再生を同時に行えます。
+Mother 用の独立したプレイヤーを作成します。これは Bmc
+の単一の簡易プレイヤーとは別のため、Ishidomaru のライブ入力と Mother
+のクリップ再生を同時に行えます。
 
 #+begin_src supercollider
 ~motherPlayer = BmcClipPlayer(Bmc.clip(\combinedTake), ~mother);
@@ -292,14 +314,16 @@ Mother 用の独立したプレイヤーを作成します。これは Bmc の�
 :PROPERTIES:
 :CUSTOM_ID: 5-ishidomaru-のライブ入力を復元する
 :END:
-XR-Animator の VMC 出力を再び有効にします。エンコーダーでは引き続き次の値を使用します。
+XR-Animator の VMC
+出力を再び有効にします。エンコーダーでは引き続き次の値を使用します。
 
 #+begin_src text
 Avatar: Ishidomaru
 Source: getting-started-xr
 #+end_src
 
-Ishidomaru が Web カメラに追従し、Mother が =combinedTake= を繰り返すはずです。
+Ishidomaru が Web カメラに追従し、Mother が =combinedTake=
+を繰り返すはずです。
 
 Mother の独立した再生を停止します。
 
@@ -321,4 +345,5 @@ Bmc.stopPlayback;
 Bmc.stop;
 #+end_src
 
-その後、XR-Animator の VMC 出力を無効にし、*Control-C* でエンコーダーとデコーダーを停止して、Godot シーンを停止します。
+その後、XR-Animator の VMC 出力を無効にし、*Control-C*
+でエンコーダーとデコーダーを停止して、Godot シーンを停止します。

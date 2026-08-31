@@ -1,5 +1,5 @@
 BmcClipLibrary {
-	var <clips, <currentName, <paths;
+	var <clips, <currentName;
 	classvar defaultDirectory;
 
 	*defaultDirectory {
@@ -7,12 +7,17 @@ BmcClipLibrary {
 			defaultDirectory = Platform.userAppSupportDir +/+ "BmcClips"
 		}
 	}
+	*defaultDirectory_ { |path|
+		if(path.isNil) { Error("BmcClipLibrary default directory cannot be nil").throw };
+		defaultDirectory = path.standardizePath;
+		^defaultDirectory
+	}
 
 	*new { ^super.new.init }
 
 	init {
 		clips = IdentityDictionary.new;
-		paths = IdentityDictionary.new;
+		this.refreshSaved;
 		^this
 	}
 
@@ -22,12 +27,9 @@ BmcClipLibrary {
 		};
 		name = name ?? { this.nextName };
 		name = name.asSymbol;
+		clip.name_(name);
+		clip.path_(path ?? { clip.path });
 		clips[name] = clip;
-		if(path.isNil) {
-			paths.removeAt(name);
-		} {
-			paths[name] = path.standardizePath;
-		};
 		currentName = name;
 		^clip
 	}
@@ -39,34 +41,60 @@ BmcClipLibrary {
 	}
 
 	at { |name|
+		var clip;
 		if(name.isNil) { ^this.current };
-		^clips[name.asSymbol]
+		name = name.asSymbol;
+		clip = clips[name];
+		if(clip.notNil and: { clip.isLoaded.not }) {
+			clip = this.load(clip.path, name);
+		};
+		^clip
 	}
 
-	current { ^if(currentName.isNil) { nil } { clips[currentName] } }
+	current { ^if(currentName.isNil) { nil } { this.at(currentName) } }
 	select { |name|
 		name = name.asSymbol;
 		if(clips.includesKey(name).not) {
 			Error("Unknown Bmc clip: %".format(name)).throw;
 		};
 		currentName = name;
-		^clips[name]
+		^this.at(name)
 	}
 
 	names { ^clips.keys.asArray.sort }
 	savedNames {
+		^clips.keys.select { |key| clips[key].path.notNil }.asArray.sort
+	}
+
+	refreshSaved {
 		var directory = PathName(this.class.defaultDirectory);
-		if(directory.isFolder.not) { ^[] };
-		^directory.files.select { |file|
-			["bmc", "scd"].includes(file.extension.asString.toLower)
-		}.collect { |file|
-			file.fileNameWithoutExtension.asSymbol
-		}.as(Set).asArray.sort
+		var found = IdentityDictionary.new;
+		// Loaded and generated clips survive rescans; unloaded placeholders do not.
+		clips.keysValuesDo { |key, clip| if(clip.isLoaded) { found[key] = clip } };
+		if(directory.isFolder) {
+			directory.files.do { |file|
+				var extension = file.extension.asString.toLower.asSymbol;
+				var key = file.fileNameWithoutExtension.asSymbol;
+				var existing = found[key];
+				if([\bmc, \scd].includes(extension)) {
+					if(existing.isNil or: { existing.isLoaded.not and: { extension == \scd } }) {
+						found[key] = BmcClip(nil, (), key, file.fullPath);
+					} {
+						if(existing.path.isNil) { existing.path_(file.fullPath) };
+					};
+				};
+			};
+		};
+		clips = found;
+		if(currentName.notNil and: { clips.includesKey(currentName).not }) { currentName = nil };
+		^this.names
 	}
 
 	savedPathFor { |name|
+		var catalogClip = clips[name.asSymbol];
 		var bmcPath = this.defaultPathFor(name);
 		var scdPath = this.defaultScdPathFor(name);
+		if(catalogClip.notNil and: { catalogClip.path.notNil }) { ^catalogClip.path };
 		if(File.exists(scdPath)) { ^scdPath };
 		if(File.exists(bmcPath)) { ^bmcPath };
 		^nil
@@ -77,14 +105,13 @@ BmcClipLibrary {
 		var result;
 		name = name.asSymbol;
 		result = clips.removeAt(name);
-		paths.removeAt(name);
 		if(currentName == name) { currentName = clips.keys.asArray.first };
 		^result
 	}
 
 	rename { |oldName, newName|
 		var clip = this.at(oldName);
-		var path = paths[oldName.asSymbol];
+		var path = clip !? _.path;
 		if(clip.isNil) { Error("Unknown Bmc clip: %".format(oldName)).throw };
 		this.remove(oldName);
 		^this.add(newName, clip, path)
@@ -92,7 +119,6 @@ BmcClipLibrary {
 
 	clear {
 		clips.clear;
-		paths.clear;
 		currentName = nil;
 		^this
 	}
@@ -127,7 +153,7 @@ BmcClipLibrary {
 		name = name ?? { currentName };
 		path = path ?? { this.defaultPathFor(name) };
 		clip.write(path);
-		paths[name.asSymbol] = path.standardizePath;
+		clip.path_(path);
 		^path
 	}
 
@@ -137,14 +163,18 @@ BmcClipLibrary {
 		name = name ?? { currentName };
 		path = path ?? { this.defaultScdPathFor(name) };
 		clip.writeScd(path);
-		paths[name.asSymbol] = path.standardizePath;
+		clip.path_(path);
 		^path
 	}
 
 	pathFor { |name|
+		var clip;
 		name = name ?? { currentName };
 		if(name.isNil) { ^nil };
-		^paths[name.asSymbol] ?? { this.defaultScdPathFor(name) }
+		clip = clips[name.asSymbol];
+		^if(clip.isNil) { this.defaultScdPathFor(name) } {
+			clip.path ?? { this.defaultScdPathFor(name) }
+		}
 	}
 
 	exportScd { |name|
@@ -173,7 +203,9 @@ BmcClipLibrary {
 				var clip = clips[name];
 				postf("%%: % frames, % seconds\n",
 					if(name == currentName) { "* " } { "  " },
-					name, clip.size, clip.duration.round(0.001));
+					name,
+					if(clip.isLoaded) { clip.size } { "unloaded" },
+					if(clip.isLoaded) { clip.duration.round(0.001) } { "unloaded" });
 			};
 		};
 		^this.names
@@ -191,7 +223,7 @@ BmcClipLibrary {
 				displayedNames = if(showingSaved) { this.savedNames } { this.names };
 				view.items = displayedNames.collect { |name|
 					var clip = clips[name];
-					if(clip.isNil) {
+					if(clip.isLoaded.not) {
 						"% — saved on disk".format(name)
 					} {
 						"% — % frames — % s".format(
@@ -223,9 +255,6 @@ BmcClipLibrary {
 				if(selectedName.isNil) {
 					"Bmc: select a clip to play".warn;
 				} {
-					if(clips.includesKey(selectedName).not) {
-						this.load(this.savedPathFor(selectedName), selectedName);
-					};
 					Bmc.play(selectedName);
 					refresh.value;
 				};

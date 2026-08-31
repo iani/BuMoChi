@@ -14,6 +14,7 @@ Bmc {
 	classvar <sessions, <currentSession;
 	classvar <decoderPort, <forwardDecoder;
 	classvar <compositor;
+	classvar <cameraSource, <cameraTarget;
 
 	*initClass {
 		boneNames = #[
@@ -31,6 +32,11 @@ Bmc {
 		defaultAvatarVmcPort = 39539;
 		this.initializeEnvironment;
 		StartUp.add({ this.start(defaultInputPort) });
+		// Recompilation and application quit run ShutDown before SuperCollider
+		// disconnects its network resources. Release Bmc's OSC responder and
+		// compositor here so the custom UDP receive port is not left active while
+		// the language closes its sockets.
+		ShutDown.add({ this.stop });
 	}
 
 	*initializeEnvironment {
@@ -52,6 +58,8 @@ Bmc {
 		compositor = BmcCompositor({ avatars.values.asSet.asArray }, 60.0);
 		sessions = IdentityDictionary.new;
 		currentSession = nil;
+		cameraSource = nil;
+		cameraTarget = defaultAvatarID;
 	}
 
 	// This utility class returns the merged data directly; it has no instance.
@@ -185,6 +193,41 @@ Bmc {
 	*decoderPort_ { |port| decoderPort = this.validPort(port); ^decoderPort }
 	*forwardDecoder_ { |flag = true| forwardDecoder = flag == true; ^forwardDecoder }
 
+	// ----- live motion-source routing -----
+	*motionSourceRoutes { ^dispatcher.sourceRoutes.copy }
+	*routeMotionSource { |sourceName, avatarName|
+		var target = this.avatar(avatarName);
+		if(target.isNil) { Error("Unknown Bmc avatar: %".format(avatarName)).throw };
+		avatars.values.asSet.do { |avatar| avatar.removeSourcesFor(sourceName) };
+		dispatcher.routeSource(sourceName, target);
+		^target
+	}
+	*removeMotionSourceRoute { |sourceName|
+		avatars.values.asSet.do { |avatar| avatar.removeSourcesFor(sourceName) };
+		^dispatcher.removeSourceRoute(sourceName)
+	}
+	*cameraSource_ { |sourceName|
+		if(sourceName.isNil) { Error("Bmc camera source cannot be nil").throw };
+		if(cameraSource.notNil and: { cameraSource.asSymbol != sourceName.asSymbol }) {
+			this.removeMotionSourceRoute(cameraSource)
+		};
+		cameraSource = sourceName.asSymbol;
+		this.routeMotionSource(cameraSource, cameraTarget);
+		^cameraSource
+	}
+	*cameraTarget_ { |avatarName|
+		var target = this.avatar(avatarName);
+		if(target.isNil) { Error("Unknown Bmc camera target avatar: %".format(avatarName)).throw };
+		cameraSource = cameraSource ?? { dispatcher.lastSourceFor(defaultAvatarID) };
+		if(cameraSource.isNil) {
+			Error("Bmc has not yet received a camera source for %. Set Bmc.cameraSource_ first."
+				.format(defaultAvatarID)).throw
+		};
+		cameraTarget = target.avatarID;
+		this.routeMotionSource(cameraSource, cameraTarget);
+		^cameraTarget
+	}
+
 	*sendOutput { |message|
 		if(forwardDecoder) { NetAddr("127.0.0.1", decoderPort).sendMsg(*message) };
 		^message
@@ -308,6 +351,24 @@ Bmc {
 	*selectClip { |name| ^library.select(name) }
 	*currentClip { ^library.current }
 	*listClips { ^library.list }
+	*savedClips { ^library.savedNames }
+	*listSavedClips {
+		var names = this.savedClips;
+		if(names.isEmpty) {
+			"Bmc: no clips saved on disk".postln;
+		} {
+			names.do(_.postln);
+		};
+		^names
+	}
+	*clipDirectory { ^BmcClipLibrary.defaultDirectory }
+	*clipDirectory_ { |path|
+		BmcClipLibrary.defaultDirectory_(path);
+		library.refreshSaved;
+		^this.clipDirectory
+	}
+	*postClipDirectory { ^this.clipDirectory.postln }
+	*refreshSavedClips { ^library.refreshSaved }
 	*showClips { ^library.show }
 	*removeClip { |name| ^library.remove(name) }
 	*renameClip { |oldName, newName| ^library.rename(oldName, newName) }
@@ -367,6 +428,8 @@ Bmc {
 	*pause { |playerName = \default| this.player(playerName).pause; ^this }
 	*freeze { |playerName = \default| this.player(playerName).freeze; ^this }
 	*resume { |playerName = \default| this.player(playerName).resume; ^this }
+	*mutePlayback { |playerName = \default| this.player(playerName).mute; ^this }
+	*unmutePlayback { |playerName = \default| this.player(playerName).unmute; ^this }
 	*stopPlayback { |playerName = \default| this.player(playerName).stop; ^this }
 	*restartPlayback { |playerName = \default| this.player(playerName).restart; ^this }
 	*resetPlayback { |playerName = \default| this.player(playerName).reset; ^this }

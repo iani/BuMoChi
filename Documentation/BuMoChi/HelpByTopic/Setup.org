@@ -2,21 +2,69 @@
 :PROPERTIES:
 :CUSTOM_ID: quick-start-one-command-pipeline-launcher
 :END:
-The launcher starts and supervises =BunrakuOSCEncoder= and =BunrakuOSCDecoder=. With no arguments it starts the local-only pipeline and does not start =OscGroupClient=:
+The launcher starts and supervises =BunrakuOSCEncoder= and
+=BunrakuOSCDecoder=. With no arguments it starts the local-only pipeline
+and does not start =OscGroupClient=:
 
 #+begin_src sh
 ./PipelineApplications/start_bumochi_pipeline.sh
 #+end_src
 
-Run that command from the root of the BuMoChi repository. It uses the standard local ports automatically:
+Run that command from the root of the BuMoChi repository. It uses the
+standard local ports automatically:
 
 #+begin_src text
 XR-Animator -> encoder 39537 -> Bmc 57130 -> decoder 39538 -> Godot 39539
 #+end_src
 
-The launcher does not start XR-Animator, SuperCollider, or Godot. Start those three applications separately. Recompile the SuperCollider class library so that Bmc listens on =57130=, configure XR-Animator to send to =39537=, and run a Godot avatar receiver on =39539=.
+The launcher does not start XR-Animator, SuperCollider, or Godot. Start
+those three applications separately. Recompile the SuperCollider class
+library so that Bmc listens on =57130=, configure XR-Animator to send to
+=39537=, and run a Godot avatar receiver on =39539=.
 
-To include OSCGroups, supply an OSC server address and a unique username:
+** Meaning of the launcher =--avatar= option
+:PROPERTIES:
+:CUSTOM_ID: meaning-of-the-launcher---avatar-option
+:END:
+The =--avatar= option identifies which animation figure is controlled by
+the local motion-capture stream received by =BunrakuOSCEncoder=. It does
+not change XR-Animator's UDP destination. XR-Animator still sends VMC to
+the encoder's listen port, =127.0.0.1:39537= by default. The encoder
+adds the selected avatar name to every frame received on that port, and
+Bmc uses that name to select the matching registered =BmcAvatar=.
+
+For example:
+
+#+begin_src sh
+./start_bumochi_pipeline.sh --avatar Mother
+#+end_src
+
+means:
+
+#+begin_src text
+XR-Animator camera motion
+    -> UDP 39537
+    -> BunrakuOSCEncoder labels each frame "Mother"
+    -> Bmc.avatar(\Mother)
+    -> Mother's configured vmcPort
+#+end_src
+
+It does *not* mean that Mother uses UDP port =39537= in Godot. Port
+=39537= is only the local XR-Animator-to-encoder connection. Mother's
+Godot destination is set separately in SuperCollider, for example:
+
+#+begin_src supercollider
+Bmc.addAvatar(\Mother, "Mother").vmcPort_(39540);
+#+end_src
+
+The encoder avatar name and the Bmc registration key must match exactly.
+The launcher's default is =--avatar Ishidomaru=; use =--avatar Mother=
+when the local XR-Animator camera should control Mother. Changing this
+option requires restarting the encoder because it is a process startup
+setting.
+
+To include OSCGroups, supply an OSC server address and a unique
+username:
 
 #+begin_src sh
 ./PipelineApplications/start_bumochi_pipeline.sh \
@@ -33,7 +81,9 @@ OSCGroups mode uses these additional defaults:
 | Server port               | =22242=   | =--server-port PORT=  |
 | Local network-facing port | =22243=   | =--local-port PORT=   |
 
-The password =bmc123= is a convenient rehearsal default, not a secure public-network credential. Set a different password for an exposed OSCGroups server.
+The password =bmc123= is a convenient rehearsal default, not a secure
+public-network credential. Set a different password for an exposed
+OSCGroups server.
 
 Inspect every available launcher option without starting anything:
 
@@ -41,22 +91,28 @@ Inspect every available launcher option without starting anything:
 ./PipelineApplications/start_bumochi_pipeline.sh --help
 #+end_src
 
-Stop all helper processes started by the launcher with =Control-C= in its terminal.
+Stop all helper processes started by the launcher with =Control-C= in
+its terminal.
 
-When the launcher is started with =--verbose=, follow the live encoder and decoder output in another terminal:
+When the launcher is started with =--verbose=, follow the live encoder
+and decoder output in another terminal:
 
 #+begin_src sh
 tail -f "$TMPDIR/bumochi-pipeline-$USER/encoder.log" \
         "$TMPDIR/bumochi-pipeline-$USER/decoder.log"
 #+end_src
 
-The launcher starts Python in unbuffered mode, so new log lines appear immediately.
+The launcher starts Python in unbuffered mode, so new log lines appear
+immediately.
 
 * Cheatsheet! Check the active Bmc port configuration
 :PROPERTIES:
 :CUSTOM_ID: cheatsheet-check-the-active-bmc-port-configuration
 :END:
-Your VMC mocap applications (XR-Animator, Waidayo, or other) and Godot should be configured to send/receive animation data at the ports required by the pipeline. To check these port numbers, after recompiling the SuperCollider class library, evaluate:
+Your VMC mocap applications (XR-Animator, Waidayo, or other) and Godot
+should be configured to send/receive animation data at the ports
+required by the pipeline. To check these port numbers, after recompiling
+the SuperCollider class library, evaluate:
 
 #+begin_src supercollider
 Bmc.help;
@@ -74,15 +130,20 @@ BunrakuOSCDecoder output ports:
   Ishidomaru: 39539
 #+end_src
 
-The final list is generated from the avatars currently configured in Bmc, so it expands when additional avatar routes are added. Run =Bmc.help;= again after changing any ports.
+The final list is generated from the avatars currently configured in
+Bmc, so it expands when additional avatar routes are added. Run
+=Bmc.help;= again after changing any ports.
 
-The following sections are only necessary if you want to customize the pipeline or check for errors.
+The following sections are only necessary if you want to customize the
+pipeline or check for errors.
 
 * Details
 :PROPERTIES:
 :CUSTOM_ID: details
 :END:
-This guide provides information to troubleshoot or tweak the internal port numbers of all applications of the pipeline. It shows how to start and configure the six applications in the following downstream order:
+This guide provides information to troubleshoot or tweak the internal
+port numbers of all applications of the pipeline. It shows how to start
+and configure the six applications in the following downstream order:
 
 | No. | Application         | Input/listening port | Output/destination port     | Required configuration                                                                                                                                                                                                 |
 |-----+---------------------+----------------------+-----------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -104,11 +165,15 @@ The resulting application and port sequence is:
 5. BunrakuOSCDecoder   --VMC 39539-----------> 6. Godot / Ishidomaru
 #+end_src
 
-The procedure uses the default single-avatar Ishidomaru configuration. Ishidomaru's Godot VMC receiver listens on =39539=.
+The procedure uses the default single-avatar Ishidomaru configuration.
+Ishidomaru's Godot VMC receiver listens on =39539=.
 
-Run all terminal commands from the root of the BuMoChi repository unless the command uses a globally installed launcher.
+Run all terminal commands from the root of the BuMoChi repository unless
+the command uses a globally installed launcher.
 
-Only the receiving application owns a UDP listening port. Several applications may send packets to Bmc on =57130= without conflict because Bmc is the single listener.
+Only the receiving application owns a UDP listening port. Several
+applications may send packets to Bmc on =57130= without conflict because
+Bmc is the single listener.
 
 * Before starting
 :PROPERTIES:
@@ -120,11 +185,17 @@ Only the receiving application owns a UDP listening port. Several applications m
 python3 --version
 #+end_src
 
-2. [@2] For OSCGroups collaboration only, obtain the =OscGroupServer= address and a unique username from the session organiser. Confirm whether the session uses the default group =bumochi= and password =bmc123= or overrides them.
+2. [@2] For OSCGroups collaboration only, obtain the =OscGroupServer=
+   address and a unique username from the session organiser. Confirm
+   whether the session uses the default group =bumochi= and password
+   =bmc123= or overrides them.
 
-3. For OSCGroups collaboration only, give this workstation a unique OSCGroups username and encoder =--source= identity. The launcher uses local network-facing port =22243= unless it is overridden.
+3. For OSCGroups collaboration only, give this workstation a unique
+   OSCGroups username and encoder =--source= identity. The launcher uses
+   local network-facing port =22243= unless it is overridden.
 
-4. Stop older encoder, decoder, and =OscGroupClient= processes. If needed, inspect the local receiving ports:
+4. Stop older encoder, decoder, and =OscGroupClient= processes. If
+   needed, inspect the local receiving ports:
 
 #+begin_src sh
 lsof -nP -iUDP:39537
@@ -149,15 +220,20 @@ Port: 39537
 
 4. [@4] Enable full-body VMC output.
 
-XR-Animator may start before the encoder. UDP frames sent before the encoder begins listening are simply discarded.
+XR-Animator may start before the encoder. UDP frames sent before the
+encoder begins listening are simply discarded.
 
-For screenshots and detailed configuration instructions, see [[file:PortNumberSetup.md#1-xr-animator-vmc-output-port][XR-Animator VMC output port]] and [[file:HelperApplications/BunrakuOSCEncoder.md#configure-xr-animator][Configure XR-Animator]].
+For screenshots and detailed configuration instructions, see
+[[file:PortNumberSetup.md#1-xr-animator-vmc-output-port][XR-Animator VMC output port]]
+and
+[[file:HelperApplications/BunrakuOSCEncoder.md#configure-xr-animator][Configure XR-Animator]].
 
 * 2. BunrakuOSCEncoder
 :PROPERTIES:
 :CUSTOM_ID: 2-bunrakuoscencoder
 :END:
-Open a Terminal window at the BuMoChi repository root and start the encoder with every relevant port written explicitly:
+Open a Terminal window at the BuMoChi repository root and start the
+encoder with every relevant port written explicitly:
 
 #+begin_src sh
 python3 PipelineApplications/BunrakuOSCEncoder.py \
@@ -172,7 +248,14 @@ python3 PipelineApplications/BunrakuOSCEncoder.py \
   --verbose
 #+end_src
 
-Replace =workstation-a-xr-animator= with a stable source identity unique to this workstation. Leave this terminal open.
+Replace =workstation-a-xr-animator= with a stable source identity unique
+to this workstation. Leave this terminal open.
+
+Here =--avatar "Ishidomaru"= means that the local XR-Animator stream
+arriving on =39537= is labelled as Ishidomaru motion. Replace it with
+=--avatar "Mother"= if the camera should control the Bmc avatar
+registered as =\Mother=. This identity setting is independent of both
+the encoder listen port and the avatar's final Godot =vmcPort=.
 
 The encoder produces two identical route-free source-frame copies:
 
@@ -181,9 +264,12 @@ local copy   -> UDP 57130 -> local Bmc
 network copy -> UDP 22244 -> local OscGroupClient
 #+end_src
 
-Because this startup order places the encoder before =OscGroupClient= and Bmc, its first outgoing packets may be discarded. Normal delivery begins as soon as those receivers start.
+Because this startup order places the encoder before =OscGroupClient=
+and Bmc, its first outgoing packets may be discarded. Normal delivery
+begins as soon as those receivers start.
 
-If the globally installed launcher is available, the equivalent command is:
+If the globally installed launcher is available, the equivalent command
+is:
 
 #+begin_src sh
 BunrakuOSCEncoder \
@@ -198,7 +284,10 @@ BunrakuOSCEncoder \
   --verbose
 #+end_src
 
-For installation, options, and diagnostic instructions, see [[file:HelperApplications/BunrakuOSCEncoder.md#how-to-start-bunrakuoscencoder][How to start BunrakuOSCEncoder]] and [[file:HelperApplications/BunrakuOSCEncoder.md#test-and-diagnose][Test and diagnose BunrakuOSCEncoder]].
+For installation, options, and diagnostic instructions, see
+[[file:HelperApplications/BunrakuOSCEncoder.md#how-to-start-bunrakuoscencoder][How to start BunrakuOSCEncoder]]
+and
+[[file:HelperApplications/BunrakuOSCEncoder.md#test-and-diagnose][Test and diagnose BunrakuOSCEncoder]].
 
 * 3. OscGroupClient
 :PROPERTIES:
@@ -220,7 +309,9 @@ HelperAppsAndExamples/OSCGroups/bin/macos/OscGroupClient \
   USER_NAME USER_PASSWORD GROUP_NAME GROUP_PASSWORD
 #+end_src
 
-Replace all uppercase placeholders. Replace example local port =22243= if it is occupied or if another client on this computer uses it. Leave this terminal open.
+Replace all uppercase placeholders. Replace example local port =22243=
+if it is occupied or if another client on this computer uses it. Leave
+this terminal open.
 
 The important application-facing ports are:
 
@@ -229,7 +320,9 @@ OscGroupClient input:  UDP 22244 <- local encoder frames for sharing
 OscGroupClient output: UDP 57130 -> remote source frames delivered to local Bmc
 #+end_src
 
-Do not set the client output to decoder port =39538=. Remote route-free frames must enter Bmc first for local selection, composition, recording, and synthesis.
+Do not set the client output to decoder port =39538=. Remote route-free
+frames must enter Bmc first for local selection, composition, recording,
+and synthesis.
 
 If the globally installed client is available, use the same arguments:
 
@@ -239,16 +332,23 @@ OscGroupClient \
   USER_NAME USER_PASSWORD GROUP_NAME GROUP_PASSWORD
 #+end_src
 
-For argument definitions, installation, and checks, see [[file:HelperApplications/OSCGroupsClient.md#how-to-start-oscgroupclient][How to start OscGroupClient]], [[file:HelperApplications/OSCGroupsClient.md#command-line-arguments][OscGroupClient command-line arguments]], and [[file:PortNumberSetup.md#2-oscgroupclient-port][OSCGroupClient port]].
+For argument definitions, installation, and checks, see
+[[file:HelperApplications/OSCGroupsClient.md#how-to-start-oscgroupclient][How to start OscGroupClient]],
+[[file:HelperApplications/OSCGroupsClient.md#command-line-arguments][OscGroupClient command-line arguments]],
+and
+[[file:PortNumberSetup.md#2-oscgroupclient-port][OSCGroupClient port]].
 
 * 4. SuperCollider
 :PROPERTIES:
 :CUSTOM_ID: 4-supercollider
 :END:
 1. Start SuperCollider.
-2. Recompile the class library if necessary with *Language → Recompile Class Library*.
-3. After compilation, Bmc automatically listens for =/bunraku/vmc/frame= on UDP =57130=.
-4. Evaluate this block to verify and explicitly restore the default Ishidomaru route:
+2. Recompile the class library if necessary with *Language → Recompile
+   Class Library*.
+3. After compilation, Bmc automatically listens for =/bunraku/vmc/frame=
+   on UDP =57130=.
+4. Evaluate this block to verify and explicitly restore the default
+   Ishidomaru route:
 
 #+begin_src supercollider
 (
@@ -272,51 +372,61 @@ Its static field should say:
 Listening for '/bunraku/vmc/frame' on port: 57130
 #+end_src
 
-The dynamic =received= count should increase while XR-Animator is sending. It may include both local frames received directly from the encoder and remote frames received through =OscGroupClient=.
+The dynamic =received= count should increase while XR-Animator is
+sending. It may include both local frames received directly from the
+encoder and remote frames received through =OscGroupClient=.
 
-For details, see [[file:PortNumberSetup.md#3-supercollider-port-listening-to-oscgroupclient][SuperCollider port listening to OSCGroupClient]], [[file:PortNumberSetup.md#default-forwarding-pipeline-of-bumochi-after-fresh-library-compile][Default forwarding pipeline of BuMoChi]], and [[../UserGuide.md#system-control][Bmc system control]].
+For details, see
+[[file:PortNumberSetup.md#3-supercollider-port-listening-to-oscgroupclient][SuperCollider port listening to OSCGroupClient]],
+[[file:PortNumberSetup.md#default-forwarding-pipeline-of-bumochi-after-fresh-library-compile][Default forwarding pipeline of BuMoChi]],
+and [[../UserGuide.md#system-control][Bmc system control]].
 
 * 5. BunrakuOSCDecoder
 :PROPERTIES:
 :CUSTOM_ID: 5-bunrakuoscdecoder
 :END:
-Open a third Terminal window at the BuMoChi repository root and start the decoder:
+Open a third Terminal window at the BuMoChi repository root and start
+the decoder:
 
 #+begin_src sh
 python3 PipelineApplications/BunrakuOSCDecoder.py \
   --listen-ip 127.0.0.1 \
   --listen-port 39538 \
   --target-ip 127.0.0.1 \
-  --allow-target-port 39539 \
   --verbose
 #+end_src
 
-Leave this terminal open. The decoder receives locally synthesized routed frames from Bmc on =39538=, reads the embedded avatar destination, reconstructs standard VMC bundles, and sends Ishidomaru's bundles to Godot on =39539=.
+Leave this terminal open. The decoder receives locally synthesized
+routed frames from Bmc on =39538=, reads the embedded avatar
+destination, reconstructs standard VMC bundles, and sends Ishidomaru's
+bundles to Godot on =39539=.
 
-If the globally installed launcher is available, the equivalent command is:
+If the globally installed launcher is available, the equivalent command
+is:
 
 #+begin_src sh
 BunrakuOSCDecoder \
   --listen-ip 127.0.0.1 \
   --listen-port 39538 \
   --target-ip 127.0.0.1 \
-  --allow-target-port 39539 \
   --verbose
 #+end_src
 
-For a multi-avatar Godot scene, permit every destination used by that scene. For example:
+The same decoder accepts every valid destination embedded by Bmc, so a
+multi-avatar scene requires no different decoder command:
 
 #+begin_src sh
 python3 PipelineApplications/BunrakuOSCDecoder.py \
   --listen-ip 127.0.0.1 \
   --listen-port 39538 \
   --target-ip 127.0.0.1 \
-  --allow-target-port 39539 \
-  --allow-target-port 39540 \
   --verbose
 #+end_src
 
-For installation, options, and diagnostics, see [[file:HelperApplications/BunrakuOSCDecoder.md#how-to-start-bunrakuoscdecoder][How to start BunrakuOSCDecoder]] and [[file:HelperApplications/BunrakuOSCDecoder.md#test-and-diagnose][Test and diagnose BunrakuOSCDecoder]].
+For installation, options, and diagnostics, see
+[[file:HelperApplications/BunrakuOSCDecoder.md#how-to-start-bunrakuoscdecoder][How to start BunrakuOSCDecoder]]
+and
+[[file:HelperApplications/BunrakuOSCDecoder.md#test-and-diagnose][Test and diagnose BunrakuOSCDecoder]].
 
 * 6. Godot
 :PROPERTIES:
@@ -324,38 +434,49 @@ For installation, options, and diagnostics, see [[file:HelperApplications/Bunrak
 :END:
 1. Start Godot and open the intended avatar project.
 2. For the default single-avatar test, open =Seed_2_Ishidomaru_C=.
-3. Confirm that the project's Ishidomaru VMC receiver listens on UDP =39539=.
+3. Confirm that the project's Ishidomaru VMC receiver listens on UDP
+   =39539=.
 4. Run the project scene.
 
-Godot may start last. VMC bundles sent before its receiver starts are discarded; live animation begins when the scene is running and listening.
+Godot may start last. VMC bundles sent before its receiver starts are
+discarded; live animation begins when the scene is running and
+listening.
 
-For detailed inspection and configuration instructions, see [[file:PortNumberSetup.md#4-godot-avatar-specific-listening-port][Godot avatar-specific listening port]].
+For detailed inspection and configuration instructions, see
+[[file:PortNumberSetup.md#4-godot-avatar-specific-listening-port][Godot avatar-specific listening port]].
 
 For the uniform two-avatar E project, use two explicit receiver nodes:
 
 | Avatar     | Receiver node          | UDP port | Body tracker name              | Face tracker name              |
 |------------+------------------------+----------+--------------------------------+--------------------------------|
-| Mother     | =MotherVMCTracker=     | =39539=  | =/vmc/mother_body_tracker=     | =/vmc/mother_face_tracker=     |
-| Ishidomaru | =IshidomaruVMCTracker= | =39540=  | =/vmc/ishidomaru_body_tracker= | =/vmc/ishidomaru_face_tracker= |
+| Ishidomaru | =IshidomaruVMCTracker= | =39539=  | =/vmc/ishidomaru_body_tracker= | =/vmc/ishidomaru_face_tracker= |
+| Mother     | =MotherVMCTracker=     | =39540=  | =/vmc/mother_body_tracker=     | =/vmc/mother_face_tracker=     |
 
-When using that scene, also set Bmc's avatar routes accordingly and start the decoder with both allowed ports:
+When using that scene, set Bmc's avatar destinations accordingly. The
+unrestricted routed-frame decoder does not need an avatar-specific
+allow-list:
 
 #+begin_src supercollider
-Bmc.avatar(\Ishidomaru).vmcPort_(39540);
-Bmc.addAvatar(\Mother, "Mother").vmcPort_(39539);
+Bmc.avatar(\Ishidomaru).vmcPort_(39539);
+Bmc.addAvatar(\Mother, "Mother").vmcPort_(39540);
 #+end_src
 
-See [[file:Multi-Avatar%20project%20port%20number%20setting%20in%20godot%20-%20NOTES.md#set-the-vmc-port-numbers-for-mother-and-ishidomaru][Multi-Avatar project port number setting in Godot]] for the explicit-receiver arrangement.
+See
+[[file:Multi-Avatar%20project%20port%20number%20setting%20in%20godot%20-%20NOTES.md#set-the-vmc-port-numbers-for-mother-and-ishidomaru][Multi-Avatar project port number setting in Godot]]
+for the explicit-receiver arrangement.
 
 * Verify the complete pipeline
 :PROPERTIES:
 :CUSTOM_ID: verify-the-complete-pipeline
 :END:
 1. XR-Animator reports that VMC output is enabled for =127.0.0.1:39537=.
-2. The encoder's =received=, =bmc_sent=, and =oscgroups_sent= counters increase.
+2. The encoder's =received=, =bmc_sent=, and =oscgroups_sent= counters
+   increase.
 3. =OscGroupClient= reports successful server and group registration.
-4. =Bmc.showDispatcherStatus= reports =running: true=, port =57130=, and an increasing =received= count.
-5. The decoder reports incoming frames on =39538= and VMC output to =39539=.
+4. =Bmc.showDispatcherStatus= reports =running: true=, port =57130=, and
+   an increasing =received= count.
+5. The decoder reports incoming frames on =39538= and VMC output to
+   =39539=.
 6. Ishidomaru moves in Godot.
 
 To test only the final SuperCollider-to-Godot path, evaluate:
