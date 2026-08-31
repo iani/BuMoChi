@@ -1,0 +1,111 @@
+#+title: Bmc.play and BmcClipPlayer Version 2 API
+
+Lets refine the control api of BmcClipPlayer as well as of the Bmc.play method.to include: stop and restart, freeze and resume, reset, set loop option/flag and start and end clips.
+
+For reference:
+
+Current version before the implementation of the present proposal is assigned
+*Version No 1*.  The target version after the implementation of present proposal will be *Version No 2*.
+
+* Bmc.play
+
+Extend interface of Bmc.play
+from
+        =Bmc.play(name)=
+to
+        =Bmc.play(name, loop, rate, startframe, endframe, playerName, avatarName, compositionRule)=
+
+Also modify =Bmc.playClip= to mirror exactly the new arguments of =Bmc.play=
+
+** Version 2 implementation decisions
+
+- =startFrame= and =endFrame= are inclusive. Missing =endFrame= means the final frame. Values outside the clip are clipped to its valid frame range.
+- =BmcClipPlayer.stop= preserves the current frame; =restart= starts again at =startFrame=.
+- =freeze= is an alias for =pause= and =resume= continues from the frozen position.
+- =BmcClipPlayer.reset= stops and rewinds to =startFrame= while preserving the configured clip, output, frame range, rate, and loop flag.
+- The facade uses =Bmc.stopPlayback=, =Bmc.restartPlayback=, and =Bmc.resetPlayback=. Existing =Bmc.stop= and =Bmc.reset= retain their system-wide meanings so playback control cannot accidentally stop the receiver or discard the in-memory environment.
+- =playerName= selects an independent player. =\default= preserves the original single-player behavior. Reusing a name stops and reconfigures that player; using a new name creates another player, so the same clip can play concurrently with different ranges and rates.
+- The registry is =Bmc.players= rather than =BmcClipPlayer.clips=. =Bmc.clips= already means the dictionary of immutable recorded clips, while named players are session/environment state owned and reset by =Bmc=. Use =Bmc.player(name)= to retrieve an instance and control it directly.
+
+
+* BmcClipPlayer
+
+Version 1 variables:
+
+ #+begin_src sclang
+	var <clip, <output, <task, <currentIndex = 0;
+	var <rate = 1.0, <looping = false, <isPlaying = false, <isPaused = false;
+ #+end_src
+
+ Version proposed additions (adjusted after implementation discussion):
+
+ #+begin_src sclang
+	var <startFrame = 0, <endFrame, <name;
+ #+end_src
+
+The player instances do not own a global class registry. =Bmc= owns the
+=players= dictionary, preventing stale players from surviving =Bmc.reset= and
+avoiding collision with the established clip-library terminology.
+
+* Named player registry and controls
+
+The registry always contains =\default=. Calls without =playerName= therefore
+remain compatible with the Version 1 facade:
+
+#+begin_src sclang
+Bmc.player;                 // the \default BmcClipPlayer
+Bmc.player(\slowIntro);     // a named BmcClipPlayer
+Bmc.players;                // IdentityDictionary of all players
+Bmc.playerNames;            // sorted names
+Bmc.removePlayer(\slowIntro);
+#+end_src
+
+All facade playback controls accept an optional player name:
+
+#+begin_src sclang
+Bmc.freeze(\slowIntro);
+Bmc.resume(\slowIntro);
+Bmc.stopPlayback(\slowIntro);
+Bmc.restartPlayback(\slowIntro);
+Bmc.resetPlayback(\slowIntro);
+Bmc.seek(1.5, \slowIntro);
+Bmc.rate(0.75, \slowIntro);
+Bmc.loop(true, \slowIntro);
+#+end_src
+
+=Bmc.play= returns the addressed player. A new name creates a player whose
+initial output is the currently selected avatar. Reusing the name stops that
+player and replaces its clip and playback settings. Other named players are
+not changed. The returned instance can subsequently receive the concise
+=BmcClipPlayer= methods directly.
+
+=Bmc.removePlayer= stops the named player before removing it. The =\default=
+player cannot be removed. =Bmc.stop= stops every registered player, while
+=Bmc.reset= replaces the entire registry with a fresh =\default= player.
+
+** Version 2b: target avatar and composition rule
+
+A player stores its target =avatar= and =compositionRule=. The rule is either:
+
+1. =\overwrite=, which replaces the complete result from older sources; or
+2. a symbol or array resolved through the canonical =BmcBoneSets= list, which
+   replaces only those skeleton parts and retains older cached data elsewhere.
+
+The additional facade arguments follow =playerName= so Version 2 calls remain
+valid. Omitting =avatarName= uses the currently selected Bmc avatar. Omitting
+=compositionRule= uses =\overwrite=.
+
+#+begin_src sclang
+Bmc.play(\take1, true, 1.0, 0, nil,
+    \leftArmPlayer, \Ishidomaru, \leftArm);
+
+Bmc.play(\take1, true, 1.0, 0, nil,
+    \handsPlayer, \Ishidomaru, [\LeftHand, \RightHand]);
+#+end_src
+
+When a named player changes target avatar, its old avatar cache is removed and
+the new target creates a cache on the next emitted frame. Reconfiguring its
+composition rule updates that player's cache without affecting other sources.
+ 
+
+ 

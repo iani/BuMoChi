@@ -1,28 +1,79 @@
 BmcClipPlayer {
-	var <clip, <output, <task, <currentIndex = 0;
+	var <clip, <output, <avatar, <compositionRule = \overwrite;
+	var <task, <currentIndex = 0, <name;
 	var <rate = 1.0, <looping = false, <isPlaying = false, <isPaused = false;
+	var <startFrame = 0, <endFrame;
 
-	*new { |clip, output| ^super.new.init(clip, output) }
+	*new { |clip, output, name| ^super.new.init(clip, output, name) }
 
-	init { |argClip, argOutput|
+	init { |argClip, argOutput, argName|
 		clip = argClip;
 		output = argOutput;
+		avatar = if(argOutput.isKindOf(BmcAvatar)) { argOutput } { nil };
+		name = argName;
+		endFrame = if(clip.isNil or: { clip.isEmpty }) { nil } { clip.size - 1 };
 		^this
 	}
 
-	clip_ { |newClip| this.stop; clip = newClip; currentIndex = 0 }
-	output_ { |newOutput| output = newOutput }
+	clip_ { |newClip|
+		this.stop;
+		clip = newClip;
+		startFrame = 0;
+		endFrame = if(clip.isNil or: { clip.isEmpty }) { nil } { clip.size - 1 };
+		currentIndex = startFrame;
+		^clip
+	}
+	output_ { |newOutput|
+		if(avatar.notNil and: { avatar !== newOutput } and: { name.notNil }) {
+			avatar.removeSourceNamed(name)
+		};
+		output = newOutput;
+		avatar = if(newOutput.isKindOf(BmcAvatar)) { newOutput } { nil };
+		^output
+	}
+	compositionRule_ { |rule|
+		compositionRule = if(rule.isNil or: { rule == \overwrite }) {
+			\overwrite
+		} {
+			Bmc.normalizeBones(rule)
+		};
+		^compositionRule
+	}
 	rate_ { |newRate|
 		if(newRate <= 0) { Error("BmcClipPlayer rate must be greater than zero").throw };
 		rate = newRate;
 	}
 	loop_ { |flag| looping = flag.asBoolean }
+	startFrame_ { |index|
+		if(clip.isNil or: { clip.isEmpty }) {
+			startFrame = index.asInteger.max(0);
+			currentIndex = startFrame;
+			^startFrame
+		};
+		startFrame = index.asInteger.clip(0, clip.size - 1);
+		if(endFrame.isNil or: { endFrame < startFrame }) { endFrame = startFrame };
+		currentIndex = currentIndex.clip(startFrame, endFrame);
+		^startFrame
+	}
+	endFrame_ { |index|
+		if(clip.isNil or: { clip.isEmpty }) { endFrame = index; ^endFrame };
+		endFrame = (index ?? { clip.size - 1 }).asInteger.clip(startFrame, clip.size - 1);
+		currentIndex = currentIndex.clip(startFrame, endFrame);
+		^endFrame
+	}
+	range_ { |start = 0, end|
+		if(clip.isNil or: { clip.isEmpty }) { Error("BmcClipPlayer has no clip to range").throw };
+		startFrame = start.asInteger.clip(0, clip.size - 1);
+		endFrame = (end ?? { clip.size - 1 }).asInteger.clip(startFrame, clip.size - 1);
+		currentIndex = currentIndex.clip(startFrame, endFrame);
+		^this
+	}
 
 	play { |startIndex|
 		if(clip.isNil or: { clip.isEmpty }) { Error("BmcClipPlayer has no clip to play").throw };
 		this.stop;
 		currentIndex = startIndex ?? { currentIndex };
-		currentIndex = currentIndex.clip(0, clip.size - 1);
+		currentIndex = currentIndex.clip(startFrame, endFrame);
 		isPlaying = true;
 		isPaused = false;
 		task = Task({
@@ -30,8 +81,8 @@ BmcClipPlayer {
 			while { isPlaying } {
 				this.send(clip.frameAt(currentIndex));
 				this.changed(\frame, currentIndex, clip.frameAt(currentIndex));
-				if(currentIndex >= (clip.size - 1)) {
-					if(looping) { currentIndex = 0 } { isPlaying = false };
+				if(currentIndex >= endFrame) {
+					if(looping) { currentIndex = startFrame } { isPlaying = false };
 				} {
 					waitTime = (clip.timeAt(currentIndex + 1) - clip.timeAt(currentIndex)) / rate;
 					currentIndex = currentIndex + 1;
@@ -48,16 +99,38 @@ BmcClipPlayer {
 		if(output.isNil) { ^this };
 		if(output.isKindOf(Function)) { output.value(message); ^this };
 		if(output.isKindOf(NetAddr)) { output.sendMsg(*message); ^this };
-		if(output.respondsTo(\receiveFrame)) { output.receiveFrame(message); ^this };
+		if(output.respondsTo(\receiveFrame)) {
+			output.receiveFrame(message, nil, this, compositionRule);
+			^this
+		};
 		Error("Unsupported BmcClipPlayer output: %".format(output)).throw;
 	}
 
-	pause { if(task.notNil) { task.pause; isPaused = true } }
-	resume { if(task.notNil) { task.resume; isPaused = false } }
+	pause {
+		if(task.notNil and: { isPlaying } and: { isPaused.not }) {
+			task.pause;
+			isPaused = true;
+		};
+		^this
+	}
+	freeze { ^this.pause }
+	resume {
+		if(task.notNil and: { isPlaying } and: { isPaused }) {
+			task.resume;
+			isPaused = false;
+		};
+		^this
+	}
 	stop {
 		isPlaying = false;
 		isPaused = false;
 		if(task.notNil) { task.stop; task = nil };
+		^this
+	}
+	restart { ^this.play(startFrame) }
+	reset {
+		this.stop;
+		currentIndex = startFrame;
 		^this
 	}
 

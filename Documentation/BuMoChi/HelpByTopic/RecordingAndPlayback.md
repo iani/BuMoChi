@@ -432,7 +432,7 @@ Bmc.playSessionClip(\motherEntrance);
 Bmc.playSessionClip(\ishidomaruReply);
 ```
 
-The current implementation has one Bmc clip player. Consequently these calls play one configured clip at a time; they do not start several clips simultaneously. A future multi-player session layer can add simultaneous or scheduled ensemble playback without changing the stored session format.
+`Bmc.play` and `Bmc.playClip` use the `\default` player unless a `playerName` is supplied. Named players can run simultaneously and are independently accessible through `Bmc.player(name)`. `Bmc.playSessionClip` currently continues to use the default player.
 
 See [Avatar Port Numbers](Avatar_Port_Numbers.md) for the complete multi-avatar OSC routing pipeline and terminal commands.
 

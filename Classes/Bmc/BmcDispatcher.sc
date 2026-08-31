@@ -47,7 +47,7 @@ BmcDispatcher {
 	removeDestination { |object| destinations.remove(object); ^object }
 
 	receive { |message, time, addr|
-		var streamKey, previous, avatar, avatarIndex, sourceIndex, frameIDIndex;
+		var streamKey, previous, avatarIndex, sourceIndex, frameIDIndex;
 		try { Bmc.validateMessage(message, "incoming frame") } { |error|
 			rejected = rejected + 1;
 			this.changed(\rejected, message, error);
@@ -68,8 +68,6 @@ BmcDispatcher {
 		destinations.do { |destination|
 			if(destination.respondsTo(\receiveFrame)) { destination.receiveFrame(message, time) };
 		};
-		avatar = avatars[message[avatarIndex].asSymbol];
-		if(avatar.notNil) { avatar.receiveFrame(message, time) };
 		avatars.values.asSet.do { |targetAvatar|
 			targetAvatar.receiveSourceFrame(message, time);
 		};

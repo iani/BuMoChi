@@ -52,6 +52,7 @@ check.(Bmc.bone(calibrationFrame.asOSCMessage, \Hips).copyRange(0, 2) == [0.0, 1
 	"calibration frame hips position is wrong");
 Bmc.output({ |message| defaultOutputMessage = message });
 Bmc.dispatcher.receive(makeFrame.("Ishidomaru", "default-test", 1, 0.0, 0.0), 9.0);
+Bmc.defaultAvatar.sampleAndSend(9.0);
 defaultOutputFrame = BmcFrame.fromOSC(defaultOutputMessage);
 check.(defaultOutputFrame.avatar == "Ishidomaru", "default output did not retain the Ishidomaru avatar name");
 check.(defaultOutputFrame.targetPort == 39539, "default output did not embed Ishidomaru port 39539");
@@ -123,6 +124,7 @@ File.delete(recordedTake2Path);
 composite = Bmc.addAvatar(\composite, "composite");
 wire = Bmc.wire("camera-b", \leftArm, \composite, "avatar-b");
 Bmc.dispatcher.receive(makeFrame.("avatar-b", "camera-b", 3, 0.2, 2.0), 20.2);
+composite.sampleAndSend(20.2);
 check.(Bmc.bone(composite.currentFrame.asOSCMessage, \LeftHand) == Array.fill(7, 2.0),
 	"live wire did not update the composite avatar");
 Bmc.unwire(wire);

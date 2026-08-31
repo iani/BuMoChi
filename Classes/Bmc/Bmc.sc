@@ -7,12 +7,13 @@
 
 Bmc {
 	classvar <boneNames;
-	classvar <dispatcher, <recorder, <player, <library, <avatars, <wires;
+	classvar <dispatcher, <recorder, <players, <library, <avatars, <wires;
 	classvar <defaultAvatar, recordingName, recordingFormat, recorderPublisher;
 	classvar <defaultXrAnimatorOutputPort, <defaultInputPort, <defaultDecoderPort;
 	classvar <defaultAvatarID, <defaultAvatarName, <defaultAvatarVmcPort;
 	classvar <sessions, <currentSession;
 	classvar <decoderPort, <forwardDecoder;
+	classvar <compositor;
 
 	*initClass {
 		boneNames = #[
@@ -46,7 +47,9 @@ Bmc {
 		avatars[defaultAvatarID] = defaultAvatar;
 		avatars[\default] = defaultAvatar;
 		dispatcher.registerAvatar(defaultAvatar);
-		player = BmcClipPlayer(nil, defaultAvatar);
+		players = IdentityDictionary.new;
+		players[\default] = BmcClipPlayer(nil, defaultAvatar, \default);
+		compositor = BmcCompositor({ avatars.values.asSet.asArray }, 60.0);
 		sessions = IdentityDictionary.new;
 		currentSession = nil;
 	}
@@ -59,11 +62,13 @@ Bmc {
 	// ----- top-level system -----
 	*start { |port = 57130|
 		dispatcher.start(port);
+		compositor.start;
 		^this
 	}
 
 	*stop {
-		this.stopPlayback;
+		players.values.do { |clipPlayer| clipPlayer.stop };
+		compositor.stop;
 		if(recorder.isRecording) { this.cancelRecording };
 		dispatcher.stop;
 		^this
@@ -72,7 +77,10 @@ Bmc {
 	*status {
 		var result = dispatcher.status.copy.putAll((
 			recording: recorder.isRecording,
-			playing: player.isPlaying,
+			playing: players.values.any { |clipPlayer| clipPlayer.isPlaying },
+			playerCount: players.size,
+			playingPlayers: players.keys.select { |name| players[name].isPlaying },
+			compositor: compositor.status,
 			currentClip: library.currentName,
 			clipCount: library.size,
 			wireCount: wires.size
@@ -80,6 +88,15 @@ Bmc {
 		result.postln;
 		^result
 	}
+
+	*compositorRate { |value|
+		if(value.isNil) { ^compositor.rate };
+		compositor.rate_(value);
+		^this
+	}
+	*compositorRate_ { |value| compositor.rate_(value); ^value }
+	*startCompositor { compositor.start; ^this }
+	*stopCompositor { compositor.stop; ^this }
 
 	*help {
 		var configuredAvatars = avatars.values.asSet.select { |avatar|
@@ -113,7 +130,7 @@ Bmc {
 	*showDispatcherStatus { |updateInterval = 0.25|
 		updateInterval = updateInterval.asFloat.max(0.05);
 		{
-			var window = Window("Bmc OSC/VMC Input", Rect(120, 120, 460, 210));
+			var window = Window("Bmc OSC/VMC Input", Rect(0, 0, 300, 100));
 			var listening = StaticText().string_(
 				"Listening for '/bunraku/vmc/frame' on port: %".format(dispatcher.port)
 			);
@@ -155,13 +172,13 @@ Bmc {
 	*selectAvatar { |name|
 		defaultAvatar = this.avatar(name);
 		if(defaultAvatar.isNil) { Error("Unknown Bmc avatar: %".format(name)).throw };
-		player.output_(defaultAvatar);
+		this.player.output_(defaultAvatar);
 		^defaultAvatar
 	}
 
 	*output { |destination|
 		defaultAvatar.output_(destination);
-		player.output_(defaultAvatar);
+		this.player.output_(defaultAvatar);
 		^destination
 	}
 
@@ -304,21 +321,58 @@ Bmc {
 	*convertClipToScd { |name| ^this.clipToScd(name) }
 
 	// ----- playback -----
-	*play { |name|
-		var selected = if(name.isNil) { library.current } { library.select(name) };
-		if(selected.isNil) { Error("Bmc has no selected clip").throw };
-		player.clip_(selected);
-		player.play;
-		^player
+	*player { |name = \default|
+		var result = players[name.asSymbol];
+		if(result.isNil) { Error("Unknown Bmc clip player: %".format(name)).throw };
+		^result
 	}
-	*playClip { |name| ^this.play(name) }
+	*playerNames { ^players.keys.asArray.sort }
+	*removePlayer { |name|
+		var key = name.asSymbol;
+		var result;
+		if(key == \default) { Error("Bmc default player cannot be removed").throw };
+		result = players.removeAt(key);
+		if(result.notNil) { result.stop };
+		^result
+	}
 
-	*pause { player.pause; ^this }
-	*resume { player.resume; ^this }
-	*stopPlayback { player.stop; ^this }
-	*seek { |seconds| player.seek(seconds); ^this }
-	*rate { |value| player.rate_(value); ^this }
-	*loop { |flag = true| player.loop_(flag); ^this }
+	*play { |name, loop = false, rate = 1.0, startFrame = 0, endFrame,
+		playerName = \default, avatarName, compositionRule = \overwrite|
+		var selected = if(name.isNil) { library.current } { library.select(name) };
+		var key = (playerName ?? { \default }).asSymbol;
+		var clipPlayer;
+		var targetAvatar = if(avatarName.isNil) { defaultAvatar } { this.avatar(avatarName) };
+		if(selected.isNil) { Error("Bmc has no selected clip").throw };
+		if(targetAvatar.isNil) { Error("Unknown Bmc avatar: %".format(avatarName)).throw };
+		clipPlayer = players[key];
+		if(clipPlayer.isNil) {
+			clipPlayer = BmcClipPlayer(nil, defaultAvatar, key);
+			players[key] = clipPlayer;
+		};
+		clipPlayer.output_(targetAvatar);
+		clipPlayer.compositionRule_(compositionRule);
+		clipPlayer.clip_(selected);
+		clipPlayer.loop_(loop);
+		clipPlayer.rate_(rate);
+		clipPlayer.range_(startFrame, endFrame);
+		clipPlayer.play;
+		^clipPlayer
+	}
+	*playClip { |name, loop = false, rate = 1.0, startFrame = 0, endFrame,
+		playerName = \default, avatarName, compositionRule = \overwrite|
+		^this.play(name, loop, rate, startFrame, endFrame,
+			playerName, avatarName, compositionRule)
+	}
+
+	*pause { |playerName = \default| this.player(playerName).pause; ^this }
+	*freeze { |playerName = \default| this.player(playerName).freeze; ^this }
+	*resume { |playerName = \default| this.player(playerName).resume; ^this }
+	*stopPlayback { |playerName = \default| this.player(playerName).stop; ^this }
+	*restartPlayback { |playerName = \default| this.player(playerName).restart; ^this }
+	*resetPlayback { |playerName = \default| this.player(playerName).reset; ^this }
+	*seek { |seconds, playerName = \default| this.player(playerName).seek(seconds); ^this }
+	*rate { |value, playerName = \default| this.player(playerName).rate_(value); ^this }
+	*loop { |flag = true, playerName = \default| this.player(playerName).loop_(flag); ^this }
 
 	// ----- playback sessions -----
 	*saveSession { |name, clipSettings, avatarSettings, path, decoderSettings|
@@ -383,13 +437,13 @@ Bmc {
 			clip = library.load(clipPath, settings[\clip]);
 		};
 		defaultAvatar = avatarObject;
-		player.output_(avatarObject);
-		player.clip_(clip);
-		player.rate_(settings[\rate]);
-		player.loop_(settings[\loop]);
-		player.seek(settings[\start]);
-		player.play;
-		^player
+		this.player.output_(avatarObject);
+		this.player.clip_(clip);
+		this.player.rate_(settings[\rate]);
+		this.player.loop_(settings[\loop]);
+		this.player.seek(settings[\start]);
+		this.player.play;
+		^this.player
 	}
 
 	// ----- clip composition -----
@@ -424,11 +478,24 @@ Bmc {
 		^object
 	}
 
+	*addFrameSource { |name, source, target = \default, sourceAvatar, mode, bones|
+		var targetObject = this.avatar(target);
+		var object;
+		if(targetObject.isNil) { targetObject = this.addAvatar(target) };
+		mode = mode ?? { if(bones.isNil) { \overwrite } { \compose } };
+		object = BmcFrameSource(name, source, sourceAvatar, mode, bones);
+		targetObject.addWire(object);
+		wires.add(object);
+		^object
+	}
+
 	*unwire { |wire|
 		wires.remove(wire);
 		avatars.values.asSet.do { |object| object.removeWire(wire) };
 		^wire
 	}
+	*removeFrameSource { |sourceCache| ^this.unwire(sourceCache) }
+	*frameSources { ^wires.copy }
 
 	*listWires { wires.do(_.postln); ^wires.copy }
 	*clearWires {
@@ -532,7 +599,8 @@ Bmc {
 		if(bones.isSequenceableCollection.not) {
 			Error("Bmc: bones must be a bone name or an array of names").throw;
 		};
-		bones = bones.collect(_.asSymbol);
+		// Arrays may mix exact canonical bone names and named body regions.
+		bones = bones.collect { |bone| BmcBoneSets.resolve(bone) }.flat.collect(_.asSymbol);
 		bones.do { |bone| this.boneStart(bone) };
 		^bones
 	}

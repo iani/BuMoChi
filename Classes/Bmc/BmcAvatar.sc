@@ -1,6 +1,6 @@
 BmcAvatar {
 	var <avatarID, <avatarName, <referencePose, <currentPose, <currentFrame;
-	var <output, <vmcPort, <wires;
+	var <output, <vmcPort, <wires, <dirty = false;
 
 	*new { |avatarID, avatarName| ^super.new.init(avatarID, avatarName) }
 
@@ -24,15 +24,57 @@ BmcAvatar {
 		vmcPort = port;
 		^this
 	}
-	addWire { |wire| wires.add(wire); ^wire }
-	removeWire { |wire| wires.remove(wire); ^wire }
-	clearWires { wires.clear; ^this }
+	// Newest source is first. Composition evaluates in reverse so index zero
+	// has final authority over every older cache.
+	addWire { |wire| wires.insert(0, wire); dirty = true; ^wire }
+	removeWire { |wire|
+		if(wires.remove(wire).notNil) { dirty = true };
+		^wire
+	}
+	clearWires {
+		wires.clear;
+		dirty = true;
+		^this
+	}
+	sources { ^wires.copy }
+	addSource { |sourceCache| ^this.addWire(sourceCache) }
+	removeSource { |sourceCache| ^this.removeWire(sourceCache) }
+	clearSources { ^this.clearWires }
+	removeSourceNamed { |sourceName|
+		var cache = wires.detect { |item| item.name == sourceName.asSymbol };
+		if(cache.notNil) { this.removeWire(cache) };
+		^cache
+	}
 
-	receiveFrame { |frame, time|
-		var typed, completedPose;
-		typed = if(frame.isKindOf(BmcFrame)) { frame } { BmcFrame.fromOSC(frame) };
-		completedPose = typed.pose.copy;
-		completedPose.fillMissingFrom(currentPose);
+	receiveFrame { |frame, time, sourceObject, compositionRule = \overwrite|
+		var typed = if(frame.isKindOf(BmcFrame)) { frame } { BmcFrame.fromOSC(frame) };
+		var selectorSource;
+		var key = if(sourceObject.notNil and: { sourceObject.respondsTo(\name) }) {
+			sourceObject.name
+		} {
+			("direct_" ++ typed.source.asString ++ "_" ++ typed.avatar.asString).asSymbol
+		};
+		var cache = wires.detect { |item| item.name == key };
+		if(cache.isNil) {
+			selectorSource = if(sourceObject.isNil) {
+				typed.source
+			} {
+				("__player_" ++ key.asString)
+			};
+			cache = BmcFrameSource(key, selectorSource, typed.avatar, \overwrite);
+			this.addWire(cache);
+		};
+		cache.rule_(compositionRule);
+		cache.update(typed, time);
+		dirty = true;
+		^cache
+	}
+
+	composeFrame { |time|
+		var result = BmcFrame.new(avatarName, "bmc-reference", 0, 0.0, referencePose);
+		var completedPose;
+		wires.reverse.do { |sourceCache| result = sourceCache.applyTo(result) };
+		completedPose = result.pose.copy;
 		completedPose.fillMissingFrom(referencePose);
 		currentPose = completedPose;
 		// The destination avatar controls both routing and the avatar name
@@ -40,24 +82,34 @@ BmcAvatar {
 		// assigned to another staged avatar during playback.
 		// Keep the completed frame route-free so recordings remain portable.
 		// Routing is attached only by send, at the final avatar boundary.
-		currentFrame = typed.withoutRoute.withPose(completedPose).withAvatar(avatarName);
-		this.changed(\completedFrame, currentFrame.asOSCMessage, time ?? { SystemClock.seconds });
-		this.send(currentFrame);
+		currentFrame = result.withoutRoute.withPose(completedPose).withAvatar(avatarName);
 		^currentFrame
 	}
 
+	shouldSample { ^wires.notEmpty or: { dirty } }
+
+	sampleAndSend { |time|
+		var frame = this.composeFrame(time);
+		this.changed(\completedFrame, frame.asOSCMessage, time ?? { SystemClock.seconds });
+		this.send(frame);
+		dirty = false;
+		^frame
+	}
+
+	// Explicit compatibility/manual operation. Normal output is clocked by
+	// BmcCompositor rather than triggered by source updates.
+	composeAndSend { |time| ^this.sampleAndSend(time) }
+
 	receiveSourceFrame { |sourceFrame, time|
-		var result, matching;
-		matching = wires.select { |wire| wire.matches(sourceFrame) }.sortBy(\priority);
-		if(matching.isEmpty) { ^nil };
-		result = if(currentFrame.notNil) {
-			currentFrame.asOSCMessage
-		} {
-			BmcFrame.new(avatarName, "bmc-reference", 0, 0.0, referencePose).asOSCMessage
-		};
-		matching.do { |wire| result = wire.apply(result, sourceFrame) };
-		result[Bmc.messageAvatarIndex(result)] = avatarName.asString;
-		^this.receiveFrame(result, time)
+		var typed = if(sourceFrame.isKindOf(BmcFrame)) { sourceFrame } { BmcFrame.fromOSC(sourceFrame) };
+		var matching = wires.select { |sourceCache| sourceCache.matches(typed) };
+		var direct = (typed.avatar.asString == avatarID.asString)
+		or: { typed.avatar.asString == avatarName.asString };
+		if(matching.isEmpty and: { direct.not }) { ^nil };
+		if(matching.isEmpty and: { direct }) { ^this.receiveFrame(typed, time) };
+		matching.do { |sourceCache| sourceCache.update(typed, time) };
+		dirty = true;
+		^matching
 	}
 
 	send { |frame|

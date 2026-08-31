@@ -1,30 +1,25 @@
-BmcWire {
-	var <source, <sourceAvatar, <targetAvatar, <bones, <priority, <enabled = true;
+// Compatibility name for a cached, partial-body frame source.
+BmcWire : BmcFrameSource {
+	var <targetAvatar, <priority;
 
 	*new { |source, sourceAvatar, targetAvatar, bones, priority = 0|
-		^super.new.init(source, sourceAvatar, targetAvatar, bones, priority)
+		^super.new.initWire(source, sourceAvatar, targetAvatar, bones, priority)
 	}
 
-	init { |argSource, argSourceAvatar, argTargetAvatar, argBones, argPriority|
-		source = argSource;
-		sourceAvatar = argSourceAvatar;
+	initWire { |argSource, argSourceAvatar, argTargetAvatar, argBones, argPriority|
+		var wireName = (
+			"wire_" ++ argTargetAvatar.asString ++ "_" ++ this.identityHash
+		).asSymbol;
+		super.init(wireName, argSource, argSourceAvatar, \compose, argBones);
 		targetAvatar = argTargetAvatar;
-		bones = Bmc.normalizeBones(argBones);
 		priority = argPriority;
 		^this
 	}
 
-	enabled_ { |flag| enabled = flag.asBoolean }
-
-	matches { |frame|
-		frame = if(frame.isKindOf(BmcFrame)) { frame.asOSCMessage } { frame };
-		^enabled
-		and: { source.isNil or: { frame[Bmc.messageSourceIndex(frame)].asString == source.asString } }
-		and: { sourceAvatar.isNil or: { frame[Bmc.messageAvatarIndex(frame)].asString == sourceAvatar.asString } }
-	}
-
+	// Legacy one-shot API. Cached avatar composition uses update/applyTo.
 	apply { |targetFrame, sourceFrame|
 		if(this.matches(sourceFrame).not) { ^targetFrame };
-		^Bmc.combine(targetFrame, sourceFrame, bones)
+		this.update(sourceFrame);
+		^this.applyTo(BmcFrame.fromOSC(targetFrame)).asOSCMessage
 	}
 }

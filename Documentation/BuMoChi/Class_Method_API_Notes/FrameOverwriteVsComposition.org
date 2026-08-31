@@ -1,0 +1,88 @@
+#+title: Frame Overwrite versus Composition
+
+* Problem
+
+An avatar may receive frames from several concurrent origins, including a
+local XR Animator stream, remote network data, and one or more local clip
+players. Direct avatar input and partial-body wires previously followed
+separate paths, so their precedence was not represented uniformly.
+
+* Decision: cached source stack
+
+Each =BmcAvatar= owns a source array in stack order: the last source added is
+stored at index zero. Each entry is a =BmcFrameSource= that stores:
+
+- its name and source/avatar selectors;
+- its latest route-free frame and receipt time;
+- whether it is enabled;
+- its composition mode;
+- its selected bones when the mode is partial composition.
+
+The stack order is stable. Receiving a newer frame updates a source's cache but
+does not move that source to the front. Thus a fast older stream cannot regain
+authority merely by sending another packet.
+
+Composition evaluates the array from oldest to newest. The source at index
+zero is applied last and therefore has final authority. Removing it exposes
+the cached composition beneath it without waiting for every older source to
+send another frame.
+
+* Rules
+
+The default rule is =\overwrite=. It replaces the complete working frame with
+the cached source frame. This is used when no composition rule is supplied.
+
+=\compose= currently replaces only a resolved bone set. This preserves the
+existing =BmcWire= behavior while putting it into the same cached-source
+pipeline. Future modes may transform, transpose, blend, or otherwise combine
+the working frame and source frame without changing the stack model.
+
+If =Bmc.addFrameSource= receives =bones= but no explicit mode, it infers
+=\compose=. With neither =mode= nor =bones= it infers =\overwrite=.
+
+* API
+
+#+begin_src sclang
+// Full-frame source; newest source has final authority.
+~remote = Bmc.addFrameSource(
+    \remotePerformer,
+    "remote-xr",
+    \Ishidomaru,
+    "RemoteAvatar"
+);
+
+// Partial-body composition; \compose is inferred from \leftArm.
+~leftArm = Bmc.addFrameSource(
+    \remoteLeftArm,
+    "remote-xr",
+    \Ishidomaru,
+    "RemoteAvatar",
+    bones: \leftArm
+);
+
+Bmc.avatar(\Ishidomaru).sources; // newest-first array
+Bmc.frameSources;                // explicitly registered sources
+Bmc.removeFrameSource(~leftArm);
+#+end_src
+
+Direct frames addressed to an avatar automatically create an overwrite cache
+identified by their source and source-avatar fields. A named =BmcClipPlayer=
+automatically creates a private overwrite cache identified by the player name,
+so multiple players targeting one avatar remain distinct sources.
+
+A =BmcClipPlayer= also stores its target avatar and composition rule. The rule
+is =\overwrite= or a canonical body-part/bone selection. The player passes that
+rule when updating its private avatar cache, allowing several simultaneous
+players to control different parts of the same avatar.
+
+* Compatibility
+
+=BmcWire= is retained as a compatibility subclass of =BmcFrameSource=. It is a
+cached =\compose= source with a required bone selection. Existing =Bmc.wire=
+and =Bmc.unwire= calls continue to work, while =Bmc.addFrameSource= exposes the
+more general API.
+
+The old =priority= value remains readable on =BmcWire= for compatibility, but
+stack insertion order now defines precedence. Direct dispatcher delivery and
+wired delivery are unified so one incoming frame produces one composed avatar
+output rather than separate direct and composed outputs.

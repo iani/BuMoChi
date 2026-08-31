@@ -1,119 +1,590 @@
 
-# Glossary, basic concepts
 
-**Motion source**
-: Anything capable of supplying time-varying motion data. A source may be a recorded clip, a live mocap stream, a language-side function, a Synth-controlled generator, or another compatible producer. A motion source is independent of the avatar that may eventually render its data.
+This topic describes BuMoChi's cached-source composition system and its constant-rate compositor.
 
-**Motion**
-: A configured use of a motion source. Its configuration may specify playback rate, looping, starting position, transformations, and other processing rules. Several motions may use the same underlying source differently.
+# What is composition of animation figures
 
-**Figure**
-: A logical moving body whose complete frames are composed from one or more ordered source components. A figure exists before avatar routing: it describes the resulting motion, not the rendered model or its VMC destination.
+Composition constructs one complete pose for an animation figure from several independent motion sources. Instead of requiring one mocap stream or clip to control the whole body, BuMoChi treats each source as a layer that may contribute a complete frame or only selected parts.
 
-**Figure construction / figure composition**
-: The process of assembling a figure's complete frame from its ordered source components. *Figure composition* is the preferred term for the runtime process; *figure construction* may also refer more broadly to defining the component array, selections, and missing-data rules that the process will use.
+For example, one figure might use local XR Animator for its base movement, a remote performer for both arms, a recorded clip for the head, and—once procedural sources are implemented—a function for rhythmic breathing. The composer starts with a reference pose, applies the available layers in order, resolves overlaps according to their rules, and produces one complete frame for an avatar and its Godot route.
 
-**Source component**
-: One entry in a figure's ordered source-component array. It identifies a motion and specifies which elements that motion may contribute, together with any component-level transformations or rules. A component is therefore a configured layer in a particular figure, not the underlying motion data itself.
+Composition is non-destructive. It does not rewrite clips or incoming mocap. Each source retains its own cache while the avatar constructs a new result from current cached values.
 
-**Source-component array**
-: The ordered collection of components used to compose a figure. Components are applied from left to right. Array order defines precedence: for an element selected by more than one component, the later component's valid value replaces the earlier value.
+This guide distinguishes two complementary forms of composition:
 
-**Element**
-: A separately composable part of motion data, such as a root transform, bone position, bone rotation, hand channel, or facial-expression value. The precise element vocabulary is defined by BuMoChi's frame representation.
+**Structural composition**
+: Constructs a complete animation figure by selecting which sources supply the whole body or particular body regions. It assembles existing frame values according to source order and body-part selections.
 
-**Selection / component mask**
-: The set of elements that a source component is allowed to copy into the composition frame. Values outside the selection have no effect. Missing values inside the selection must not erase valid values inherited from an earlier component.
+For example, local XR Animator mocap can supply the hips, torso, and legs; a remote performer's mocap can supply both arms; and a recorded clip can supply the head and neck. Structural composition assembles these selected regions into one complete avatar pose without mathematically changing the movement supplied by any source.
 
-**Source cache**
-: A source component's latest completely computed frame or partial frame, retained together with timing information. The composer reads this stable snapshot rather than reading values while the source is still changing them.
+Another structural example is temporarily placing a looping left-hand clip over a full-body live stream. The clip controls the hand while the live stream continues to supply the rest of the body. Removing the clip returns hand control to the current live source.
 
-**Atomic cache update**
-: Publication of a newly computed source frame as one complete operation. Until publication is complete, the composer continues to see the preceding cached frame and can never observe a mixture of old and new values.
+**Transformative composition**
+: Produces derived motion by mathematically modifying, combining, or generating movement from one or more sources. Examples include scaling motion range, adding jitter, applying offsets, and calculating weighted blends.
 
-**Update rate**
-: The frequency at which an individual motion source computes and publishes new cached values. Different sources may have different or irregular update rates. Update rate is distinct from the figure's composition rate.
+For example, a modifier can double the range of a live arm gesture around the shoulder while preserving its timing, or add smooth low-amplitude noise to the head rotation to produce trembling. In both cases, the resulting movement is derived from the original source rather than simply copied from another body-part source.
 
-**Composition clock**
-: The single regular clock that tells the figure composer when to sample all source caches and produce another complete frame.
+A two-source transformative example blends a live arm motion with a recorded arm gesture. A weight of 0 follows the live motion, a weight of 1 follows the clip, and intermediate weights produce a new motion between them. Translation can use a weighted average, while rotation requires quaternion interpolation.
 
-**Composition rate**
-: The frequency of composition-clock ticks and therefore the nominal rate at which complete figure frames are generated. It should normally be at least as high as the intended animation/VMC output rate.
+Structural composition answers, “Which source controls each part of the figure?” Transformative composition answers, “How should the selected source motion be changed or combined?” A future composition pipeline may use both: structurally assemble a figure, then apply transformative rules to selected layers or to the assembled result.
 
-**Composition tick / sampling instant**
-: One event of the composition clock. At that instant, the composer reads the latest complete cache of every component and applies the components from left to right.
+For instance, structural composition might assign live mocap to the legs and torso and a remote performer to the arms. Transformative composition could then reduce the arm-motion range to 60 percent, add a small rhythmic torso sway, and blend the final head pose between live tracking and a prepared clip.
 
-**Composition frame**
-: The temporary working frame assembled during a composition tick. It begins with a defined base or neutral state and is progressively filled or overridden by the ordered source components.
+The current implementation supports full-frame overwrite and selected-body replacement. Arithmetic transformation, blending, function-valued channels, and Synth-controlled rules are planned extensions.
 
-**Output frame / completed figure frame**
-: The stable result published after every source component has been applied and any still-missing values have been resolved. Only after completion is routing information added and the frame sent to an avatar destination.
+## Structural composition: composing an avatar from different sources
 
-**Sample and hold**
-: The timing rule used when a source has not published a new value before a composition tick. The composer reuses that source's most recent cached value until a replacement becomes available.
+Several sources can target the same avatar:
 
-**Timestamp and sequence number**
-: Metadata recording when a cached value was produced and, optionally, its order within the source stream. These fields support diagnostics and may later support interpolation, resampling, and stale-source detection.
+~~~text
+newest: recorded clip      head and neck
+        remote mocap       both arms
+oldest: local XR Animator  complete body
+~~~
 
-**Avatar**
-: The external rendered destination assigned to a completed figure. The avatar provides its identity and final VMC route; it does not determine the contents or ownership of the source clips and motions used to compose the figure.
+The local stream supplies the complete body. Remote mocap replaces only the arms, and the clip replaces only the head and neck. Legs, hips, and torso remain controlled by the local performer. If two layers select the same bone, the newer layer wins; bones it does not select retain the older values.
 
-# Data composition order
+This permits distributed performance in which different performers or processes control different regions while updating at independent rates.
 
-The motion sources used to construct a figure are stored in an ordered array of source components. The array expresses precedence as well as membership. At each composition step, the components are evaluated from left to right. Each component may contribute only its intended elements—for example, the root, torso, arms, hands, face, or selected individual bones. A value written by a later component therefore replaces an earlier value for the same element, while elements that it does not target retain the values already supplied by earlier components.
+Composition layers can also be added and removed during a performance. For example, an avatar may normally follow a live full-body performer while a looping clip temporarily controls only the left hand. The live source continues updating all its bones underneath the clip, including the hand, but the newer clip has authority over the selected hand while its layer is present.
 
-```mermaid
-flowchart TB
-    Clock["Regular composition clock<br/>one tick per output frame"]
+Removing the clip layer reveals the latest cached live hand pose rather than returning to the pose that existed when the clip began. This makes the transition back to live control responsive to what the performer is doing now.
 
-    subgraph Sources["Ordered source-component array"]
-        direction LR
-        S1["1. Base or full-body source<br/>independent update rate"]
-        S2["2. Selected-body-part source<br/>independent update rate"]
-        S3["3. Later override source<br/>independent update rate"]
-    end
+Freezing or stopping a player currently leaves its last cached pose active. Artistically, this can hold one body region while the rest of the avatar continues moving. To return that region to the sources underneath, remove or disable the player cache, change its selection rule, or add a newer source.
 
-    subgraph Caches["Latest-complete per-source caches"]
-        direction LR
-        C1["Cache 1<br/>frame + timestamp"]
-        C2["Cache 2<br/>frame + timestamp"]
-        C3["Cache 3<br/>frame + timestamp"]
-    end
+None of these operations alters the original live frames or recorded clips. They only change which cached sources contribute to the avatar's completed output frame.
 
-    S1 -->|"atomic cache update"| C1
-    S2 -->|"atomic cache update"| C2
-    S3 -->|"atomic cache update"| C3
+## Transformative composition: modifying an avatars motion
 
-    Clock --> Composer
-    C1 -->|"1. copy selected elements"| Composer
-    C2 -->|"2. copy selected elements"| Composer
-    C3 -->|"3. copy selected elements<br/>overrides overlaps"| Composer
+Structural composition selects which source supplies each part of the resulting body. Transformative composition is different: a modifying source or rule transforms movement that already comes from another source, producing a derived motion rather than merely replacing selected bones.
 
-    Composer["Figure composer<br/>samples current caches left to right"]
-    Composer --> Frame["Completed figure frame"]
-    Frame --> Output["Avatar routing / VMC output"]
-```
+For example, a live mocap stream might provide an arm gesture while a modifier magnifies the gesture's range. If the performer's hand moves 20 centimetres away from a reference position, a scale factor of 2 could make the avatar's hand move 40 centimetres. A factor of 0.5 would reduce the same gesture to 10 centimetres. The modifier should normally operate relative to a declared reference pose or pivot so that scaling affects the movement range rather than incorrectly scaling absolute world coordinates.
 
-Each source may update its cache several times, once, or not at all between two composition ticks. At a tick, the composer reads the latest complete value in each cache. A cache with no new value therefore contributes its previous value.
+A modifier could also add controlled noise or jitter. The original source would still determine the general trajectory of the hand or head, while a noise function adds small, time-varying translation or rotation offsets. Parameters could control the affected bones, amplitude, frequency, smoothness, and random seed. Smooth low-frequency noise might suggest breathing or instability; faster noise could produce trembling or mechanical vibration.
 
-## Per-source caches
+Two motions can also be combined mathematically. Given source poses A and B and a weight *w* between 0 and 1, a derived pose could use:
 
-Each source component computes independently and writes its most recent complete or partial frame into its own cache. A component must finish updating its cache before that cache becomes visible to the composer; the composer should never read a half-written frame. The cache should also retain the source timestamp and, where useful, a local sequence number.
+~~~text
+result = (1 - w) × A + w × B
+~~~
 
-The components should not copy their data directly into one another. Instead, the figure composer owns a temporary composition frame. On each composition step it reads the current cache of every component, in array order, and selectively copies the elements enabled by that component's mask into the temporary frame. This keeps source computation separate from composition and makes left-to-right precedence explicit.
+For translations, this is an ordinary weighted average. Rotations require quaternion interpolation—normally spherical linear interpolation—rather than component-by-component averaging. At *w = 0*, the result follows A; at *w = 1*, it follows B; intermediate weights blend the two motions. The weight itself could change over time, allowing a gradual transition or continuous interaction between performers.
 
-If a slow component has not produced a new value when the next composition step begins, its last cached value is reused. This is a sample-and-hold rule: a source remains effective until it publishes a replacement. A faster component may update its cache several times between two composition steps; the next step reads the newest complete value available at that instant.
+Other useful modifying operations include:
 
-## Composition clock
+- adding a positional or rotational offset;
+- mirroring left-side movement onto the right side;
+- transposing movement from one body region to another;
+- constraining a transform to a plane, range, or joint limit;
+- smoothing or exaggerating changes in speed;
+- delaying one source and combining it with its earlier motion;
+- using one source as a modulation signal for another source's amplitude or blend weight.
 
-The complete figure should be assembled and emitted on one regular composition clock rather than whenever any individual source happens to update. At every tick, the composer performs the following operations:
+Modification can be restricted to selected canonical body regions just like replacement composition. A noise modifier may affect only the head, while a motion-range multiplier affects both arms and leaves the torso and legs unchanged. Several modifiers may be chained, so their order must be explicit: scaling and then adding noise is not always equivalent to adding noise and then scaling.
 
-1. Start with an empty frame or a defined neutral/base frame.
-2. Read each component's latest complete cached frame from left to right.
-3. Copy only the elements selected by that component into the composition frame.
-4. Allow later components to replace earlier values for elements selected by both.
-5. Publish the completed figure frame to the avatar/output stage.
+These transformative rules are design targets and are not yet implemented by **BmcFrameSource**. The current implementation provides absolute **\overwrite** and selected-body replacement. A future rule-object API should identify its input source or sources, selected bones, reference frame, parameters, and evaluation order. It should implement translations, quaternion rotations, weighted blends, and procedural modifiers according to their appropriate mathematics rather than treating every frame value as a simple number.
 
-This gives the output a stable frame rate and makes recordings and network transmission deterministic even when clip routines, live streams, functions, and Synth-controlled generators update at different rates.
+# Different types of composition information
 
-A regular composition clock cannot preserve every intermediate value generated by a source that runs faster than that clock. It preserves the source's state at each sampling instant. The clock should therefore be fast enough for the desired motion detail—normally at least the intended Godot/VMC output frame rate. If exact preservation of every source event later becomes necessary, components can retain a short timestamped history and the composer can interpolate or resample it. That is a separate refinement; the initial implementation should use latest-complete caches and a single regular composition clock because its timing and precedence are clear and predictable.
+Composition information requires different evaluation rules depending on its type:
+
+## Regular frame values replacing existing previous values
+
+Absolute skeletal poses from mocap or clips are implemented now. A full-frame **\overwrite** source replaces the working frame; a selected-body source copies specified canonical bones. Examples are an XR Animator pose, a remote route-free frame, or a recorded clip frame selected by elapsed playback time.
+
+## Frame values modifying previous values
+
+A modifying frame would describe a change relative to the working frame. Future rules could add a hips translation, compose a head rotation, scale a gesture around a reference pose, blend two transforms, or mirror movement between body regions.
+
+These rules are not implemented yet. They need explicit rule objects because translations, quaternion rotations, and weighted blends require different mathematics.
+
+## Functions as value sources
+
+A language-side function could calculate a pose, selected transform, or rule parameter. Examples include breathing curves, procedural gaze, noise-driven trembling, constraints, and sensor mappings.
+
+Functions are not yet first-class frame sources. They can currently participate only indirectly by constructing valid frames and writing them through the cache API. The clocked compositor must later define whether a function evaluates on its own update schedule or once per composition tick.
+
+## Synths as value sources
+
+A SuperCollider Synth could provide control-rate signals from envelopes, LFOs, amplitude followers, analysis features, or buses. An adapter would map these signals to positions, rotations, blend weights, or rule parameters.
+
+Synths do not currently write skeletal frames directly. A future adapter should sample control buses at composition time while keeping audio-server timing distinct from language-side frame timing.
+
+## Current model
+
+A **BmcAvatar** owns composition and final output. It maintains a newest-first stack of **BmcFrameSource** objects. Each source stores its latest frame, update time, selectors, enabled state, and composition rule.
+
+Sources may be:
+
+- local or remote live Bunraku/VMC streams;
+- named **BmcClipPlayer** instances;
+- explicitly registered **BmcFrameSource** objects;
+- compatibility **BmcWire** objects for partial-body composition.
+
+All four use the same avatar composition path.
+
+## Concepts
+
+**Clip**
+: Immutable recorded motion data. A clip does not own an avatar or source cache.
+
+**Clip player**
+: One configured use of a clip. It stores playback settings, player name, target avatar, and composition rule. Several players can use the same clip independently.
+
+**Frame source and source cache**
+: A **BmcFrameSource** and its latest complete, route-free **BmcFrame**. Updating a cache replaces the stored frame as one language-side operation.
+
+**Source stack**
+: The avatar's ordered source collection. The source added most recently is at index zero.
+
+**Composition rule**
+: Either full-frame **\overwrite** or selected-bone composition.
+
+## Stack order and precedence
+
+Sources are stored newest first:
+
+~~~text
+index 0   newest source; highest authority
+index 1   next-newest source
+...
+last      oldest source; lowest authority
+~~~
+
+Composition reads a reversed copy, applying the oldest cache first and the newest cache last:
+
+~~~text
+reference pose
+    -> oldest cached source
+    -> ...
+    -> newest cached source
+    -> completed avatar frame
+~~~
+
+Thus the last source added wins wherever rules overlap.
+
+Cache updates do not reorder the stack. An older high-frequency mocap stream can update continuously without displacing a later-added source. Removing a source marks the avatar for recomposition on the next compositor tick, revealing the cached result beneath it without waiting for older sources to send again.
+
+## BmcFrameSource
+
+A source exposes:
+
+~~~supercollider
+source.name;
+source.source;
+source.sourceAvatar;
+source.mode;
+source.bones;
+source.frame;
+source.time;
+source.enabled;
+~~~
+
+**source** matches the incoming frame's source field. **sourceAvatar** matches its incoming avatar field. A nil selector is unrestricted.
+
+Disable or enable a source with:
+
+~~~supercollider
+~source.enabled_(false);
+~source.enabled_(true);
+~~~
+
+A disabled source neither matches dispatcher frames nor contributes during composition.
+
+## Composition rules
+
+### Full-frame overwrite
+
+With no rule, a source defaults to **\overwrite**:
+
+~~~supercollider
+~remote = Bmc.addFrameSource(
+    \remoteBody,
+    "remote-xr",
+    \Ishidomaru,
+    "RemoteAvatar"
+);
+~~~
+
+This replaces the complete working frame with the cached source frame.
+
+### Selected-body composition
+
+Supplying bones without a mode infers **\compose**:
+
+~~~supercollider
+~arms = Bmc.addFrameSource(
+    \remoteArms,
+    "remote-xr",
+    \Ishidomaru,
+    "RemoteAvatar",
+    bones: \arms
+);
+~~~
+
+Only selected transforms are copied. Other bones retain values supplied by older sources.
+
+Rules accept:
+
+- an exact canonical bone such as **\LeftHand**;
+- a named region such as **\leftArm**, **\arms**, or **\upperBody**;
+- an array mixing regions and exact bones, such as **[\leftArm, \RightHand]**.
+
+Available regions are **\leftArm**, **\rightArm**, **\arms**, **\leftLeg**, **\rightLeg**, **\legs**, **\torso**, **\upperBody**, and **\all**.
+
+## Automatic live caches
+
+The dispatcher offers each incoming frame to every registered avatar. When its avatar identity directly matches and no explicit source rule matches, the target automatically creates an overwrite cache named from the incoming fields:
+
+~~~text
+direct_<source>_<avatar>
+~~~
+
+Later matching frames update that cache.
+
+The key does not currently contain the sender's network address. Producers needing separate precedence must use distinct source names if they otherwise share the same source and avatar fields.
+
+Direct and explicitly matched input now use one unified cache/composition path. The old behavior of emitting one direct result and another wired result has been removed.
+
+## Clip players as sources
+
+A named **BmcClipPlayer** stores:
+
+~~~supercollider
+player.name;
+player.avatar;
+player.compositionRule;
+~~~
+
+The playback API is:
+
+~~~supercollider
+Bmc.play(
+    clipName,
+    loop,
+    rate,
+    startFrame,
+    endFrame,
+    playerName,
+    avatarName,
+    compositionRule
+);
+~~~
+
+Two players may use the same clip independently:
+
+~~~supercollider
+Bmc.play(
+    \take1, true, 1.0, 0, nil,
+    \leftArmPlayer, \Ishidomaru, \leftArm
+);
+
+Bmc.play(
+    \take1, true, 0.5, 20, 100,
+    \rightHandPlayer, \Ishidomaru, [\RightHand]
+);
+~~~
+
+Each player updates a private avatar cache identified by its player name. Its private selector prevents dispatcher traffic from updating it.
+
+When a player changes target avatar, its old cache is removed. The new avatar creates a cache when the next playback frame is emitted.
+
+Playback controls address players independently:
+
+~~~supercollider
+Bmc.freeze(\leftArmPlayer);
+Bmc.resume(\leftArmPlayer);
+Bmc.restartPlayback(\rightHandPlayer);
+Bmc.stopPlayback(\rightHandPlayer);
+~~~
+
+Stopping or freezing leaves the player's last cache active. Its pose remains in the composition until updated, disabled, removed, or cleared.
+
+## BmcWire compatibility
+
+**BmcWire** remains as a compatibility subclass of **BmcFrameSource**. It is a cached partial-body **\compose** source:
+
+~~~supercollider
+~wire = Bmc.wire(
+    "camera-a",
+    \leftArm,
+    \composite,
+    "performer-a"
+);
+~~~
+
+**Bmc.wire**, **Bmc.unwire**, **Bmc.listWires**, and **Bmc.clearWires** remain available. The legacy priority value remains readable, but stack insertion order now determines precedence.
+
+## Inspection and removal
+
+~~~supercollider
+// Complete newest-first stack for one avatar:
+Bmc.avatar(\Ishidomaru).sources;
+
+// Explicitly registered sources:
+Bmc.frameSources;
+Bmc.listWires;
+
+// Remove one source:
+Bmc.removeFrameSource(~arms);
+Bmc.unwire(~wire);
+
+// Remove all sources:
+Bmc.clearWires;
+~~~
+
+Removing or clearing sources schedules recomposition on the next compositor tick. An empty stack produces one reference-pose output, after which the inactive avatar is no longer sampled until another source is added or updated.
+
+## Current composition algorithm
+
+Source updates and avatar output are separate operations. When a live or playback source produces a frame, BuMoChi converts it to a route-free **BmcFrame** and updates the appropriate cache. It does not compose or transmit immediately. The compositor samples those caches independently.
+
+## Timing currently implemented
+
+**BmcCompositor** runs independently at 60 fps by default. Avatars with source caches emit at most one composed frame per tick. A source that has not changed continues contributing its latest cache through sample-and-hold. A source that updates several times between ticks contributes only its latest completed frame.
+
+There is not yet a stale-source timeout: a cache remains active until updated, disabled, removed, or cleared.
+
+## Constant-rate compositor
+
+The fixed-rate cache sampler is implemented by **BmcCompositor**.
+
+### Composition flow
+
+~~~text
+XR Animator --------writes------> source cache A
+remote mocap -------writes------> source cache B
+clip player --------writes------> source cache C
+                                      |
+                              sampled at 60 fps
+                                      |
+                              compose all caches
+                                      |
+                              emit one avatar frame
+~~~
+
+Each source writes only to its own cache. It does not directly compose or transmit an avatar frame. The compositor owns sampling, composition, and output.
+
+Every sampling instant uses the latest complete frame from every enabled cache. This is different from selecting only the globally newest packet: all active sources participate, and stable stack order still decides which source wins where rules overlap.
+
+### Bmc compositor at 60 fps
+
+One Bmc compositor clocks all active avatars at 60 frames per second by default:
+
+~~~supercollider
+Bmc.compositorRate_(60);
+Bmc.startCompositor;
+Bmc.stopCompositor;
+~~~
+
+The intended ownership is:
+
+~~~text
+BmcCompositor, 60 fps
+    -> sample source caches for avatar 1
+    -> compose and send one frame for avatar 1
+    -> sample source caches for avatar 2
+    -> compose and send one frame for avatar 2
+    -> repeat on the next target tick
+~~~
+
+The implementation uses monotonic **SystemClock** time and schedules against successive target tick times to limit accumulated drift.
+
+### Operations performed on each tick
+
+At each 60 fps tick, the compositor:
+
+1. Capture the latest complete frame reference from every enabled cache.
+2. Begin each avatar's working frame with its reference pose.
+3. Traverse that avatar's stable source stack from oldest to newest. Older information is written first; newer sources are applied afterward and replace overlapping values. The latest-added source has final authority over the body elements selected by its rule.
+4. Apply full-frame **\overwrite** and selected-body composition rules.
+5. Fill any still-missing values from the reference pose.
+6. Assign the destination avatar identity.
+7. Publish one route-free completed frame to dependants.
+8. Attach the VMC route at the avatar boundary.
+9. Transmit exactly one frame for that avatar during the tick.
+
+Priority and recency remain separate:
+
+- cache recency selects the latest frame belonging to each individual source;
+- stable stack order determines precedence between sources.
+
+For example:
+
+~~~text
+newest: clip player     left arm only
+        remote mocap    full-frame overwrite
+oldest: local mocap     full-frame overwrite
+~~~
+
+The compositor applies local mocap, overwrites it with remote mocap, and finally replaces only the left arm with the clip player's latest cached frame.
+
+### Sample-and-hold and resampling
+
+If a source has not updated since the previous tick, its latest cache is reused. A 30 fps mocap source can therefore feed a 60 fps compositor, normally holding each source frame across two output ticks.
+
+If a source updates several times between ticks, the next tick reads its newest completed frame. Intermediate values are not emitted. Clip playback should advance according to elapsed playback time and update its cache with the frame appropriate to that time; it should not depend on compositor tick count.
+
+### Implementation boundary
+
+The implemented responsibilities are:
+
+- **BmcFrameSource.update(frame)**: update cache state only;
+- **BmcAvatar.receiveFrame**: route a frame into the appropriate cache without transmitting;
+- **BmcAvatar.composeFrame(sampleTime)**: return one completed route-free frame;
+- **BmcAvatar.sampleAndSend(sampleTime)**: compose, notify dependants, and transmit;
+- **BmcCompositor**: own the 60 fps **SystemClock** task and iterate active avatars.
+
+Removing, disabling, reordering, or changing a source affects the next tick rather than generating an immediate additional output frame.
+
+### Stale caches
+
+Automatic stale-cache policies remain future work. The intended API is:
+
+~~~supercollider
+source.timeout_(0.5);
+source.staleMode_(\hold);     // retain the last cached frame
+source.staleMode_(\disable);  // stop applying after timeout
+source.staleMode_(\fallback); // reveal sources underneath
+~~~
+
+Clip playback would normally use **\hold**. Live local mocap could use a short **\fallback** timeout, and remote mocap a slightly longer fallback timeout to tolerate network jitter. An explicitly frozen source should remain held independently of its normal live timeout.
+
+The compositor uses latest-frame sample-and-hold. A later cache implementation could retain a short timestamped history for interpolation without changing stack precedence.
+
+## Artistic guide to sampling clip playback
+
+The clip timeline and the compositor output timeline are independent. This matters whenever their rates differ.
+
+The player should determine its position from elapsed time:
+
+~~~text
+playback position = elapsed real time × playback rate
+~~~
+
+It must not advance exactly one stored clip frame per compositor tick. Doing that would change the clip's duration whenever its recorded frame rate differs from the compositor rate.
+
+### High-rate clip sampled down
+
+Consider a clip recorded at 120 fps and a compositor running at 60 fps:
+
+~~~text
+clip frames:       0    1    2    3    4    5
+clip times:       0ms  8ms 17ms 25ms 33ms 42ms
+
+compositor ticks: 0ms       17ms       33ms
+sampled frames:    0          2          4
+~~~
+
+Frames 1 and 3 update the player cache between ticks, but newer frames replace them before the compositor samples. They are not transmitted to Godot.
+
+This is normal downsampling. The clip retains its intended speed and duration, but its continuous motion is represented at 60 samples per second instead of 120.
+
+An incorrect implementation that advanced only one clip frame per tick would emit frames 0, 1, 2 at 60 fps. The 120 fps recording would then play at half speed.
+
+### Low-rate clip sampled up
+
+A 30 fps clip sampled by a 60 fps compositor behaves oppositely:
+
+~~~text
+clip frames:       0              1              2
+clip times:       0ms            33ms            67ms
+
+compositor ticks: 0ms  17ms  33ms  50ms  67ms  83ms
+sampled frames:    0    0     1     1     2     2
+~~~
+
+Each source frame is normally held across two output ticks. Godot receives 60 frames per second while the source motion retains its recorded 30 fps character.
+
+This is sample-and-hold upsampling. It produces stable output timing but does not invent new in-between poses. Future interpolation could smooth the transition if desired.
+
+### Double-speed playback
+
+For a 60 fps clip played at rate 2.0 through a 60 fps compositor:
+
+~~~text
+real elapsed time:      0ms  17ms  33ms  50ms
+clip playback position: 0ms  33ms  67ms 100ms
+selected clip frame:      0     2     4     6
+~~~
+
+Approximately every second recorded frame is skipped. This is necessary for the clip to finish in half its original duration.
+
+### Half-speed playback
+
+For the same clip at rate 0.5:
+
+~~~text
+real elapsed time:      0ms  17ms  33ms  50ms  67ms
+clip playback position: 0ms   8ms  17ms  25ms  33ms
+selected clip frame:      0     0     1     1     2
+~~~
+
+Frames are held longer, giving the clip twice its original duration. Interpolation could later create smoother intermediate poses, but it must not alter the elapsed-time position.
+
+### Irregularly timed recordings
+
+BuMoChi clips preserve relative capture times, so frames may not be evenly spaced:
+
+~~~text
+frame 0 ->  0 ms
+frame 1 -> 12 ms
+frame 2 -> 19 ms
+frame 3 -> 51 ms
+frame 4 -> 68 ms
+~~~
+
+At a playback position of 40 ms, frame 2 is the newest recorded frame not later than the requested position. At 55 ms, frame 3 is selected.
+
+Conceptually:
+
+~~~supercollider
+playbackTime = elapsedTime * rate;
+frameIndex = clip.indexAtOrBefore(playbackTime);
+playerCache.update(clip.frameAt(frameIndex));
+~~~
+
+This preserves the timing and expressive irregularity of the recording instead of pretending that every pair of frames has equal spacing.
+
+### Looping a selected range
+
+For a selected range with a duration of two seconds, looping uses elapsed time modulo the selected duration:
+
+~~~text
+range position = playback time modulo selected-range duration
+~~~
+
+At 2.1 seconds, playback is approximately 0.1 seconds into the selected range again. Loop position must not depend on how many frames the compositor happened to emit during the previous cycle.
+
+### Player-driven updates versus compositor-time lookup
+
+There are two viable implementation strategies.
+
+With player-driven updates, the player follows every recorded timestamp and updates its cache whenever a clip frame becomes due. Several cache updates may happen between output ticks; only the latest is sampled.
+
+With compositor-time lookup, the player stores its transport start time and settings. At every compositor tick it calculates the appropriate clip frame directly from elapsed time. This avoids scheduling intermediate cache updates that cannot be emitted and is likely the cleaner design for the fixed-rate compositor.
+
+### Continuous motion versus discrete events
+
+Skipping intermediate skeletal frames is normally acceptable because a pose represents continuous state. The viewer needs the correct pose at each visible output instant, not necessarily every captured sample.
+
+It is not acceptable to lose discrete events such as:
+
+- triggering a sound;
+- changing a scene;
+- starting a recording;
+- incrementing a counter;
+- emitting a one-frame cue or marker.
+
+These should use a separate timestamped event queue:
+
+~~~text
+continuous motion -> latest-frame cache -> sampled at 60 fps
+discrete events   -> timestamped queue  -> deliver every due event
+~~~
+
+The compositor may sample continuous motion, but every discrete event that became due since the previous tick must still be delivered.
+
+For artists, the essential point is that sampling changes temporal resolution, not intended duration. High-rate material loses intermediate pose samples; low-rate material holds poses across several output frames. Playback rate and looping remain functions of elapsed clip time.
+
+The constant-rate compositor described above is the authoritative output path. The stale-cache policies and interpolation discussed here remain future extensions.
