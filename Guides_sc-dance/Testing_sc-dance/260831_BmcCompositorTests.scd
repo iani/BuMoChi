@@ -14,6 +14,7 @@ var avatar = BmcAvatar(\clocked, "clocked");
 var sent = List.new;
 var compositor;
 var countAfterStop;
+var oldTask, countBeforeRecovery;
 
 avatar.output_({ |message| sent.add([SystemClock.seconds, message]) });
 avatar.receiveSourceFrame(makeFrame.(1.0));
@@ -32,6 +33,20 @@ Routine({
 	0.04.wait;
 	check.(Bmc.bone(sent.last[1], \Hips)[0] == 2.0,
 		"cache update was not visible on a later tick");
+
+	// Simulate CmdPeriod's clock clear, then invoke the registered recovery
+	// callback. The compositor must replace its infrastructure Routine without
+	// clearing the avatar cache.
+	oldTask = compositor.task;
+	oldTask.stop;
+	countBeforeRecovery = sent.size;
+	compositor.cmdPeriod;
+	check.(compositor.isRunning, "compositor did not restart after CmdPeriod");
+	check.(compositor.task !== oldTask, "CmdPeriod reused the stopped Routine");
+	0.04.wait;
+	check.(sent.size > countBeforeRecovery, "recovered compositor emitted no frames");
+	check.(Bmc.bone(sent.last[1], \Hips)[0] == 2.0,
+		"CmdPeriod recovery lost the cached camera frame");
 
 	compositor.stop;
 	countAfterStop = sent.size;

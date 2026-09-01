@@ -7,7 +7,8 @@
 
 Bmc {
 	classvar <boneNames;
-	classvar <dispatcher, <recorder, <players, <library, <avatars, <wires;
+	classvar <dispatcher, <recorder, <players, <library, <avatars, <wires, <modifiers;
+	classvar <soundFileLoader;
 	classvar <defaultAvatar, recordingName, recordingFormat, recorderPublisher;
 	classvar <defaultXrAnimatorOutputPort, <defaultInputPort, <defaultDecoderPort;
 	classvar <defaultAvatarID, <defaultAvatarName, <defaultAvatarVmcPort;
@@ -31,6 +32,10 @@ Bmc {
 		defaultAvatarName = "Ishidomaru";
 		defaultAvatarVmcPort = 39539;
 		this.initializeEnvironment;
+		// Register this during language startup, before the first server boot.
+		StartUp.add({
+			ServerBoot.add({ |server| this.loadSoundFiles(server) });
+		});
 		StartUp.add({ this.start(defaultInputPort) });
 		// Recompilation and application quit run ShutDown before SuperCollider
 		// disconnects its network resources. Release Bmc's OSC responder and
@@ -45,6 +50,7 @@ Bmc {
 		recorder = BmcClipRecorder.new;
 		avatars = IdentityDictionary.new;
 		wires = List.new;
+		modifiers = IdentityDictionary.new;
 		decoderPort = defaultDecoderPort;
 		forwardDecoder = true;
 		defaultAvatar = BmcAvatar(defaultAvatarID, defaultAvatarName);
@@ -69,16 +75,122 @@ Bmc {
 
 	// ----- top-level system -----
 	*start { |port = 57130|
+		CmdPeriod.add(this);
 		dispatcher.start(port);
 		compositor.start;
 		^this
 	}
 
 	*stop {
+		CmdPeriod.remove(this);
 		players.values.do { |clipPlayer| clipPlayer.stop };
 		compositor.stop;
 		if(recorder.isRecording) { this.cancelRecording };
 		dispatcher.stop;
+		^this
+	}
+
+	*loadSoundFiles { |server, directory|
+		if(soundFileLoader.notNil) { soundFileLoader.stopPlayback };
+		soundFileLoader = BmcSoundFileLoader.new(
+			server ?? { Server.default },
+			directory,
+			Library.global
+		);
+		^soundFileLoader.load
+	}
+
+	*playAudioBuffer { |name|
+		if(soundFileLoader.isNil) {
+			"Bmc: sound-file loader has not run yet".warn;
+			^nil
+		};
+		^soundFileLoader.playBuffer(name)
+	}
+
+	*stopAudioBufferPlayback {
+		if(soundFileLoader.notNil) { soundFileLoader.stopPlayback };
+		^this
+	}
+
+	*audioBufferEntries {
+		var buffers = Library.global.at(\buffers);
+		if(buffers.isNil) { ^#[] };
+		^buffers.keys.asArray.sort.collect { |name|
+			var buffer = buffers[name];
+			[
+				name,
+				if(buffer.respondsTo(\duration)) {
+					buffer.duration.round(0.001)
+				} {
+					nil
+				},
+				if(buffer.respondsTo(\path)) {
+					buffer.path ?? { "(path unavailable)" }
+				} {
+					"(path unavailable)"
+				}
+			]
+		}
+	}
+
+	*listAudioBuffers {
+		var entries = this.audioBufferEntries;
+		if(entries.isEmpty) {
+			"Bmc: no audio buffers loaded".postln;
+		} {
+			entries.do { |entry|
+				"% — % — %".format(
+					entry[0],
+					if(entry[1].isNil) { "duration unavailable" } { "% s".format(entry[1]) },
+					entry[2]
+				).postln
+			};
+		};
+		^entries
+	}
+
+	*showAudioBuffers {
+		var entries = this.audioBufferEntries;
+		{
+			var window = Window("Bmc Audio Buffers", Rect(200, 200, 800, 320));
+			var view = ListView();
+			var playButton = Button().states_([["Play selected"]]);
+			var stopButton = Button().states_([["Stop playback"]]);
+			var playSelected;
+			view.items = if(entries.isEmpty) {
+				["No audio buffers loaded"]
+			} {
+				entries.collect { |entry|
+					"% — % — %".format(
+						entry[0],
+						if(entry[1].isNil) { "duration unavailable" } { "% s".format(entry[1]) },
+						entry[2]
+					)
+				}
+			};
+			// ListView visually highlights its first row before its internal value
+			// necessarily reflects that selection. Initialize it explicitly.
+			if(entries.notEmpty) { view.value = 0 };
+			playSelected = {
+				if(entries.notEmpty and: { view.value.inclusivelyBetween(0, entries.size - 1) }) {
+					this.playAudioBuffer(entries[view.value][0]);
+				};
+			};
+			view.enterKeyAction = playSelected;
+			playButton.action = playSelected;
+			stopButton.action = { this.stopAudioBufferPlayback };
+			window.layout = VLayout(HLayout(playButton, stopButton), view);
+			window.front;
+		}.defer;
+		^entries
+	}
+
+	// Cmd-. stops performance processes. Stop clip players explicitly so their
+	// last caches cannot mask live camera motion. BmcCompositor independently
+	// recreates its infrastructure Routine and preserves camera routing.
+	*cmdPeriod {
+		players.values.do { |clipPlayer| clipPlayer.stop };
 		^this
 	}
 
@@ -91,7 +203,8 @@ Bmc {
 			compositor: compositor.status,
 			currentClip: library.currentName,
 			clipCount: library.size,
-			wireCount: wires.size
+			wireCount: wires.size,
+			modifierCount: modifiers.size
 		));
 		result.postln;
 		^result
@@ -218,12 +331,19 @@ Bmc {
 	*cameraTarget_ { |avatarName|
 		var target = this.avatar(avatarName);
 		if(target.isNil) { Error("Unknown Bmc camera target avatar: %".format(avatarName)).throw };
+		cameraTarget = target.avatarID;
 		cameraSource = cameraSource ?? { dispatcher.lastSourceFor(defaultAvatarID) };
 		if(cameraSource.isNil) {
+			// Before the first post-recompile frame, the encoder's host-derived
+			// source name is unknown. The default avatar needs no explicit route:
+			// direct avatar matching receives it and enables later discovery.
+			if(cameraTarget == defaultAvatarID) {
+				"Bmc: waiting for the first camera frame for %".format(defaultAvatarID).postln;
+				^cameraTarget
+			};
 			Error("Bmc has not yet received a camera source for %. Set Bmc.cameraSource_ first."
 				.format(defaultAvatarID)).throw
 		};
-		cameraTarget = target.avatarID;
 		this.routeMotionSource(cameraSource, cameraTarget);
 		^cameraTarget
 	}
@@ -398,7 +518,7 @@ Bmc {
 	}
 
 	*play { |name, loop = false, rate = 1.0, startFrame = 0, endFrame,
-		playerName = \default, avatarName, compositionRule = \overwrite|
+		playerName = \default, avatarName, compositionRule = \overwrite, startTime|
 		var selected = if(name.isNil) { library.current } { library.select(name) };
 		var key = (playerName ?? { \default }).asSymbol;
 		var clipPlayer;
@@ -416,13 +536,13 @@ Bmc {
 		clipPlayer.loop_(loop);
 		clipPlayer.rate_(rate);
 		clipPlayer.range_(startFrame, endFrame);
-		clipPlayer.play;
+		clipPlayer.playAt(startTime ?? { SystemClock.seconds });
 		^clipPlayer
 	}
 	*playClip { |name, loop = false, rate = 1.0, startFrame = 0, endFrame,
-		playerName = \default, avatarName, compositionRule = \overwrite|
+		playerName = \default, avatarName, compositionRule = \overwrite, startTime|
 		^this.play(name, loop, rate, startFrame, endFrame,
-			playerName, avatarName, compositionRule)
+			playerName, avatarName, compositionRule, startTime)
 	}
 
 	*pause { |playerName = \default| this.player(playerName).pause; ^this }
@@ -564,6 +684,35 @@ Bmc {
 	*clearWires {
 		avatars.values.asSet.do(_.clearWires);
 		wires.clear;
+		^this
+	}
+
+	// ----- transformative position modifiers -----
+	*addPositionModifier { |name, target = \default, position = #[0.0, 0.0, 0.0], mode = \replace|
+		var key = name.asSymbol;
+		var targetObject = this.avatar(target);
+		var object;
+		if(targetObject.isNil) { Error("Unknown Bmc avatar: %".format(target)).throw };
+		this.removeModifier(key);
+		object = BmcPositionModifier(key, position, mode);
+		targetObject.addModifier(object);
+		modifiers[key] = object;
+		^object
+	}
+
+	*modifier { |name| ^modifiers[name.asSymbol] }
+	*modifierNames { ^modifiers.keys.asArray.sort }
+	*removeModifier { |name|
+		var key = name.asSymbol;
+		var object = modifiers.removeAt(key);
+		if(object.notNil) {
+			avatars.values.asSet.do { |avatar| avatar.removeModifier(object) };
+		};
+		^object
+	}
+	*clearModifiers {
+		avatars.values.asSet.do(_.clearModifiers);
+		modifiers.clear;
 		^this
 	}
 

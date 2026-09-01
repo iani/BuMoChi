@@ -31,6 +31,7 @@ BmcCompositor {
 	start {
 		if(isRunning) { ^this };
 		isRunning = true;
+		CmdPeriod.add(this);
 		task = Routine({
 			var nextTick = SystemClock.seconds;
 			while { isRunning } {
@@ -47,6 +48,19 @@ BmcCompositor {
 	stop {
 		isRunning = false;
 		if(task.notNil) { task.stop; task = nil };
+		CmdPeriod.remove(this);
+		^this
+	}
+
+	// Cmd-. clears SystemClock before invoking registered handlers, killing
+	// this Routine without changing isRunning. Recreate only the compositor;
+	// avatar caches, motion-source routes, and avatar mappings remain intact.
+	cmdPeriod {
+		if(isRunning) {
+			isRunning = false;
+			task = nil;
+			this.start;
+		};
 		^this
 	}
 

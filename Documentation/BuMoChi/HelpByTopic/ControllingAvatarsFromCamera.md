@@ -123,7 +123,7 @@ Bmc.cameraTarget_(\Mother);
 
 `cameraSource_` establishes a stable, exact source match. Changing the camera target does not affect other local or remote motion sources.
 
-If `cameraTarget_` is called before Bmc has received a discoverable camera frame and before `cameraSource_` has been set, it reports an error instead of guessing.
+Immediately after recompilation, `Bmc.cameraTarget_(\Ishidomaru)` is allowed before source discovery. Ishidomaru is the direct default target, so Bmc posts that it is waiting and the first incoming Ishidomaru frame reaches it without an explicit route. Switching to another avatar before that first frame still reports an error rather than guessing which local or remote source should be moved. In that case, wait for a camera frame or call `cameraSource_` with the encoder's exact `--source` value.
 
 ## General motion-source routing
 

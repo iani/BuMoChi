@@ -70,15 +70,19 @@ BmcClipPlayer {
 		^this
 	}
 
-	play { |startIndex|
+	play { |startIndex| ^this.playAt(SystemClock.seconds, startIndex) }
+
+	playAt { |startTime, startIndex|
 		if(clip.isNil or: { clip.isEmpty }) { Error("BmcClipPlayer has no clip to play").throw };
 		this.stop;
+		startTime = startTime ?? { SystemClock.seconds };
 		currentIndex = startIndex ?? { currentIndex };
 		currentIndex = currentIndex.clip(startFrame, endFrame);
 		isPlaying = true;
 		isPaused = false;
 		task = Task({
 			var waitTime;
+			(startTime - SystemClock.seconds).max(0.0).wait;
 			while { isPlaying } {
 				this.send(clip.frameAt(currentIndex));
 				this.changed(\frame, currentIndex, clip.frameAt(currentIndex));
@@ -91,8 +95,8 @@ BmcClipPlayer {
 				};
 			};
 			this.changed(\end);
-		});
-		task.start;
+		}, SystemClock);
+		task.start(SystemClock);
 		^this
 	}
 

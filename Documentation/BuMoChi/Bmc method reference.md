@@ -45,6 +45,8 @@ After the SuperCollider class library compiles, Bmc automatically listens for ro
 
     Control the constant-rate avatar compositor. Its default rate is 60 fps. Source and clip-player updates write only to their caches; the compositor samples active avatars and emits at most one completed frame per avatar per tick. `Bmc.start` starts the compositor and `Bmc.stop` stops it. `Bmc.compositorRate` returns the current rate.
 
+    SuperCollider's Command-period shortcut (`Cmd-.` on macOS or `Ctrl-.` on other platforms) stops ordinary Tasks and Routines. Bmc stops its clip players and removes their caches, then automatically recreates its compositor Routine without resetting camera routes, live camera caches, or avatar mappings. Thus the command period can silence synths and performance routines while default live camera control continues. An explicit `Bmc.stopCompositor` or `Bmc.stop` still disables this recovery.
+
     ``` supercollider
     Bmc.compositorRate_(60);
     Bmc.startCompositor;
@@ -103,6 +105,8 @@ After the SuperCollider class library compiles, Bmc automatically listens for ro
 9.  `Bmc.cameraTarget_(avatarName)` and `Bmc.cameraTarget`
 
     Retarget the current camera source to a registered avatar without restarting the encoder or decoder. Retargeting removes the source cache from its previous avatar. Subsequent frames enter only the selected avatar's compositor and are emitted with that avatar's `vmcPort`.
+
+    Immediately after recompilation, `Bmc.cameraTarget_(\Ishidomaru)` is valid before source discovery: Ishidomaru is the direct default target, so Bmc waits for its first incoming frame. Retargeting to another avatar still requires either a previously received Ishidomaru frame or an explicit `Bmc.cameraSource_(sourceName)`, preventing accidental selection of another collaborator's stream.
 
 10. `Bmc.routeMotionSource(sourceName, avatarName)`
 
@@ -270,9 +274,9 @@ After the SuperCollider class library compiles, Bmc automatically listens for ro
 
 ## Playback
 
-1.  `Bmc.play(name, loop, rate, startFrame, endFrame, playerName, avatarName, compositionRule)` / `Bmc.playClip(...)`
+1.  `Bmc.play(name, loop, rate, startFrame, endFrame, playerName, avatarName, compositionRule, startTime)` / `Bmc.playClip(...)`
 
-    Plays a named clip. With no name, it plays the current clip. Defaults are `loop: false`, `rate: 1.0`, `startFrame: 0`, the clip's last frame as `endFrame`, `\default` as `playerName`, the selected avatar as `avatarName`, and `\overwrite` as `compositionRule`. A rule may instead be a canonical body-part symbol or array of bone names. Start and end indices are inclusive. A new player name creates an independent player; reusing a name reconfigures only that player.
+    Plays a named clip. With no name, it plays the current clip. Defaults are `loop: false`, `rate: 1.0`, `startFrame: 0`, the clip's last frame as `endFrame`, `\default` as `playerName`, the selected avatar as `avatarName`, `\overwrite` as `compositionRule`, and immediate playback as `startTime`. A rule may instead be a canonical body-part symbol or array of bone names. Start and end indices are inclusive. A new player name creates an independent player; reusing a name reconfigures only that player. Give several players the same future absolute `SystemClock` time to synchronize their playback.
 
     ``` supercollider
     Bmc.play(\take1);                  // whole clip once at recorded speed
@@ -281,6 +285,9 @@ After the SuperCollider class library compiles, Bmc automatically listens for ro
     Bmc.play(\take1, true, 0.5, 0, 80, \slowIntro);
     Bmc.play(\take1, false, 2.0, 81, 160, \fastEnding);
     Bmc.play(\take1, true, 1.0, 0, nil, \arms, \Ishidomaru, \arms);
+    ~t = SystemClock.seconds + 0.2;
+    Bmc.play(\take1, loop: true, playerName: \a, startTime: ~t);
+    Bmc.play(\take1, loop: true, playerName: \b, startTime: ~t);
     ```
 
 2.  `Bmc.player(name)`, `Bmc.players`, and `Bmc.playerNames`
@@ -399,3 +406,33 @@ Every avatar maintains a newest-first stack of cached frame sources. Sources are
 5.  `Bmc.clearWires`
 
     Removes every live wire from every Bmc avatar.
+
+## Positional modifiers
+
+Positional modifiers are the first implemented transformative-composition rule. They run after an avatar's structural source stack has produced a completed frame and modify the `\Hips` translation on every compositor tick. They preserve all four `Hips` quaternion values, so source turns and pirouettes remain visible, and they never rewrite the contributing camera stream or clip.
+
+1. `Bmc.addPositionModifier(name, target, position, mode)`
+
+   Adds a named modifier to `target`. `position` is either `[x, y, z]` or a Function evaluated as `|time, frame, modifier|`. A `nil` coordinate preserves that axis. `mode` is `\replace` (absolute coordinates, the default) or `\add` (offsets relative to the composed frame).
+
+   ```supercollider
+   Bmc.addPositionModifier(\stageRight, \Mother, [1.5, nil, 0.0]);
+
+   ~start = SystemClock.seconds;
+   Bmc.addPositionModifier(\orbit, \Ishidomaru, { |time|
+       var angle = (time - ~start) * 2pi / 8;
+       [angle.cos, nil, angle.sin]
+   });
+
+   Bmc.addPositionModifier(\lift, \Mother, [0.0, 0.25, 0.0], \add);
+   ```
+
+   Modifiers use newest-first storage and oldest-to-newest evaluation, so a later modifier has final authority over coordinates it replaces. The Function receives compositor time rather than maintaining its own Routine, making procedural motion independent of incoming camera or clip frame rates.
+
+2. `Bmc.modifier(name)` and `Bmc.modifierNames`
+
+   Return a named modifier or the sorted list of registered modifier names. A modifier exposes `position`, `mode`, and `enabled`; use `position_`, `mode_`, or `enabled_` to change it live.
+
+3. `Bmc.removeModifier(name)` and `Bmc.clearModifiers`
+
+   Remove one named modifier or every positional modifier. Removing a modifier reveals the unmodified structural composition on the next compositor tick.

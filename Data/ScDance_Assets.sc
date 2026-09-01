@@ -5,9 +5,8 @@
 
 ScDanceAssets : AvatarAssets {
 	var buffers;
-	*initClass {
-		ServerBoot add: { this.loadBuffers }
-	}
+	// Audio buffers are now loaded centrally by BmcSoundFileLoader. The legacy
+	// loading methods remain available, but are no longer registered at boot.
 	buffers { ^buffers ?? { buffers = IdentityDictionary() } }
 	animationFolders { ^this subfolders: "Animations" }
 	soundFiles { ^this.files("Audiofiles"); }

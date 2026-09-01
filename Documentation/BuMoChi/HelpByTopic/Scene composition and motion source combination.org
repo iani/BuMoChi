@@ -178,14 +178,14 @@ and legs unchanged. Several modifiers may be chained, so their order
 must be explicit: scaling and then adding noise is not always equivalent
 to adding noise and then scaling.
 
-These transformative rules are design targets and are not yet
-implemented by *BmcFrameSource*. The current implementation provides
-absolute *\overwrite* and selected-body replacement. A future
-rule-object API should identify its input source or sources, selected
-bones, reference frame, parameters, and evaluation order. It should
-implement translations, quaternion rotations, weighted blends, and
-procedural modifiers according to their appropriate mathematics rather
-than treating every frame value as a simple number.
+Positional modification of the completed avatar frame is now implemented
+by *BmcPositionModifier*. It can replace or add to selected =Hips=
+translation axes using a fixed vector or a Function sampled at compositor
+time. Rotational offsets, motion-range scaling, noise-specific rules,
+mirroring, constraints, and weighted blending remain design targets.
+Those future rule objects must identify their inputs, selected bones,
+reference frame, parameters, and evaluation order, and use the correct
+mathematics for translations, quaternion rotations, and blends.
 
 * Different types of composition information
 :PROPERTIES:
@@ -213,9 +213,10 @@ Future rules could add a hips translation, compose a head rotation,
 scale a gesture around a reference pose, blend two transforms, or mirror
 movement between body regions.
 
-These rules are not implemented yet. They need explicit rule objects
-because translations, quaternion rotations, and weighted blends require
-different mathematics.
+The first such rule is *BmcPositionModifier*, which transforms the
+completed frame's =Hips= translation. Other modifying-frame rules still
+require explicit objects because quaternion rotations, scaling, and
+weighted blends require different mathematics.
 
 ** Functions as value sources
 :PROPERTIES:
@@ -565,6 +566,8 @@ clip player --------writes------> source cache C
                                       |
                               compose all caches
                                       |
+                         apply avatar modifiers
+                                      |
                               emit one avatar frame
 #+end_src
 
@@ -604,6 +607,15 @@ BmcCompositor, 60 fps
 The implementation uses monotonic *SystemClock* time and schedules
 against successive target tick times to limit accumulated drift.
 
+The compositor is infrastructure rather than an artist-started
+performance Routine. Pressing SuperCollider's command-period shortcut
+stops ordinary processes and synths. Bmc also stops its clip players and
+removes their caches, then starts a fresh compositor Routine after the
+clock is cleared. Existing motion-source routes, avatar mappings, and
+live camera caches are retained, so camera control continues and cannot
+remain hidden beneath a stopped clip cache. Use =Bmc.stopCompositor= or
+=Bmc.stop= when the compositor itself should remain stopped.
+
 *** Operations performed on each tick
 :PROPERTIES:
 :CUSTOM_ID: operations-performed-on-each-tick
@@ -617,11 +629,14 @@ At each 60 fps tick, the compositor:
    afterward and replace overlapping values. The latest-added source has
    final authority over the body elements selected by its rule.
 4. Apply full-frame *\overwrite* and selected-body composition rules.
-5. Fill any still-missing values from the reference pose.
-6. Assign the destination avatar identity.
-7. Publish one route-free completed frame to dependants.
-8. Attach the VMC route at the avatar boundary.
-9. Transmit exactly one frame for that avatar during the tick.
+5. Apply the avatar's positional modifiers from oldest to newest. Each
+   modifier may replace or add selected =Hips= translation axes using
+   the current compositor time.
+6. Fill any still-missing values from the reference pose.
+7. Assign the destination avatar identity.
+8. Publish one route-free completed frame to dependants.
+9. Attach the VMC route at the avatar boundary.
+10. Transmit exactly one frame for that avatar during the tick.
 
 Priority and recency remain separate:
 

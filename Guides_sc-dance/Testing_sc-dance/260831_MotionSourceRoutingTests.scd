@@ -7,6 +7,10 @@ var source = \routing_test_camera;
 var mother = Bmc.avatar(\routingTestMother);
 var frame;
 
+check.(Bmc.cameraSource.isNil, "camera source should be undiscovered after initialization");
+check.(Bmc.cameraTarget_(\Ishidomaru) == \Ishidomaru,
+	"default camera target failed before source discovery");
+
 if(mother.isNil) { mother = Bmc.addAvatar(\routingTestMother, "routingTestMother") };
 frame = BmcFrame("Ishidomaru", source.asString, 1, 0.0, BmcPose.neutral).asOSCMessage;
 

@@ -1,6 +1,6 @@
 BmcAvatar {
 	var <avatarID, <avatarName, <referencePose, <currentPose, <currentFrame;
-	var <output, <vmcPort, <wires, <dirty = false;
+	var <output, <vmcPort, <wires, <modifiers, <dirty = false;
 
 	*new { |avatarID, avatarName| ^super.new.init(avatarID, avatarName) }
 
@@ -10,6 +10,7 @@ BmcAvatar {
 		referencePose = BmcPose.neutral;
 		currentPose = referencePose.copy;
 		wires = List.new;
+		modifiers = List.new;
 		^this
 	}
 
@@ -40,6 +41,19 @@ BmcAvatar {
 	addSource { |sourceCache| ^this.addWire(sourceCache) }
 	removeSource { |sourceCache| ^this.removeWire(sourceCache) }
 	clearSources { ^this.clearWires }
+	// Newest modifier is first, matching source-stack ordering.
+	addModifier { |modifier| modifiers.insert(0, modifier); dirty = true; ^modifier }
+	removeModifier { |modifier|
+		if(modifiers.remove(modifier).notNil) { dirty = true };
+		^modifier
+	}
+	removeModifierNamed { |modifierName|
+		var modifier = modifiers.detect { |item| item.name == modifierName.asSymbol };
+		if(modifier.notNil) { this.removeModifier(modifier) };
+		^modifier
+	}
+	clearModifiers { modifiers.clear; dirty = true; ^this }
+	positionModifiers { ^modifiers.copy }
 	removeSourceNamed { |sourceName|
 		var cache = wires.detect { |item| item.name == sourceName.asSymbol };
 		if(cache.notNil) { this.removeWire(cache) };
@@ -81,6 +95,7 @@ BmcAvatar {
 		var result = BmcFrame.new(avatarName, "bmc-reference", 0, 0.0, referencePose);
 		var completedPose;
 		wires.reverse.do { |sourceCache| result = sourceCache.applyTo(result) };
+		modifiers.reverse.do { |modifier| result = modifier.applyTo(result, time) };
 		completedPose = result.pose.copy;
 		completedPose.fillMissingFrom(referencePose);
 		currentPose = completedPose;
@@ -93,7 +108,7 @@ BmcAvatar {
 		^currentFrame
 	}
 
-	shouldSample { ^wires.notEmpty or: { dirty } }
+	shouldSample { ^wires.notEmpty or: { modifiers.notEmpty } or: { dirty } }
 
 	sampleAndSend { |time|
 		var frame = this.composeFrame(time);
