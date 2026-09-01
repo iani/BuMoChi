@@ -241,6 +241,8 @@ Godot listens on =39539=.
    clip library, makes it the current clip, and saves it to disk in the
    format selected when recording began. Ordinary =Bmc.record= and
    =Bmc.recordScd= calls save =.scd=; =Bmc.recordBmc= saves =.bmc=.
+   After saving, Bmc notifies its dependants with
+   =Bmc.changed(\clipRecordingStopped, name, clip)=.
 
 5. =Bmc.cancelRecording=
 
@@ -475,7 +477,10 @@ Godot listens on =39539=.
    become visible again at the next compositor tick. The =BmcClipPlayer=
    remains registered and retains its clip and settings, so it can be
    restarted later. Other players, the receiver, and other Bmc services
-   continue running.
+   continue running. Both an explicit stop and the natural end of
+   non-looping playback notify Bmc dependants with
+   =Bmc.changed(\clipPlaybackStopped, clipName, playerName, clip)=. For
+   example, the two names might be =\ishidomaru, \default=.
 
 5. =Bmc.mutePlayback(playerName)= / =Bmc.unmutePlayback(playerName)=
 
@@ -523,6 +528,16 @@ Godot listens on =39539=.
 10. =Bmc.loop(flag, playerName)=
 
     Turns repeated playback on or off.
+
+11. =Bmc.sonifyTake(clipName, sonifications, playerName, record)=
+
+    Runs the synchronized take workflow for an existing clip. It
+    optionally starts disk recording, plays the ten-note countdown,
+    begins clip playback with countdown note ten, starts the supplied
+    sonification after that note, and cleans up at the clip's end.
+    =record= defaults to =false=. Use =Bmc.stopTake=, =Bmc.cancelTake=,
+    and =Bmc.takeStatus= for control and inspection. See
+    [[file:HelpByTopic/RecordingWithSound.md][Recording with sound]].
 
 ** Combining recordings
 :PROPERTIES:

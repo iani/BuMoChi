@@ -144,7 +144,7 @@ After the SuperCollider class library compiles, Bmc automatically listens for ro
 
 4.  `Bmc.stopRecording`
 
-    Stops recording, returns a `BmcMocapClip`, adds it to the in-memory clip library, makes it the current clip, and saves it to disk in the format selected when recording began. Ordinary `Bmc.record` and `Bmc.recordScd` calls save `.scd`; `Bmc.recordBmc` saves `.bmc`.
+    Stops recording, returns a `BmcMocapClip`, adds it to the in-memory clip library, makes it the current clip, and saves it to disk in the format selected when recording began. Ordinary `Bmc.record` and `Bmc.recordScd` calls save `.scd`; `Bmc.recordBmc` saves `.bmc`. After saving, Bmc notifies its dependants with `Bmc.changed(\clipRecordingStopped, name, clip)`.
 
 5.  `Bmc.cancelRecording`
 
@@ -300,7 +300,7 @@ After the SuperCollider class library compiles, Bmc automatically listens for ro
 
 4.  `Bmc.stopPlayback(playerName)`
 
-    Stops playback and removes that player's frame cache from its target avatar's compositor stack. Underlying sources, such as XR Animator, become visible again at the next compositor tick. The `BmcClipPlayer` remains registered and retains its clip and settings, so it can be restarted later. Other players, the receiver, and other Bmc services continue running.
+    Stops playback and removes that player's frame cache from its target avatar's compositor stack. Underlying sources, such as XR Animator, become visible again at the next compositor tick. The `BmcClipPlayer` remains registered and retains its clip and settings, so it can be restarted later. Other players, the receiver, and other Bmc services continue running. Both an explicit stop and the natural end of non-looping playback notify Bmc dependants with `Bmc.changed(\clipPlaybackStopped, clipName, playerName, clip)`. For example, the two names might be `\ishidomaru, \default`.
 
 5.  `Bmc.mutePlayback(playerName)` / `Bmc.unmutePlayback(playerName)`
 
@@ -333,6 +333,10 @@ After the SuperCollider class library compiles, Bmc automatically listens for ro
 10. `Bmc.loop(flag, playerName)`
 
     Turns repeated playback on or off.
+
+11. `Bmc.sonifyTake(clipName, sonifications, playerName, record)`
+
+    Runs the synchronized take workflow for an existing clip. It optionally starts disk recording, plays degrees 0 through 4 twice as a countdown, begins clip playback with a final degree 7 cue, starts the supplied sonification after that cue, and cleans up at the clip's end. `record` defaults to `false`. Use `Bmc.stopTake`, `Bmc.cancelTake`, and `Bmc.takeStatus` for control and inspection. See [Recording with sound](HelpByTopic/RecordingWithSound.md).
 
 ## Combining recordings
 

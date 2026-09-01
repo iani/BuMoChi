@@ -8,7 +8,7 @@
 Bmc {
 	classvar <boneNames;
 	classvar <dispatcher, <recorder, <players, <library, <avatars, <wires, <modifiers;
-	classvar <soundFileLoader;
+	classvar <soundFileLoader, <takeSonifier;
 	classvar <defaultAvatar, recordingName, recordingFormat, recorderPublisher;
 	classvar <defaultXrAnimatorOutputPort, <defaultInputPort, <defaultDecoderPort;
 	classvar <defaultAvatarID, <defaultAvatarName, <defaultAvatarVmcPort;
@@ -61,11 +61,13 @@ Bmc {
 		dispatcher.registerAvatar(defaultAvatar);
 		players = IdentityDictionary.new;
 		players[\default] = BmcClipPlayer(nil, defaultAvatar, \default);
+		players[\default].addDependant(this);
 		compositor = BmcCompositor({ avatars.values.asSet.asArray }, 60.0);
 		sessions = IdentityDictionary.new;
 		currentSession = nil;
 		cameraSource = nil;
 		cameraTarget = defaultAvatarID;
+		takeSonifier = BmcTakeSonifier(Server.default);
 	}
 
 	// This utility class returns the merged data directly; it has no instance.
@@ -85,6 +87,11 @@ Bmc {
 		CmdPeriod.remove(this);
 		players.values.do { |clipPlayer| clipPlayer.stop };
 		compositor.stop;
+		if(takeSonifier.notNil and: {
+			takeSonifier.isPending or: { takeSonifier.isPlaying }
+		}) {
+			takeSonifier.cancel
+		};
 		if(recorder.isRecording) { this.cancelRecording };
 		dispatcher.stop;
 		^this
@@ -192,6 +199,17 @@ Bmc {
 	*cmdPeriod {
 		players.values.do { |clipPlayer| clipPlayer.stop };
 		^this
+	}
+
+	*update { |changer, what|
+		if(changer.isKindOf(BmcClipPlayer) and: { what == \end }) {
+			this.changed(
+				\clipPlaybackStopped,
+				changer.clip.name,
+				changer.name,
+				changer.clip
+			);
+		};
 	}
 
 	*status {
@@ -439,7 +457,10 @@ Bmc {
 
 	*stopRecording {
 		var clip;
-		if(recorder.isRecording.not) { Error("Bmc is not recording").throw };
+		if(recorder.isRecording.not) {
+			"Bmc is not recording.".postln;
+			^nil
+		};
 		recorderPublisher.removeDependant(recorder);
 		recorderPublisher = nil;
 		clip = recorder.stop;
@@ -449,6 +470,7 @@ Bmc {
 		} {
 			library.saveScd(recordingName)
 		};
+		this.changed(\clipRecordingStopped, recordingName, clip);
 		recordingName = nil;
 		recordingFormat = nil;
 		^clip
@@ -464,6 +486,13 @@ Bmc {
 	}
 
 	*isRecording { ^recorder.isRecording }
+
+	*sonifyTake { |clipName, sonifications, playerName = \default, record = false|
+		^takeSonifier.start(clipName, sonifications, playerName, record)
+	}
+	*stopTake { takeSonifier.stop; ^this }
+	*cancelTake { takeSonifier.cancel; ^this }
+	*takeStatus { ^takeSonifier.status }
 
 	// ----- clip library -----
 	*clips { ^library.clips }
@@ -528,6 +557,7 @@ Bmc {
 		clipPlayer = players[key];
 		if(clipPlayer.isNil) {
 			clipPlayer = BmcClipPlayer(nil, defaultAvatar, key);
+			clipPlayer.addDependant(this);
 			players[key] = clipPlayer;
 		};
 		clipPlayer.output_(targetAvatar);

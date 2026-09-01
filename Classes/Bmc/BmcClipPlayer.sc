@@ -87,7 +87,11 @@ BmcClipPlayer {
 				this.send(clip.frameAt(currentIndex));
 				this.changed(\frame, currentIndex, clip.frameAt(currentIndex));
 				if(currentIndex >= endFrame) {
-					if(looping) { currentIndex = startFrame } { isPlaying = false };
+					if(looping) {
+						currentIndex = startFrame
+					} {
+						isPlaying = false
+					};
 				} {
 					waitTime = (clip.timeAt(currentIndex + 1) - clip.timeAt(currentIndex)) / rate;
 					currentIndex = currentIndex + 1;
@@ -136,6 +140,7 @@ BmcClipPlayer {
 	}
 	unmute { isMuted = false; ^this }
 	stop {
+		var wasPlaying = isPlaying;
 		isPlaying = false;
 		isPaused = false;
 		if(task.notNil) { task.stop; task = nil };
@@ -145,6 +150,7 @@ BmcClipPlayer {
 		if(avatar.notNil and: { name.notNil }) {
 			avatar.removeSourceNamed(name)
 		};
+		if(wasPlaying) { this.changed(\end) };
 		^this
 	}
 	restart { ^this.play(startFrame) }
