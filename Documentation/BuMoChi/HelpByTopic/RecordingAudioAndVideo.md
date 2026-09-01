@@ -1,12 +1,14 @@
 # Recording audio and screen video to disk
 
+A runnable, block-by-block test is provided in [RecordingAudioAndVideo.scd](RecordingAudioAndVideo.scd). It defines a simple sine-tone sonification, maps hips and right-hand movement, and includes both audio-only and audio-plus-screen recording commands.
+
 ## Purpose
 
 BuMoChi should be able to record the SuperCollider server output and a screen capture as one take. Both files should be created from one `Bmc.sonifyTake` operation, saved together, and stopped automatically when animation-clip playback stops.
 
 The screen recorder should be controlled from SuperCollider, but the actual screen capture can be performed by a small Python helper that starts and stops FFmpeg. This separates operating-system process management from the musical and animation logic in `BmcTakeSonifier`.
 
-## Proposed user interface
+## User interface
 
 The existing `record` flag continues to control audio recording. A separate flag enables screen capture:
 
@@ -19,31 +21,69 @@ Bmc.sonifyTake(
 );
 ```
 
-Keeping the flags separate permits audio-only, video-only, audio-and-video, and unrecorded rehearsal takes. We may later replace the two flags with a recording-options object if more settings are needed, but independent Boolean arguments are sufficient for the first implementation.
+Keeping the flags separate permits audio-only, video-only, audio-and-video, and unrecorded rehearsal takes. The complete implemented signature also accepts `loop`, `rate`, `startFrame`, and `endFrame` so the recorded take metadata describes the actual source range and playback settings.
 
 ## Recording directory and take names
 
-All takes should be stored below:
+By default, takes are stored below:
 
 ```supercollider
 Platform.userAppSupportDir +/+ "Recordings"
 ```
 
-Each take is saved in its own directory. The directory name combines the clip name and a timestamp in the requested `YYMMDDHHSS` form:
+Because screen recordings can consume substantial disk space, the recording root is configurable and may point to an external disk. Set it in code:
+
+```supercollider
+Bmc.videoRecordingFolder_("/Volumes/PerformanceMedia/BuMoChi Recordings");
+```
+
+or choose a directory with the macOS folder dialog:
+
+```supercollider
+Bmc.chooseVideoRecordingFolder;
+```
+
+Inspect the current setting with:
+
+```supercollider
+Bmc.videoRecordingFolder;
+```
+
+The selection is stored persistently in:
+
+```supercollider
+Platform.userAppSupportDir +/+ "video_recording_folder.scd"
+```
+
+This file contains a readable SuperCollider event:
+
+```supercollider
+(videoRecordingFolder: "/Volumes/PerformanceMedia/BuMoChi Recordings")
+```
+
+It is reloaded after class-library recompilation and after restarting SuperCollider. If the preference file does not yet exist, BuMoChi writes it with the default application-support `Recordings` directory. If a configured external disk is not mounted when a take begins, BuMoChi reports that the recording folder is unavailable and does not silently fall back to the internal disk.
+
+Each take is saved in its own directory. The directory name combines the clip name and the accepted conventional timestamp in `YYMMDDHHMMSS` form:
 
 ```text
-<SuperCollider user application support>/Recordings/
-    ishidomaru1_2609011534/
-        ishidomaru1_2609011534.wav
-        ishidomaru1_2609011534.mp4
-        ishidomaru1_2609011534.scd
+<configured video recording folder>/
+    ishidomaru1_260901152734/
+        ishidomaru1_260901152734.wav
+        ishidomaru1_260901152734.mp4
+        ishidomaru1_260901152734.scd
 ```
 
 The same basename groups the audio, video, and SuperCollider metadata unambiguously. The `.scd` file is a required part of every take, not an optional generic metadata sidecar. It records the source clip, exact playback configuration, and the complete SuperCollider synthesis and mapping source needed to inspect and reuse the sonification.
 
-`YYMMDDHHSS` contains year, month, day, hour, and second, but no minute field. Consequently, two takes made in different minutes of the same hour at the same second value would receive the same name. The implementation must avoid overwriting an existing directory, for example by adding `_02`, `_03`, and so on. Before implementation, we may instead decide to use the conventional collision-resistant `YYMMDDHHMMSS` form, which includes minutes.
+`YYMMDDHHMMSS` contains year, month, day, hour, minute, and second. `BmcTakeRecordingPath` implements this using `Date.localtime.stamp` with its separator removed. If two takes are nevertheless created within the same second, it adds a numeric suffix and never overwrites an existing take directory.
 
-## Proposed components
+## Implemented first version
+
+The first version consists of `BmcTakeRecordingPath`, `BmcTakeMetadata`, `BmcScreenRecorder`, and `PipelineApplications/bmc_screen_capture.py`, integrated through `BmcTakeSonifier`. It creates the take directory and initial `.scd` metadata before capture, waits for FFmpeg to create the video file, records SuperCollider audio to the matching `.wav` path, and stops both recorders from the clip player's end event. The Python helper sends FFmpeg a graceful interrupt so the MP4 container can be finalized. After both files close, FFmpeg adds the WAV recording to the MP4 as AAC audio.
+
+The initial metadata saves all playback parameters, file names, status, actual take duration, the current Interpreter command text, and an `asCompileString` description of the supplied sonification object. Interpreter-history reconstruction across several evaluated blocks remains experimental, as discussed below.
+
+## Components
 
 ### `BmcTakeRecordingPath`
 
@@ -59,14 +99,14 @@ It must create the directory, reject unsafe clip-name characters or replace them
 
 ### `BmcTakeMetadata`
 
-This helper should collect, write, and finalize the take description as an `.scd` file. The file should evaluate to one SuperCollider `Event`, making it readable both as text and from SuperCollider:
+This helper collects, writes, and finalizes the take description as an `.scd` file. The file evaluates to one SuperCollider `Event`, making it readable both as text and from SuperCollider. The implemented first version provides `interpreterCode` and `sonificationDescription`. The richer `synthesisCode` and `mappingCode` functions shown below are the target format that we will refine after testing Interpreter-history capture:
 
 ```supercollider
-~take = ".../ishidomaru1_2609011534.scd".load;
+~take = ".../ishidomaru1_260901152734.scd".load;
 ~take[\sourceClip];
 ~take[\playback];
-~take[\synthesisCode].value;
-~take[\mappingCode].value;
+~take[\interpreterCode];
+~take[\sonificationDescription];
 ```
 
 The event should contain at least:
@@ -75,7 +115,7 @@ The event should contain at least:
 (
     format: \bmcAudioVideoTake,
     formatVersion: 1,
-    takeName: \ishidomaru1_2609011534,
+    takeName: \ishidomaru1_260901152734,
     createdAt: "2026-09-01 15:27:34",
 
     sourceClip: \ishidomaru1,
@@ -90,8 +130,8 @@ The event should contain at least:
     ),
 
     files: (
-        audio: "ishidomaru1_2609011534.wav",
-        video: "ishidomaru1_2609011534.mp4"
+        audio: "ishidomaru1_260901152734.wav",
+        video: "ishidomaru1_260901152734.mp4"
     ),
 
     synthesisCode: {
@@ -117,7 +157,7 @@ The event should contain at least:
 )
 ```
 
-The example code is illustrative; the generated file must contain the actual synthesis and mappings used for that take. `synthesisCode` and `mappingCode` are SuperCollider functions so that they remain formatted as executable SuperCollider source. Loading the metadata file creates the functions but does not run them. The user explicitly runs `.value` when reconstruction is wanted.
+The example code is illustrative of the intended refined format. In that target format, `synthesisCode` and `mappingCode` are SuperCollider functions so that they remain executable SuperCollider source. Loading the metadata file creates the functions but does not run them; the user explicitly runs `.value` when reconstruction is wanted. Until Interpreter-history capture is refined, the first implementation records the current evaluated Interpreter command as a String and marks the supplied sonification with its available `asCompileString` description rather than pretending that a complete SynthDef source has been recovered.
 
 The playback metadata has the following meanings:
 
@@ -159,7 +199,9 @@ Calling `stop` when no capture is active should be harmless and should post a sh
 
 The Python helper should start FFmpeg as a child process and capture the selected macOS display. FFmpeg is preferable to directly invoking `screencapture -v` because its process lifetime, readiness, output format, frame rate, and graceful termination are easier to control.
 
-For the initial implementation, FFmpeg should capture video only. SuperCollider remains responsible for recording the definitive audio. This avoids duplicate sound, feedback, and dependence on a virtual audio device.
+During live capture, FFmpeg records video only and SuperCollider records the definitive audio. This avoids duplicate sound, feedback, and dependence on a virtual audio device. After capture stops and SuperCollider confirms that the WAV has closed, FFmpeg remuxes the MP4 with the WAV encoded as AAC. The video stream is copied without re-encoding. FFmpeg's `-shortest` option trims whichever stream is longer, so the completed MP4 ends at the shorter audio/video duration. The original WAV remains beside it as the uncompressed master audio.
+
+If muxing fails, the original silent MP4 and WAV remain available. The metadata status becomes `\muxFailed` and `videoHasAudio` remains false. A successful audio-and-video take records `videoHasAudio: true`.
 
 The helper needs two operations:
 
@@ -201,7 +243,7 @@ Starting screen capture first prevents the beginning of the countdown from being
 
 Manual `Bmc.stopTake` and cancellation during the countdown must use the same cleanup path. Cleanup should be idempotent so that a second end notification cannot stop or free anything twice.
 
-Both stop requests originate in the same SuperCollider callback, but audio and video are recorded by different processes and therefore cannot stop on the same audio sample. Their endpoints should normally differ by only a small process-scheduling delay. The countdown supplies a strong synchronization reference, and a future post-processing step could align or mux the files using measured timestamps.
+Both stop requests originate in the same SuperCollider callback, but audio and video are recorded by different processes and therefore cannot stop on the same audio sample. Their endpoints should normally differ by only a small process-scheduling delay. BuMoChi waits for the WAV to close, then automatically muxes it into the MP4 and trims the longer stream to the shorter duration. The countdown remains a strong synchronization reference for reviewing or refining alignment.
 
 ## State and status reporting
 
@@ -215,10 +257,10 @@ Both stop requests originate in the same SuperCollider callback, but audio and v
     playing: true,
     recording: true,
     screenCapturing: true,
-    takeDirectory: ".../Recordings/ishidomaru1_2609011534",
-    audioPath: ".../ishidomaru1_2609011534.wav",
-    videoPath: ".../ishidomaru1_2609011534.mp4",
-    metadataPath: ".../ishidomaru1_2609011534.scd"
+    takeDirectory: ".../Recordings/ishidomaru1_260901152734",
+    audioPath: ".../ishidomaru1_260901152734.wav",
+    videoPath: ".../ishidomaru1_260901152734.mp4",
+    metadataPath: ".../ishidomaru1_260901152734.scd"
 )
 ```
 
@@ -228,15 +270,21 @@ An error starting screen capture should be reported before the countdown begins.
 
 The program that launches FFmpeg must have macOS Screen Recording permission. On first use, macOS may display a permission request. The user may need to enable the relevant application under **System Settings > Privacy & Security > Screen & System Audio Recording** and restart SuperCollider before capture succeeds.
 
-The initial implementation should select `Capture screen 0`, which FFmpeg currently detects on the development computer. Display selection should eventually be configurable because device indices can change when monitors are attached or removed.
+The default recorded display is FFmpeg AVFoundation device **`Capture screen 0`**. On the current development Mac this is the first/main macOS display. Place the Godot project window on that display and make sure the animation is visible there before starting `Bmc.sonifyTake`. Other windows, notifications, and pointer movement visible on that display will also be recorded.
 
-## Suggested implementation stages
+When monitors are connected, disconnected, or rearranged, verify which display FFmpeg calls `Capture screen 0` before an important take:
 
-1. Implement and test the Python FFmpeg helper independently from a terminal.
-2. Implement `BmcScreenRecorder` and test start, stop, cancellation, failure, and repeated takes from SuperCollider.
-3. Implement `BmcTakeRecordingPath` and explicit audio recording paths.
-4. Implement the serializable sonification specification and `BmcTakeMetadata`, including round-trip tests that load the `.scd` and reconstruct its mappings.
-5. Add `screenCapture` to `Bmc.sonifyTake` and integrate both recorders and metadata finalization with `BmcTakeSonifier`.
-6. Extend `Bmc.takeStatus` and document permissions and display selection.
-7. Test normal clip completion, manual stop, cancellation during countdown, server failure, FFmpeg failure, incomplete sonification source, and two consecutive takes.
-8. Optionally add a later mux/alignment operation without changing the original audio, video, and `.scd` files.
+```bash
+ffmpeg -f avfoundation -list_devices true -i ""
+```
+
+Display selection should eventually become a `Bmc.sonifyTake` option. The current implementation always requests `Capture screen 0`.
+
+## Remaining development and testing
+
+1. Grant macOS Screen Recording permission and test an actual capture from SuperCollider on the rehearsal machine.
+2. Test normal clip completion, manual stop, cancellation during countdown, server failure, FFmpeg failure, and two consecutive takes.
+3. Refine Interpreter history capture and the executable synthesis/mapping representation after examining real saved takes.
+4. Add measured audio and video media durations to finalized metadata.
+5. Make display and frame-rate selection configurable from the SuperCollider API.
+6. Test whether start-time offset correction beyond duration trimming is needed after reviewing real countdown recordings.

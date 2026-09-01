@@ -23,7 +23,21 @@ Bmc.sonifyTake(
 );
 ```
 
-The first argument names an existing Bmc clip. The second can be one `BmcLiveSonification`, an array of them, or an advanced setup function. `record` defaults to `false`; set `record: true` to record the server output using SuperCollider's normal recording path and format. `playerName` defaults to `\default`.
+The first argument names an existing Bmc clip. The second can be one `BmcLiveSonification`, an array of them, or an advanced setup function. `record` defaults to `false`; set `record: true` to record the server output. `playerName` defaults to `\default`. Recorded takes use a dedicated directory below the persistent `Bmc.videoRecordingFolder` and a shared `YYMMDDHHMMSS` basename for their audio and `.scd` metadata files. Use `Bmc.videoRecordingFolder_(path)` or `Bmc.chooseVideoRecordingFolder` to place recordings on an external disk. Add `screenCapture: true` to record a matching MP4 through FFmpeg. The default is FFmpeg's `Capture screen 0`, normally the first/main macOS display, so the Godot animation must be visible there. Afterward, FFmpeg incorporates the WAV into the MP4 and trims the longer stream to the shorter duration. See [RecordingAudioAndVideo.md](RecordingAudioAndVideo.md).
+
+The optional `loop`, `rate`, `startFrame`, and `endFrame` arguments configure the recorded playback range:
+
+```supercollider
+Bmc.sonifyTake(
+    \ishidomaru1,
+    ~sonification,
+    record: true,
+    screenCapture: true,
+    rate: 0.5,
+    startFrame: 120,
+    endFrame: 840
+);
+```
 
 ## 2. Issuing the recording command. 
 

@@ -529,15 +529,29 @@ Godot listens on =39539=.
 
     Turns repeated playback on or off.
 
-11. =Bmc.sonifyTake(clipName, sonifications, playerName, record)=
+11. =Bmc.sonifyTake(clipName, sonifications, playerName, record, screenCapture, loop, rate, startFrame, endFrame)=
 
     Runs the synchronized take workflow for an existing clip. It
-    optionally starts disk recording, plays the ten-note countdown,
+    optionally records server audio and screen video, plays the ten-note countdown,
     begins clip playback with countdown note ten, starts the supplied
     sonification after that note, and cleans up at the clip's end.
-    =record= defaults to =false=. Use =Bmc.stopTake=, =Bmc.cancelTake=,
-    and =Bmc.takeStatus= for control and inspection. See
-    [[file:HelpByTopic/RecordingWithSound.md][Recording with sound]].
+    =record= and =screenCapture= default to =false=. Recorded files and
+    =.scd= metadata share a =clipName_YYMMDDHHMMSS= basename in one
+    directory below the persistent =Bmc.videoRecordingFolder=. The loop,
+    rate, and inclusive frame-range settings are saved in the metadata.
+    Use =Bmc.stopTake=, =Bmc.cancelTake=, and =Bmc.takeStatus= for control
+    and inspection. See [[file:HelpByTopic/RecordingWithSound.md][Recording with sound]] and
+    [[file:HelpByTopic/RecordingAudioAndVideo.md][Recording audio and video]].
+
+12. =Bmc.videoRecordingFolder= / =Bmc.videoRecordingFolder_(path)= /
+    =Bmc.chooseVideoRecordingFolder=
+
+    Gets or changes the root directory for complete take folders. The setter
+    accepts an internal or external-disk path; the chooser opens a folder
+    dialog. The preference is stored in
+    =Platform.userAppSupportDir/video_recording_folder.scd= and survives
+    library recompilation and application restart. An unavailable external
+    disk causes a clear recording error rather than an internal-disk fallback.
 
 ** Combining recordings
 :PROPERTIES:

@@ -334,9 +334,13 @@ After the SuperCollider class library compiles, Bmc automatically listens for ro
 
     Turns repeated playback on or off.
 
-11. `Bmc.sonifyTake(clipName, sonifications, playerName, record)`
+11. `Bmc.sonifyTake(clipName, sonifications, playerName, record, screenCapture, loop, rate, startFrame, endFrame)`
 
-    Runs the synchronized take workflow for an existing clip. It optionally starts disk recording, plays degrees 0 through 4 twice as a countdown, begins clip playback with a final degree 7 cue, starts the supplied sonification after that cue, and cleans up at the clip's end. `record` defaults to `false`. Use `Bmc.stopTake`, `Bmc.cancelTake`, and `Bmc.takeStatus` for control and inspection. See [Recording with sound](HelpByTopic/RecordingWithSound.md).
+    Runs the synchronized take workflow for an existing clip. It optionally records server audio and screen video, plays degrees 0 through 4 twice as a countdown, begins clip playback with a final degree 7 cue, starts the supplied sonification after that cue, and cleans up at the clip's end. `record` and `screenCapture` default to `false`. Recorded files and `.scd` metadata are grouped in one `clipName_YYMMDDHHMMSS` directory below the persistent `Bmc.videoRecordingFolder`. The loop, rate, and inclusive frame-range arguments configure playback and are stored in the take metadata. Use `Bmc.stopTake`, `Bmc.cancelTake`, and `Bmc.takeStatus` for control and inspection. See [Recording with sound](HelpByTopic/RecordingWithSound.md) and [Recording audio and video](HelpByTopic/RecordingAudioAndVideo.md).
+
+12. `Bmc.videoRecordingFolder` / `Bmc.videoRecordingFolder_(path)` / `Bmc.chooseVideoRecordingFolder`
+
+    Gets or changes the root directory for complete take folders. The setter accepts an internal or external-disk path; the chooser opens a folder dialog. The preference is stored as SuperCollider data in `Platform.userAppSupportDir/video_recording_folder.scd` and survives library recompilation and application restart. If an external disk is unavailable, recording fails clearly rather than falling back to the internal disk.
 
 ## Combining recordings
 

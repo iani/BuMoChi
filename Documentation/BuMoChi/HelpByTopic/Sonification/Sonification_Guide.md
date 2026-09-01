@@ -106,12 +106,24 @@ BuMoChi creates both Synths and attaches both observers to the same player. When
 `Bmc.sonifyTake` runs the synchronized take workflow. Its arguments are:
 
 ```supercollider
-Bmc.sonifyTake(clipName, sonifications, playerName: \default, record: false);
+Bmc.sonifyTake(
+    clipName,
+    sonifications,
+    playerName: \default,
+    record: false,
+    screenCapture: false,
+    loop: false,
+    rate: 1.0,
+    startFrame: 0,
+    endFrame: nil
+);
 ```
 
 The countdown plays degrees 0 through 4 twice and then degree 7. Clip playback begins exactly with the final degree-7 cue. The mapped sonification begins after that cue has completed.
 
 Set `record: true` to begin SuperCollider server recording before the countdown. Recording then contains the complete countdown and all sound through the clip's final frame. It stops automatically when playback ends.
+
+Set `screenCapture: true` to record FFmpeg's **`Capture screen 0`**, normally the first/main macOS display, to a matching MP4. Place the visible Godot animation on that display before starting the take. After recording, FFmpeg adds the SuperCollider audio to the MP4 and trims the longer media stream to the shorter duration. The uncompressed WAV is retained. Audio, video, and `.scd` metadata use the same `YYMMDDHHMMSS` take basename below the persistent `Bmc.videoRecordingFolder`. Use `Bmc.videoRecordingFolder_(path)` or `Bmc.chooseVideoRecordingFolder` to select an external disk. See [RecordingAudioAndVideo.md](../RecordingAudioAndVideo.md).
 
 For the detailed timing and recording workflow, see [RecordingWithSound.md](../RecordingWithSound.md).
 

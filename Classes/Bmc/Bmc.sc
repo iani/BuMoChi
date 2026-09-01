@@ -487,12 +487,26 @@ Bmc {
 
 	*isRecording { ^recorder.isRecording }
 
-	*sonifyTake { |clipName, sonifications, playerName = \default, record = false|
-		^takeSonifier.start(clipName, sonifications, playerName, record)
+	*sonifyTake { |clipName, sonifications, playerName = \default, record = false,
+		screenCapture = false, loop = false, rate = 1.0, startFrame = 0, endFrame|
+		^takeSonifier.start(
+			clipName, sonifications, playerName, record, screenCapture,
+			loop, rate, startFrame, endFrame
+		)
 	}
 	*stopTake { takeSonifier.stop; ^this }
 	*cancelTake { takeSonifier.cancel; ^this }
 	*takeStatus { ^takeSonifier.status }
+	*videoRecordingFolder { ^BmcTakeRecordingPath.recordingDirectory }
+	*videoRecordingFolder_ { |path| ^BmcTakeRecordingPath.recordingDirectory_(path) }
+	*chooseVideoRecordingFolder {
+		{
+			FileDialog({ |paths|
+				if(paths.notEmpty) { this.videoRecordingFolder_(paths.first) }
+			}, fileMode: 2)
+		}.defer;
+		^this
+	}
 
 	// ----- clip library -----
 	*clips { ^library.clips }
