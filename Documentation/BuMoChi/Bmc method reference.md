@@ -2,6 +2,8 @@
 
 `Bmc` is the recommended entry point for ordinary sessions. The methods below delegate work to the appropriate supporting object.
 
+> **Clip/preset terminology:** A clip is the complete recorded data. Range, speed, looping, selected bones, and target(s) describe how a clip is played. When saved together under a name, those playback choices form a preset; they never trim or otherwise modify the clip.
+
 ## System control
 
 After the SuperCollider class library compiles, Bmc automatically listens for route-free Bunraku frames on input port `57130`. Its selected default avatar is `Ishidomaru`; completed frames for that identity are rewritten as `Ishidomaru`, assigned Godot VMC destination port `39539`, and forwarded to the local Bunraku decoder on port `39538`. Decoder forwarding is enabled. This ready state supports immediate live monitoring and `Bmc.record` without a separate initialization block when the encoder uses `--avatar "Ishidomaru"` and Godot listens on `39539`.
@@ -336,7 +338,7 @@ After the SuperCollider class library compiles, Bmc automatically listens for ro
 
 11. `Bmc.sonifyTake(clipName, sonifications, playerName, record, screenCapture, loop, rate, startFrame, endFrame)`
 
-    Runs the synchronized take workflow for an existing clip. It optionally records server audio and screen video, plays degrees 0 through 4 twice as a countdown, begins clip playback with a final degree 7 cue, starts the supplied sonification after that cue, and cleans up at the clip's end. `record` and `screenCapture` default to `false`. Recorded files and `.scd` metadata are grouped in one `clipName_YYMMDDHHMMSS` directory below the persistent `Bmc.videoRecordingFolder`. The loop, rate, and inclusive frame-range arguments configure playback and are stored in the take metadata. Use `Bmc.stopTake`, `Bmc.cancelTake`, and `Bmc.takeStatus` for control and inspection. See [Recording with sound](HelpByTopic/RecordingWithSound.md) and [Recording audio and video](HelpByTopic/RecordingAudioAndVideo.md).
+    Runs the synchronized take workflow for an existing clip. It optionally records server audio and screen video, archives the source clip in the take directory, plays degrees 0 through 4 twice as a countdown, begins clip playback with a final degree 7 cue, starts the supplied sonification after that cue, and cleans up at the clip's end. An existing source file is copied unchanged; an unsaved in-memory clip is serialized as a new `.scd` snapshot. `record` and `screenCapture` default to `false`. Recorded files and `.scd` metadata are grouped in one `clipName_YYMMDDHHMMSS` directory below the persistent `Bmc.videoRecordingFolder`. The loop, rate, and inclusive frame-range arguments configure playback and are stored in the take metadata. Use `Bmc.stopTake`, `Bmc.cancelTake`, and `Bmc.takeStatus` for control and inspection. See [Recording with sound](HelpByTopic/RecordingWithSound.md) and [Recording audio and video](HelpByTopic/RecordingAudioAndVideo.md).
 
 12. `Bmc.videoRecordingFolder` / `Bmc.videoRecordingFolder_(path)` / `Bmc.chooseVideoRecordingFolder`
 

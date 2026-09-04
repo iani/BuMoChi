@@ -8,7 +8,7 @@
 Bmc {
 	classvar <boneNames;
 	classvar <dispatcher, <recorder, <players, <library, <avatars, <wires, <modifiers;
-	classvar <soundFileLoader, <takeSonifier;
+	classvar <soundFileLoader, <takeSonifier, <presetLibrary, <clipEditorWindow;
 	classvar <defaultAvatar, recordingName, recordingFormat, recorderPublisher;
 	classvar <defaultXrAnimatorOutputPort, <defaultInputPort, <defaultDecoderPort;
 	classvar <defaultAvatarID, <defaultAvatarName, <defaultAvatarVmcPort;
@@ -46,6 +46,7 @@ Bmc {
 
 	*initializeEnvironment {
 		library = BmcClipLibrary.new;
+		presetLibrary = BmcClipPresetLibrary.new;
 		dispatcher = BmcDispatcher.new(defaultInputPort);
 		recorder = BmcClipRecorder.new;
 		avatars = IdentityDictionary.new;
@@ -227,6 +228,7 @@ Bmc {
 		result.postln;
 		^result
 	}
+	*animationDataInputActive { |timeout = 0.5| ^dispatcher.inputActive(timeout) }
 
 	*compositorRate { |value|
 		if(value.isNil) { ^compositor.rate };
@@ -507,6 +509,23 @@ Bmc {
 		}.defer;
 		^this
 	}
+	*dataFolder { ^BmcDataFolder.root }
+	*setDataFolder { |path|
+		if(path.notNil) {
+			BmcDataFolder.root_(path);
+			BmcClipLibrary.defaultDirectory_(BmcDataFolder.clips);
+			BmcTakeRecordingPath.recordingDirectory_(BmcDataFolder.videos);
+			library.refreshSaved;
+			"Bmc data will be stored in: %".format(BmcDataFolder.root).postln;
+			^BmcDataFolder.root
+		};
+		{
+			FileDialog({ |paths|
+				if(paths.notEmpty) { this.setDataFolder(paths.first) }
+			}, fileMode: 2)
+		}.defer;
+		^this
+	}
 
 	// ----- clip library -----
 	*clips { ^library.clips }
@@ -533,6 +552,29 @@ Bmc {
 	*postClipDirectory { ^this.clipDirectory.postln }
 	*refreshSavedClips { ^library.refreshSaved }
 	*showClips { ^library.show }
+	*clipEditor { |name|
+		if(name.notNil) { library.select(name) };
+		clipEditorWindow = BmcClipEditor(library, presetLibrary, name ?? { library.currentName });
+		^clipEditorWindow
+	}
+	*clipPresets { |clipName| ^presetLibrary.names(clipName ?? { library.currentName }) }
+	*clipPreset { |clipName, presetName| ^presetLibrary.at(clipName, presetName) }
+	*playPreset { |clipName, presetName| ^this.playPresetObject(presetLibrary.at(clipName, presetName)) }
+	*playPresetObject { |preset|
+		var targets, playersForPreset, rule;
+		if(preset.isNil) { Error("Unknown Bmc clip preset").throw };
+		preset.validateFor(library.at(preset.sourceClip));
+		targets = if(preset.targets.isEmpty) { [defaultAvatar.avatarID] } { preset.targets };
+		rule = if(preset.bones == \all) { \overwrite } { preset.bones };
+		playersForPreset = targets.collect { |target, index|
+			var playerName = if(index == 0) { \clipEditor } {
+				("clipEditor_" ++ index).asSymbol
+			};
+			this.play(preset.sourceClip, preset.looping, preset.speed,
+				preset.startFrame, preset.endFrame, playerName, target, rule)
+		};
+		^playersForPreset.first
+	}
 	*removeClip { |name| ^library.remove(name) }
 	*renameClip { |oldName, newName| ^library.rename(oldName, newName) }
 	*loadClip { |path, name| ^library.load(path, name) }

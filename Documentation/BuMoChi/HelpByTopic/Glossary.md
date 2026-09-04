@@ -12,11 +12,29 @@ A session definition defines motion sources, motions, figures, avatars, and thei
 
 Each session is saved as a separate named `.scd` file. Loaded sessions are registered by name in the in-memory `Bmc.sessions` dictionary.
 
+# Scene
+
+A Scene is a Godot node tree, normally stored as a `.tscn` resource within a Godot project. Each Scene has one root node and may contain instances of other Scenes as child branches. One Scene is configured as the project's default or main Scene, which Godot loads when the project starts.
+
+In BuMoChi documentation, **Scene** refers only to this Godot concept. It does not mean a BuMoChi timeline, dramaturgical section, playback preset, or collection of motion data. A Scene may contain avatars, environments, cameras, lights, and the Godot-side receivers that render animation. A Sequence may activate different Scenes belonging to the same Godot project.
+
+# Sequence
+
+A Sequence is a time-ordered collection of BuMoChi actions associated with one Godot project. At minimum, it operates in the project's default Scene. It may also switch sequentially among multiple `.tscn` Scenes belonging to that project.
+
+A Sequence action, also called a cue, may activate a Scene; start, stop, or change a clip-preset playback; start, stop, or change an animation wiring; alter routing or target assignments; wait for a duration; or respond to an external event. An animation wiring is a live connection that sends motion from a source to a figure, avatar, or other processing destination.
+
+A Sequence stores references and timing, not recorded motion or Godot node trees. Clips remain the complete recorded data, Presets describe how individual clips are played, Scenes remain resources in the Godot project, and Sessions provide reusable motion, figure, avatar, and routing configuration. A Sequence may select and coordinate these objects over time without modifying them.
+
 # Clip
 
 A clip is immutable, time-indexed recorded motion data: an ordered collection of mocap frames and their relative playback times.
 
 A clip is not owned by or permanently associated with an avatar. Avatar and source names recorded in its frames are provenance metadata: they describe where the motion came from, not where it must be sent during future playback. Output routes are never stored in a clip.
+
+## Preset
+
+A preset is a named, non-destructive description of how one clip is played. It stores an inclusive start/end frame range, playback speed, loop behavior, bone selection, and playback target or targets. It may also store sonification and frame-modification code. The clip remains the complete recorded data: creating, editing, or deleting a preset never trims, copies, or changes its source clip.
 
 The same clip may animate different avatars, supply selected bones, be transformed, or be combined with other recorded, live, or generated sources.
 
@@ -44,7 +62,7 @@ For example, `\walk` is a session-local motion name that uses the saved clip `\t
 \walk -> (clip: \take1, rate: 1.0, loop: false, in: 0.0)
 ```
 
-The `clip` field is convenient shorthand for `source: (type: \clip, name: \take1)`. The `in` value is the position in seconds at which reading begins inside the clip. A future scene timeline may use a separate `at` value for the time at which a motion begins in a scene.
+The `clip` field is convenient shorthand for `source: (type: \clip, name: \take1)`. The `in` value is the position in seconds at which reading begins inside the clip. A Sequence action uses a separate `at` value for the time at which a motion begins on the Sequence timeline.
 
 # Figure
 
@@ -68,21 +86,54 @@ The avatar name stored inside a recorded clip is provenance metadata. It may ide
 
 A motion name is a session-local key for a configured source, such as `\walk` or `\motherEntrance`. It may differ from the saved clip name. For example, motion `\motherEntrance` may use clip `\take1` without renaming or modifying that recording.
 
-# Scene
-
-A scene is a possible future dramaturgical unit within a session. It should add an ordered sequence, timeline, or set of cues. The present session format configures motion and routing but does not yet define this temporal structure.
-
 # Conceptual pipeline
 
+The diagram separates stored definitions from time-ordered control and live data flow. Solid arrows carry motion data or invoke actions; dotted arrows express ownership, reference, or configuration relationships.
+
 ``` mermaid
-flowchart TD
-    C[Recorded clips] --> M[Configured motions]
-    L[Live sources] --> M
-    G[Generated sources] --> M
-    M --> F[Ordered figure composition]
-    F --> A[Avatar identity and VMC route]
-    A --> D[Shared Bunraku decoder]
-    D --> V[Godot avatar]
+flowchart LR
+    subgraph Definitions["Stored and reusable definitions"]
+        C["Clip<br/>complete recorded motion"]
+        P["Preset<br/>range, speed, loop,<br/>bones and targets"]
+        SESS["Session<br/>sources, motions, figures,<br/>avatars and routing"]
+        SEQ["Sequence<br/>time-ordered actions and cues"]
+        PROJ["Godot project"]
+        SCN["Scenes<br/>one or more .tscn trees"]
+        C -. "referenced by" .-> P
+        SESS -. "configuration used by" .-> SEQ
+        PROJ -. "contains" .-> SCN
+        SEQ -. "associated with one" .-> PROJ
+    end
+
+    subgraph Runtime["BuMoChi runtime motion flow"]
+        LIVE["Live or generated source"]
+        PLAY["Preset playback"]
+        WIRE["Animation wiring / motion"]
+        FIG["Figure composition"]
+        AV["Avatar identity and route"]
+        DEC["Shared Bunraku decoder"]
+        C --> PLAY
+        P --> PLAY
+        LIVE --> WIRE
+        PLAY --> FIG
+        WIRE --> FIG
+        FIG --> AV
+        AV --> DEC
+    end
+
+    subgraph Godot["Running Godot project"]
+        CTRL["Persistent Scene and VMC controller"]
+        ACTIVE["Active Scene"]
+        RENDER["Rendered avatar"]
+        CTRL --> ACTIVE
+        ACTIVE --> RENDER
+    end
+
+    SEQ -- "starts, stops or changes" --> PLAY
+    SEQ -- "connects or changes" --> WIRE
+    SEQ -- "activates a Scene" --> CTRL
+    SCN -. "available to activate" .-> CTRL
+    DEC -- "VMC animation frames" --> CTRL
 ```
 
 # Proposed session data

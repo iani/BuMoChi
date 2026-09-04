@@ -1,6 +1,6 @@
 BmcDispatcher {
 	var <port, <oscKey, <isRunning = false, <avatars, <destinations;
-	var <received = 0, <rejected = 0, <dropped = 0, lastFrameIDs;
+	var <received = 0, <rejected = 0, <dropped = 0, <lastReceivedTime, lastFrameIDs;
 	var <sourceRoutes, <lastSources;
 
 	*new { |port = 57130| ^super.new.init(port) }
@@ -67,6 +67,7 @@ BmcDispatcher {
 		};
 
 		received = received + 1;
+		lastReceivedTime = SystemClock.seconds;
 		avatarIndex = Bmc.messageAvatarIndex(message);
 		sourceIndex = Bmc.messageSourceIndex(message);
 		frameIDIndex = Bmc.messageFrameIDIndex(message);
@@ -98,6 +99,13 @@ BmcDispatcher {
 	status {
 		^(running: isRunning, port: port, received: received,
 			rejected: rejected, dropped: dropped, avatars: avatars.size,
+			lastReceivedTime: lastReceivedTime,
 			sourceRoutes: sourceRoutes.collect(_.avatarID))
+	}
+
+	inputActive { |timeout = 0.5|
+		^isRunning and: { lastReceivedTime.notNil and: {
+			(SystemClock.seconds - lastReceivedTime) <= timeout.asFloat.max(0.01)
+		} }
 	}
 }

@@ -6,6 +6,13 @@ computer.  A recording is stored and managed as a /clip/.  The examples below
 use clip methods such as =Bmc.record=,
 =Bmc.listClips=, and =Bmc.playClip=.
 
+* Terminology
+
+A clip is always the complete recorded data. Supplying =startFrame=,
+=endFrame=, =rate=, =loop=, bone selection, or playback targets changes only
+the manner of playback; it does not create or alter a clip. A named reusable
+collection of those choices is a /preset/.
+
 Use this port map throughout the test:
 
 | From              | To             | UDP port |

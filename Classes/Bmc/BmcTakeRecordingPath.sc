@@ -1,5 +1,6 @@
 BmcTakeRecordingPath {
 	var <directory, <basename, <audioPath, <videoPath, <metadataPath, <screenStatePath;
+	var <sourceClipPath, <sourceClipOriginalPath, <sourceClipArchiveMode;
 	classvar defaultDirectory;
 
 	*preferencePath {
@@ -11,24 +12,8 @@ BmcTakeRecordingPath {
 	}
 
 	*recordingDirectory {
-		var data;
 		if(defaultDirectory.notNil) { ^defaultDirectory };
-		if(File.exists(this.preferencePath)) {
-			data = File.readAllString(this.preferencePath).interpret;
-			defaultDirectory = if(data.isKindOf(Dictionary)) {
-				data[\videoRecordingFolder]
-			} {
-				data
-			};
-			if(defaultDirectory.isString.not) {
-				Error("Invalid Bmc video recording preference: %"
-					.format(this.preferencePath)).throw
-			};
-			defaultDirectory = defaultDirectory.standardizePath;
-		} {
-			defaultDirectory = Platform.userAppSupportDir +/+ "Recordings";
-			this.writePreference
-		};
+		defaultDirectory = BmcDataFolder.videos;
 		^defaultDirectory
 	}
 
@@ -95,6 +80,29 @@ BmcTakeRecordingPath {
 		metadataPath = directory +/+ (basename ++ ".scd");
 		screenStatePath = directory +/+ ".screen-capture.json";
 		^this
+	}
+
+	archiveSourceClip { |clip, clipName|
+		var originalPath = clip.path;
+		if(originalPath.notNil and: { File.exists(originalPath.standardizePath) }) {
+			sourceClipOriginalPath = originalPath.standardizePath;
+			if(File.type(sourceClipOriginalPath) != \regular) {
+				Error("The source clip path is not a file: %"
+					.format(sourceClipOriginalPath)).throw
+			};
+			sourceClipPath = directory +/+ PathName(sourceClipOriginalPath).fileName;
+			if(File.copy(sourceClipOriginalPath, sourceClipPath).not) {
+				Error("Could not copy source clip into take directory: %"
+					.format(sourceClipOriginalPath)).throw
+			};
+			sourceClipArchiveMode = \copiedOriginal;
+		} {
+			sourceClipOriginalPath = nil;
+			sourceClipPath = directory +/+ (this.sanitize(clipName.asString) ++ ".scd");
+			clip.writeScd(sourceClipPath);
+			sourceClipArchiveMode = \serializedSnapshot;
+		};
+		^sourceClipPath
 	}
 
 	sanitize { |string|

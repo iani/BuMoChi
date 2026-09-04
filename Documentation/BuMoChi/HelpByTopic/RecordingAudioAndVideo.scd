@@ -46,7 +46,9 @@ SynthDef(\bmcRecordingTestTone, { |out = 0, freq = 220, amp = 0.04|
 );
 
 //: ---- 6A. Optional audio-only test
-// This creates a WAV and SCD metadata file, without recording the screen.
+// This creates a WAV, SCD metadata, and an archived source clip without
+// recording the screen. Existing source files are copied unchanged; an
+// unsaved in-memory BmcClip is serialized to a new human-readable SCD file.
 Bmc.sonifyTake(
 	~recordingTestClip,
 	~recordingTestSonification,

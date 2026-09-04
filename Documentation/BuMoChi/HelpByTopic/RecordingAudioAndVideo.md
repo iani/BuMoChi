@@ -71,15 +71,20 @@ Each take is saved in its own directory. The directory name combines the clip na
         ishidomaru1_260901152734.wav
         ishidomaru1_260901152734.mp4
         ishidomaru1_260901152734.scd
+        ishidomaru1.scd
 ```
 
-The same basename groups the audio, video, and SuperCollider metadata unambiguously. The `.scd` file is a required part of every take, not an optional generic metadata sidecar. It records the source clip, exact playback configuration, and the complete SuperCollider synthesis and mapping source needed to inspect and reuse the sonification.
+The same basename groups the audio, video, and SuperCollider metadata unambiguously. The timestamped `.scd` file is a required metadata file, not an optional generic sidecar. If the source clip has an existing file, that file is copied unchanged into the take directory, retaining its original filename and `.scd` or `.bmc` format. If the clip exists only in memory, BuMoChi instead writes its current frame and timestamp data as a new human-readable `.scd` clip. Together these files preserve the motion data, exact playback configuration, and available SuperCollider synthesis and mapping source needed to inspect, modify, and reuse the take.
+
+The metadata records the archived clip filename under `files.sourceClip`. `sourceClipArchiveMode` is `\copiedOriginal` when an existing source file was copied and `\serializedSnapshot` when the in-memory clip was written to a new `.scd` file. `sourceClipOriginalPath` contains the former location for a copied original and is `nil` for a serialized snapshot. Playback itself continues to use the loaded in-memory clip.
+
+This snapshot fallback is lossless for an unsaved `BmcClip`, because its complete frame and timestamp arrays already exist in memory before playback. It does not yet record a genuinely live or procedural stream whose frames are created or transformed only while animation is running. Supporting that case will require a frame recorder attached to the player's emitted `\frame` events.
 
 `YYMMDDHHMMSS` contains year, month, day, hour, minute, and second. `BmcTakeRecordingPath` implements this using `Date.localtime.stamp` with its separator removed. If two takes are nevertheless created within the same second, it adds a numeric suffix and never overwrites an existing take directory.
 
 ## Implemented first version
 
-The first version consists of `BmcTakeRecordingPath`, `BmcTakeMetadata`, `BmcScreenRecorder`, and `PipelineApplications/bmc_screen_capture.py`, integrated through `BmcTakeSonifier`. It creates the take directory and initial `.scd` metadata before capture, waits for FFmpeg to create the video file, records SuperCollider audio to the matching `.wav` path, and stops both recorders from the clip player's end event. The Python helper sends FFmpeg a graceful interrupt so the MP4 container can be finalized. After both files close, FFmpeg adds the WAV recording to the MP4 as AAC audio.
+The first version consists of `BmcTakeRecordingPath`, `BmcTakeMetadata`, `BmcScreenRecorder`, and `PipelineApplications/bmc_screen_capture.py`, integrated through `BmcTakeSonifier`. It creates the take directory, archives the source clip by copying its file or serializing its in-memory data, writes the initial `.scd` metadata, waits for FFmpeg to create the video file, records SuperCollider audio to the matching `.wav` path, and stops both recorders from the clip player's end event. The Python helper sends FFmpeg a graceful interrupt so the MP4 container can be finalized. After both files close, FFmpeg adds the WAV recording to the MP4 as AAC audio.
 
 The initial metadata saves all playback parameters, file names, status, actual take duration, the current Interpreter command text, and an `asCompileString` description of the supplied sonification object. Interpreter-history reconstruction across several evaluated blocks remains experimental, as discussed below.
 
@@ -220,12 +225,13 @@ The start sequence should be coordinated by `BmcTakeSonifier.start`:
 
 1. Validate the clip and requested recording options.
 2. Create one take directory and the shared audio/video basename.
-3. Collect the source clip, start frame, end frame, speed, loop state, durations, and complete synthesis and mapping code, then write the initial `.scd` metadata file.
-4. If `screenCapture` is true, start `BmcScreenRecorder` and wait until FFmpeg reports that it is ready.
-5. If `record` is true, call `Server.prepareForRecord` with the generated audio path, synchronize with the server, and start server recording.
-6. Start the existing audible countdown.
-7. Start animation playback on the final synchronization cue, using the timing already implemented by `BmcTakeSonifier`.
-8. Start the selected sonification processes according to the existing take timing.
+3. Archive the source clip: copy its existing file unchanged, or serialize an unsaved in-memory clip to `.scd`.
+4. Collect the source clip, start frame, end frame, speed, loop state, durations, and available synthesis and mapping code, then write the initial `.scd` metadata file.
+5. If `screenCapture` is true, start `BmcScreenRecorder` and wait until FFmpeg reports that it is ready.
+6. If `record` is true, call `Server.prepareForRecord` with the generated audio path, synchronize with the server, and start server recording.
+7. Start the existing audible countdown.
+8. Start animation playback on the final synchronization cue, using the timing already implemented by `BmcTakeSonifier`.
+9. Start the selected sonification processes according to the existing take timing.
 
 Starting screen capture first prevents the beginning of the countdown from being lost while FFmpeg initializes. The resulting video may contain a short silent lead-in. This is preferable to missing synchronization material and can be trimmed automatically later if required.
 

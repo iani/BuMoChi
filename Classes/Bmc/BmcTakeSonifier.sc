@@ -33,6 +33,7 @@ BmcTakeSonifier {
 		screenRecorder = nil;
 		if(audioRequested or: { videoRequested }) {
 			recordingPath = BmcTakeRecordingPath(clipName);
+			recordingPath.archiveSourceClip(clip, clipName);
 			interpreterCode = thisProcess.interpreter.cmdLine;
 			metadata = BmcTakeMetadata(
 				recordingPath, clipName, playerName, clip, startFrame,

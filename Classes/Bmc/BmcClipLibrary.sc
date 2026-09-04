@@ -4,7 +4,7 @@ BmcClipLibrary {
 
 	*defaultDirectory {
 		^defaultDirectory ?? {
-			defaultDirectory = Platform.userAppSupportDir +/+ "BmcClips"
+			defaultDirectory = BmcDataFolder.clips
 		}
 	}
 	*defaultDirectory_ { |path|

@@ -4,6 +4,8 @@ title: Recording And Playback
 
 # Purpose of the guide
 
+> **Terminology:** A clip is always the complete recorded data. Supplying `startFrame`, `endFrame`, `rate`, `loop`, bone selection, or playback targets changes only the manner of playback; it does not create or alter a clip. A named reusable collection of those choices is a **preset**.
+
 This guide tests recording and playback with XR-Animator, the Bunraku OSC encoder, SuperCollider/BuMoChi, the Bunraku OSC decoder, and Godot on the same computer. A recording is stored and managed as a *clip*. The examples below use clip methods such as `Bmc.record`, `Bmc.listClips`, and `Bmc.playClip`.
 
 Use this port map throughout the test:

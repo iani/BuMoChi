@@ -32,8 +32,11 @@ BmcTakeMetadata {
 			),
 			files: (
 				audio: PathName(pathSpec.audioPath).fileName,
-				video: PathName(pathSpec.videoPath).fileName
+				video: PathName(pathSpec.videoPath).fileName,
+				sourceClip: PathName(pathSpec.sourceClipPath).fileName
 			),
+			sourceClipOriginalPath: pathSpec.sourceClipOriginalPath,
+			sourceClipArchiveMode: pathSpec.sourceClipArchiveMode,
 			interpreterCode: interpreterCode,
 			sonificationDescription: sonificationDescription
 		);

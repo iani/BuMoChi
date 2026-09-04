@@ -10,16 +10,17 @@ A session definition defines motion sources, motions, figures, avatars, and thei
 
 Each session is stored as a separate named =.scd= file in the Bmc sessions directory. When a session is loaded, it is registered under its name in the in-memory =Bmc.sessions= dictionary. Keeping one session per file makes sessions easier to inspect, copy, version, and share, and prevents an error in one session from affecting every saved session.
 
-Possible future refinement: A future /Scene/ may describe a dramaturgical unit within a session. In particular, a scene should contain an ordered sequence, timeline, or set of cues. The present data format does not yet describe that temporal structure, so /Session/ is the more accurate name at this stage.
+A /Sequence/ adds temporal structure to this configuration: it is an ordered timeline of actions or cues associated with one Godot project. A Sequence operates in the project's default Godot Scene and may switch among other =.tscn= Scenes in that project. A Session describes the reusable runtime configuration; a Sequence coordinates that configuration and Godot Scene selection over time.
 
 * Session data format
 
-Sessions use four principal data objects. /Source/ is an additional role or interface: anything capable of supplying motion data can act as a source, but sources do not have to form a separate top-level session dictionary.
+Sessions use five principal data objects. /Source/ is an additional role or interface: anything capable of supplying motion data can act as a source, but sources do not have to form a separate top-level session dictionary.
 
 1. /Clip/: A clip is an immutable stored recording of time-indexed mocap frames. Clips are usually created by recording XR-Animator, VMC, or another motion source. A clip retains provenance metadata, but it contains neither an avatar assignment nor output-routing information.
-2. /Motion/: A motion is a configured use of a motion source. Its source may be a clip, live stream, language-side Function, Synth-controlled generator, or another compatible producer. Motion settings may include playback rate, looping, the position at which reading begins, transformations, and processing rules. When evaluated, a motion supplies movement for all or part of a figure.
-3. /Figure/: A figure is a complete logical body assembled from one or more ordered motions. It lists its motion sources in the exact order in which their current values are applied to compose each completed figure frame. Only after composition is complete is the frame passed to an avatar.
-4. /Avatar/: An avatar is the rendered destination of a completed figure. It supplies the external avatar identity and final VMC destination. At the Figure -> Avatar boundary, routing metadata is added to the transmitted frame; this does not alter the source clip.
+2. /Preset/: A preset is a named description of how a particular clip is played. It stores the selected frame range, speed, loop behavior, bone selection, and target or targets, and may store sonification or frame-modification code. It refers to the full source clip without modifying it.
+3. /Motion/: A motion is a configured use of a motion source. Its source may be a clip (optionally through a preset), live stream, language-side Function, Synth-controlled generator, or another compatible producer. A motion can override preset values for one session without changing the stored preset. When evaluated, a motion supplies movement for all or part of a figure.
+4. /Figure/: A figure is a complete logical body assembled from one or more ordered motions. It lists its motion sources in the exact order in which their current values are applied to compose each completed figure frame. Only after composition is complete is the frame passed to an avatar.
+5. /Avatar/: An avatar is the rendered destination of a completed figure. It supplies the external avatar identity and final VMC destination. At the Figure -> Avatar boundary, routing metadata is added to the transmitted frame; this does not alter the source clip.
 
 Synthetic and transformed data therefore do not become part of a clip. They are represented as motion sources or processing rules. This permits Functions, Synth-controlled values, live input, and recorded clips to be used independently or combined without weakening the definition of a clip.
 
@@ -90,7 +91,7 @@ In the example, =\walk= is the session-local motion name and =\take1= is the nam
 \walk -> (clip: \take1, rate: 1.0, loop: false, in: 0.0)
 #+end_src
 
-The =in= value is the position, in seconds, at which reading begins inside the clip. It replaces the less precise name =start=. A future scene timeline may use a separate =at= value to specify when a motion begins within a scene.
+The =in= value is the position, in seconds, at which reading begins inside the clip. It replaces the less precise name =start=. A Sequence action uses a separate =at= value to specify when a motion begins on the Sequence timeline.
 
 * Source types
 

@@ -5,6 +5,13 @@
 =Bmc= is the recommended entry point for ordinary sessions. The methods
 below delegate work to the appropriate supporting object.
 
+** Clip and preset terminology
+
+A clip is the complete recorded data. Range, speed, looping, selected bones,
+and target or targets describe how a clip is played. When saved together under
+a name, those playback choices form a preset; they never trim or otherwise
+modify the clip.
+
 ** System control
 :PROPERTIES:
 :CUSTOM_ID: system-control
@@ -532,13 +539,16 @@ Godot listens on =39539=.
 11. =Bmc.sonifyTake(clipName, sonifications, playerName, record, screenCapture, loop, rate, startFrame, endFrame)=
 
     Runs the synchronized take workflow for an existing clip. It
-    optionally records server audio and screen video, plays the ten-note countdown,
+    optionally records server audio and screen video, archives the source clip
+    in the take directory, plays the ten-note countdown,
     begins clip playback with countdown note ten, starts the supplied
     sonification after that note, and cleans up at the clip's end.
     =record= and =screenCapture= default to =false=. Recorded files and
     =.scd= metadata share a =clipName_YYMMDDHHMMSS= basename in one
     directory below the persistent =Bmc.videoRecordingFolder=. The loop,
     rate, and inclusive frame-range settings are saved in the metadata.
+    Existing source files are copied unchanged; unsaved in-memory clips are
+    serialized as new =.scd= snapshots.
     Use =Bmc.stopTake=, =Bmc.cancelTake=, and =Bmc.takeStatus= for control
     and inspection. See [[file:HelpByTopic/RecordingWithSound.md][Recording with sound]] and
     [[file:HelpByTopic/RecordingAudioAndVideo.md][Recording audio and video]].

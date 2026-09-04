@@ -41,7 +41,8 @@ BmcClipPlayer {
 		^compositionRule
 	}
 	rate_ { |newRate|
-		if(newRate <= 0) { Error("BmcClipPlayer rate must be greater than zero").throw };
+		newRate = newRate.asFloat;
+		if(newRate.abs > 100) { Error("BmcClipPlayer rate must be between -100 and 100").throw };
 		rate = newRate;
 	}
 	loop_ { |flag| looping = flag.asBoolean }
@@ -76,8 +77,15 @@ BmcClipPlayer {
 		if(clip.isNil or: { clip.isEmpty }) { Error("BmcClipPlayer has no clip to play").throw };
 		this.stop;
 		startTime = startTime ?? { SystemClock.seconds };
-		currentIndex = startIndex ?? { currentIndex };
+		currentIndex = startIndex ?? {
+			if(rate < 0) { endFrame } { currentIndex }
+		};
 		currentIndex = currentIndex.clip(startFrame, endFrame);
+		if(rate == 0) {
+			this.previewCurrentFrame;
+			this.changed(\end);
+			^this
+		};
 		isPlaying = true;
 		isPaused = false;
 		task = Task({
@@ -86,15 +94,22 @@ BmcClipPlayer {
 			while { isPlaying } {
 				this.send(clip.frameAt(currentIndex));
 				this.changed(\frame, currentIndex, clip.frameAt(currentIndex));
-				if(currentIndex >= endFrame) {
+				if((rate > 0 and: { currentIndex >= endFrame }) or: {
+					rate < 0 and: { currentIndex <= startFrame }
+				}) {
 					if(looping) {
-						currentIndex = startFrame
+						currentIndex = if(rate > 0) { startFrame } { endFrame }
 					} {
 						isPlaying = false
 					};
 				} {
-					waitTime = (clip.timeAt(currentIndex + 1) - clip.timeAt(currentIndex)) / rate;
-					currentIndex = currentIndex + 1;
+					if(rate > 0) {
+						waitTime = (clip.timeAt(currentIndex + 1) - clip.timeAt(currentIndex)) / rate;
+						currentIndex = currentIndex + 1
+					} {
+						waitTime = (clip.timeAt(currentIndex) - clip.timeAt(currentIndex - 1)) / rate.abs;
+						currentIndex = currentIndex - 1
+					};
 					waitTime.max(0.0).wait;
 				};
 			};
@@ -160,11 +175,46 @@ BmcClipPlayer {
 		^this
 	}
 
-	seek { |seconds|
-		var found = 0;
+	previewCurrentFrame {
+		var frame;
 		if(clip.isNil or: { clip.isEmpty }) { ^this };
-		clip.frames.do { |frame, index| if(frame[0] <= seconds) { found = index } };
-		currentIndex = found;
+		frame = clip.frameAt(currentIndex);
+		this.send(frame);
+		this.changed(\frame, currentIndex, frame);
 		^this
 	}
+
+	seekFrame { |frameIndex, preview = true|
+		var wasPlaying = isPlaying, wasPaused = isPaused;
+		if(clip.isNil or: { clip.isEmpty }) { ^this };
+		currentIndex = frameIndex.asInteger.clip(startFrame, endFrame);
+		if(wasPlaying and: { wasPaused.not }) {
+			this.play(currentIndex)
+		} {
+			if(preview) { this.previewCurrentFrame }
+		};
+		^this
+	}
+
+	seekTime { |seconds, preview = true|
+		var low = 0, high, middle, found = 0;
+		if(clip.isNil or: { clip.isEmpty }) { ^this };
+		high = clip.size - 1;
+		while { low <= high } {
+			middle = ((low + high) / 2).floor.asInteger;
+			if(clip.timeAt(middle) <= seconds) {
+				found = middle;
+				low = middle + 1
+			} {
+				high = middle - 1
+			}
+		};
+		^this.seekFrame(found, preview)
+	}
+
+	stepFrames { |amount = 1, preview = true|
+		^this.seekFrame(currentIndex + amount.asInteger, preview)
+	}
+
+	seek { |seconds| ^this.seekTime(seconds) }
 }
