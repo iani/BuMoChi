@@ -10,7 +10,7 @@ The following guidelines summarize the required project structure and recommende
 
 1. Every BuMoChi data root must contain a `Projects` directory alongside `Clips`, `Videos`, and `Sequences`.
 2. Every Godot project offered by BuMoChi must have `project.godot` at the root of its project directory.
-3. Complete Godot Scenes intended for automatic BuMoChi discovery must be saved as `.tscn` files beneath the project's top-level `scenes` directory.
+3. Complete Godot Scenes intended for automatic BuMoChi discovery must be saved either as `.tscn` files directly in the project root or beneath the project's top-level `scenes` directory.
 4. Reusable avatars, props, user-interface components, and subordinate scene resources must be stored outside `scenes` if they should not be presented as complete performance Scenes.
 5. Every VMC-controllable avatar must have a stable BuMoChi identity and a valid VMC listener port.
 6. Avatars that may operate simultaneously must use distinct VMC ports.
@@ -75,7 +75,7 @@ The project-directory name is its stable BuMoChi identifier. The application nam
 A project is valid for BuMoChi Scene work when:
 
 1. `project.godot` exists.
-2. Its top-level `scenes` directory contains at least one loadable `.tscn` resource.
+2. Its root or top-level `scenes` directory contains at least one loadable `.tscn` resource.
 3. Godot can inspect the project without an error.
 4. At least one available Scene contains a BuMoChi-compatible VMC avatar.
 5. Every reported avatar has a non-empty identity and a valid VMC port.
@@ -88,7 +88,16 @@ If these checks fail, the project should remain visible with a clear explanation
 
 Godot does not require a particular project-directory layout. BuMoChi therefore establishes this convention for automatic discovery:
 
-> Every `.tscn` resource beneath a Godot project's top-level `scenes` directory is a candidate complete Scene available to BuMoChi.
+> A `.tscn` resource is a candidate complete Scene when it is stored directly in the Godot project root or anywhere beneath the project's top-level `scenes` directory.
+
+Thus, BuMoChi searches these two locations:
+
+```text
+<project root>/*.tscn
+<project root>/scenes/**/*.tscn
+```
+
+It does not recursively search every project directory. This avoids incorrectly presenting reusable resources from `avatars`, `props`, `addons`, and similar directories as complete performance Scenes.
 
 The search is recursive, so users may organize Scenes into subdirectories:
 
@@ -107,7 +116,7 @@ BuMoChi stores and displays their project-relative Godot resource paths:
 res://scenes/act_1/Opening.tscn
 ```
 
-Complete performance Scenes belong under `scenes`. Reusable avatars, props, user-interface components, and other subordinate scene resources should be stored outside it so they are not mistaken for complete Scenes:
+For a small or existing project, a complete performance Scene may remain directly in the project root. For a project containing several Scenes, the `scenes` directory is the recommended organization. Reusable avatars, props, user-interface components, and other subordinate scene resources should be stored outside `scenes` and outside the project root so they are not mistaken for complete Scenes:
 
 ```text
 avatars/Mother.tscn
@@ -190,4 +199,112 @@ select project
 
 ## Current implementation status
 
-The conventions and milestone in this document are specifications. The current implementation creates `Clips`, `Videos`, and `Sequences`; creation of `Projects`, Godot inspection, project validation, graphical launch, and the persistent Godot controller are the next implementation stages.
+The first filesystem-discovery draft is implemented:
+
+- `Bmc.setDataFolder` creates `Clips`, `Videos`, `Sequences`, and `Projects`.
+- `Bmc.projectDirectory` returns the active `Projects` directory.
+- `Bmc.projects` lists immediate child directories containing `project.godot`.
+- `Bmc.projectScenes(projectName)` lists root-level `.tscn` files and recursively discovered `.tscn` files beneath `scenes`, returning `res://` paths.
+- `Bmc.projectInfo(projectName)` returns the project path, project file, Scene candidates, and preliminary status.
+
+The first headless-inspection draft is also implemented. It asks the installed Godot executable to load every discovered Scene and inspect the resolved node tree:
+
+```supercollider
+Bmc.inspectProject(\VMC_1_Avatar_F, { |json, error, outputPath|
+	if(error.notNil) {
+		error.warn;
+	} {
+		json.postln;
+		("Full inspection saved at: " ++ outputPath).postln;
+	};
+});
+```
+
+For editor code and other programmatic use, request native SuperCollider data instead of JSON:
+
+```supercollider
+Bmc.inspectProjectData(\VMC_1_Avatar_F, { |data, error|
+	if(error.notNil) {
+		error.warn;
+	} {
+		data[\scenes].do { |scene|
+			[scene[\path], scene[\avatarCandidates]].postln;
+		};
+	};
+});
+```
+
+`data` is an Event containing Events and Arrays, so the Scene Editor can use it directly without parsing JSON.
+
+## Scene Editor project browser draft
+
+With the pipeline and Godot service running, open the first Scene Editor draft:
+
+```supercollider
+Bmc.sceneEditor;
+```
+
+The initial browser shows Godot project folders, their candidate Scenes, and the avatars discovered in the selected Scene. Filesystem results appear immediately. The editor then runs headless inspection and changes its status to `Godot verified` when the resolved Scene data arrives.
+
+Select an avatar to review its inferred target name. Edit **Target name** and press **Confirm target name** to establish the readable name that Presets will use. The name must be non-empty and unique within the Scene. The current prototype retains confirmations while its window remains open; saving them into a BuMoChi Scene file will be added with Scene persistence.
+
+The names currently offered to Preset playback are available programmatically:
+
+```supercollider
+Bmc.sceneEditorTargets;
+```
+
+Ports remain internal routing information and are not used as Preset target identities. This is the first implemented section of the larger Scene Editor specification; Clip/Preset integration and saved BuMoChi Scene editing remain subsequent work.
+
+Select a verified Scene and press **Play selected Scene** to launch it graphically through the helper service. The editor monitors two separate states:
+
+- **Godot Scene running** means the launched Godot process is still alive.
+- **VMC listening** means that process has opened every VMC UDP port expected by the detected avatars.
+
+The second indicator is the meaningful readiness check for animation playback. A Scene can be running while its VMC setup has failed to listen.
+
+### Initial single-project runtime rule
+
+For the current working implementation, the helper service owns at most one graphical Godot project at a time. Playing another Scene closes the previously service-launched Godot project first, including when the new Scene belongs to a different project. The service then checks the new Scene's expected VMC ports. If an unrelated process still owns one of them, launch is refused and the editor reports the conflicting port rather than starting a second receiver with ambiguous routing.
+
+This is an intentional initial limitation, consistent with a Sequence belonging to one Godot project. Supporting several simultaneous Godot projects may be considered later, but would require explicit cross-project port allocation and lifecycle controls.
+
+Inspection is asynchronous so that the SuperCollider application remains responsive. The callback receives the JSON report, an error string (or `nil`), and the temporary report path. The report contains loadability results, inferred avatar candidates, tracker names, and VMC ports. It also distinguishes Scene-local VMC tracker nodes from the project-wide `VmcPlugin` autoload used by the single-avatar templates.
+
+The Godot inspector itself has been verified against the three current template projects. On macOS, Godot must not be launched directly by the already-running `sclang` process: Apple's process fork-safety rules may terminate it. BuMoChi therefore uses a small, independently started local service as the bridge between SuperCollider and Godot.
+
+The normal BuMoChi pipeline launcher now starts and supervises this service together with the encoder and decoder:
+
+```sh
+./PipelineApplications/start_bumochi_pipeline.sh
+```
+
+Pressing Control-C stops every service owned by that launcher. If an independently started Godot service is already running, the pipeline reuses it and does not claim ownership of it. Use `--no-godot-service` only when inspection and later Godot-control features are intentionally not needed.
+
+For inspection-only development, the service can still be started separately:
+
+```sh
+./PipelineApplications/start_bumochi_godot_service.sh
+```
+
+When working from Emacs, either run the normal pipeline launcher or evaluate `Bmc.godotServiceStartPath` to obtain the full standalone-service path. Emacs remains fully compatible because it continues to communicate only with `sclang`; the service owns Godot processes.
+
+Keep that Terminal open. It should print `BuMoChi Godot service ready`. In SuperCollider, verify the connection and then inspect:
+
+```supercollider
+Bmc.godotServiceReady; // should return true
+
+Bmc.inspectProject(\VMC_1_Avatar_F, { |json, error, outputPath|
+	if(error.notNil) { error.warn } { json.postln };
+});
+```
+
+The first service protocol implements `inspect`. The service boundary is intentionally reusable: subsequent milestones can add graphical project launch and communicate with a persistent Godot controller for Scene switching and runtime status. Scene switching itself will require that controller inside compatible Godot projects; the inspection service alone does not yet perform it.
+
+`Bmc.godotExecutable` shows the executable used for inspection. On macOS it defaults to `/Applications/Godot.app/Contents/MacOS/Godot`. Set another installation explicitly when needed:
+
+```supercollider
+Bmc.godotExecutable = "/path/to/Godot";
+```
+
+Avatar discovery remains deliberately conservative. Explicit `bumochi_avatar_name` and `bumochi_vmc_port` metadata take precedence; otherwise the draft infers candidates from `XRNode3D` tracker assignments and reports their confidence as `inferred`. Full compatibility validation, graphical launch, and the persistent Godot controller remain later milestones.

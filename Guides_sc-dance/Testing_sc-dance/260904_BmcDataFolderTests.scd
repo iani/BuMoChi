@@ -15,8 +15,12 @@ protect {
     checkDirectory.(testRoot +/+ "Clips");
     checkDirectory.(testRoot +/+ "Videos");
     checkDirectory.(testRoot +/+ "Sequences");
+    checkDirectory.(testRoot +/+ "Projects");
     if(Bmc.sequenceDirectory != (testRoot +/+ "Sequences").standardizePath) {
         Error("Bmc.sequenceDirectory does not follow Bmc.setDataFolder").throw
+    };
+    if(Bmc.projectDirectory != (testRoot +/+ "Projects").standardizePath) {
+        Error("Bmc.projectDirectory does not follow Bmc.setDataFolder").throw
     };
     "Bmc data-folder tests passed".postln;
 } {

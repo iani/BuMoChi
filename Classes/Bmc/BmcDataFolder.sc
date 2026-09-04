@@ -37,6 +37,7 @@ BmcDataFolder {
 	*clips { ^this.root +/+ "Clips" }
 	*videos { ^this.root +/+ "Videos" }
 	*sequences { ^this.root +/+ "Sequences" }
+	*projects { ^this.root +/+ "Projects" }
 
 	*ensureDirectory { |path|
 		if(File.exists(path).not and: { File.mkdir(path).not }) {
@@ -53,6 +54,7 @@ BmcDataFolder {
 		this.ensureDirectory(rootDirectory +/+ "Clips");
 		this.ensureDirectory(rootDirectory +/+ "Videos");
 		this.ensureDirectory(rootDirectory +/+ "Sequences");
+		this.ensureDirectory(rootDirectory +/+ "Projects");
 		^rootDirectory
 	}
 

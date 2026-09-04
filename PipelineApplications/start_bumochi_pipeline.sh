@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# Start and supervise the BuMoChi encoder, decoder, and (optionally)
-# OscGroupClient. Run this script from any directory.
+# Start and supervise the BuMoChi encoder, decoder, Godot helper service,
+# and (optionally) OscGroupClient. Run this script from any directory.
 
 set -u
 
@@ -31,6 +31,7 @@ PASSWORD=bmc123
 AVATAR=Ishidomaru
 SOURCE_NAME="$(hostname -s 2>/dev/null || hostname)-xr-animator"
 USE_OSCGROUPS=0
+USE_GODOT_SERVICE=1
 VERBOSE=0
 DRY_RUN=0
 LOG_DIR=${BUMOCHI_LOG_DIR:-"${TMPDIR:-/tmp}/bumochi-pipeline-${USER:-user}"}
@@ -59,6 +60,7 @@ OscGroupClient options:
   --server-port PORT     OSCGroups server port (default: 22242)
   --local-port PORT      Unique local network-facing client port (default: 22243)
   --no-oscgroups         Force local-only startup
+  --no-godot-service     Do not start the Godot inspection/control service
 
 Pipeline options:
   --avatar NAME          Encoder avatar name (default: Ishidomaru)
@@ -179,6 +181,7 @@ while [ "$#" -gt 0 ]; do
     --oscgroups-port) need_value "$@"; OSCGROUPS_INPUT_PORT=$2; shift 2 ;;
     --log-dir) need_value "$@"; LOG_DIR=$2; shift 2 ;;
     --no-oscgroups) USE_OSCGROUPS=0; shift ;;
+    --no-godot-service) USE_GODOT_SERVICE=0; shift ;;
     --verbose) VERBOSE=1; shift ;;
     --dry-run) DRY_RUN=1; shift ;;
     -h|--help) usage; exit 0 ;;
@@ -189,6 +192,12 @@ done
 command -v "$PYTHON" >/dev/null 2>&1 || die "Python command not found: $PYTHON"
 [ -f "$APP_DIR/BunrakuOSCEncoder.py" ] || die "BunrakuOSCEncoder.py is missing"
 [ -f "$APP_DIR/BunrakuOSCDecoder.py" ] || die "BunrakuOSCDecoder.py is missing"
+GODOT_SERVICE="$APP_DIR/bmc_godot_service.py"
+GODOT_SERVICE_DIR=/tmp/bumochi-godot-service
+GODOT_SERVICE_READY="$GODOT_SERVICE_DIR/service.ready"
+if [ "$USE_GODOT_SERVICE" -eq 1 ]; then
+  [ -f "$GODOT_SERVICE" ] || die "Godot helper service is missing: $GODOT_SERVICE"
+fi
 
 check_port "encoder port" "$ENCODER_PORT"
 check_port "Bmc port" "$BMC_PORT"
@@ -219,6 +228,24 @@ if [ "$DRY_RUN" -eq 0 ]; then
     port_must_be_free "OscGroupClient local network" "$LOCAL_TO_REMOTE_PORT"
   fi
   trap stop_all INT TERM EXIT
+fi
+
+if [ "$USE_GODOT_SERVICE" -eq 1 ]; then
+  set -- "$PYTHON" -u "$GODOT_SERVICE" --spool-dir "$GODOT_SERVICE_DIR"
+  if [ "$DRY_RUN" -eq 1 ]; then
+    print_command BmcGodotService "$@"
+  else
+    existing_service_pid=
+    if [ -f "$GODOT_SERVICE_READY" ]; then
+      IFS= read -r existing_service_pid < "$GODOT_SERVICE_READY" || existing_service_pid=
+    fi
+    if [ -n "$existing_service_pid" ] && kill -0 "$existing_service_pid" 2>/dev/null; then
+      printf 'Using existing BmcGodotService PID %s\n' "$existing_service_pid"
+    else
+      mkdir -p "$LOG_DIR" || die "cannot create log directory: $LOG_DIR"
+      start_process BmcGodotService "$LOG_DIR/godot-service.log" "$@"
+    fi
+  fi
 fi
 
 set -- "$PYTHON" -u "$APP_DIR/BunrakuOSCDecoder.py" \

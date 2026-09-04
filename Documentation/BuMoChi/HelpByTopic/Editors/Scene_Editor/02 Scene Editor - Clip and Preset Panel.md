@@ -34,6 +34,10 @@ Bmc.sceneEditor(\performanceA, \opening);
 
 The embedded preview should use a dedicated player name such as `\sceneEditor`, so it does not unexpectedly reconfigure the default player or another performance playback. `Bmc.clipEditor` remains an optional direct entry point for inspecting Clips and testing Presets without providing the complete Scene-design workflow.
 
+> **Implementation draft (2026-09-04):** `Bmc.sceneEditor` now groups project, Godot Scene, target identity, launch, and listener-status controls into the upper `ProjectView`. Its lower half lists existing Clips and their Presets. **Add selected Preset to Scene** creates an in-memory assignment to the selected Scene and currently selected avatar target; **Play Preset** prepares that named target with its inspected VMC port and starts playback; **Stop Preset** stops the Scene Editor's Preset players. These assignments remain provisional until Scene persistence is implemented.
+
+The interface uses self-describing two-state buttons: **Play selected Scene / Stop selected Scene**, **Animate from Camera / Stop Camera Animation**, and **Record clip / Stop recording**. Camera animation targets the currently selected Scene avatar. Stopping it mutes that camera source only after raw input publication, so the independent **Camera data on** indicator and Clip recording continue to work. Recording requires a new Clip name; stopping it saves the Clip and refreshes the Clip list. Godot-running, VMC-listening, and camera-data checkboxes are status indicators rather than action controls.
+
 ## Minimum useful editor window
 
 The initial editor should contain:

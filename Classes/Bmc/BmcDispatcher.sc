@@ -1,7 +1,7 @@
 BmcDispatcher {
 	var <port, <oscKey, <isRunning = false, <avatars, <destinations;
 	var <received = 0, <rejected = 0, <dropped = 0, <lastReceivedTime, lastFrameIDs;
-	var <sourceRoutes, <lastSources;
+	var <sourceRoutes, <lastSources, <ignoredSources;
 
 	*new { |port = 57130| ^super.new.init(port) }
 
@@ -13,6 +13,7 @@ BmcDispatcher {
 		lastFrameIDs = IdentityDictionary.new;
 		sourceRoutes = IdentityDictionary.new;
 		lastSources = IdentityDictionary.new;
+		ignoredSources = Set.new;
 		^this
 	}
 
@@ -55,6 +56,8 @@ BmcDispatcher {
 		^avatar
 	}
 	removeSourceRoute { |sourceName| ^sourceRoutes.removeAt(sourceName.asSymbol) }
+	ignoreSource { |sourceName| ignoredSources.add(sourceName.asSymbol); ^sourceName.asSymbol }
+	allowSource { |sourceName| ignoredSources.remove(sourceName.asSymbol); ^sourceName.asSymbol }
 	lastSourceFor { |avatarName| ^lastSources[avatarName.asSymbol] }
 
 	receive { |message, time, addr|
@@ -84,6 +87,9 @@ BmcDispatcher {
 		destinations.do { |destination|
 			if(destination.respondsTo(\receiveFrame)) { destination.receiveFrame(message, time) };
 		};
+		// Muting live animation happens after raw-frame publication so camera
+		// recording and activity monitoring continue to work independently.
+		if(ignoredSources.includes(sourceName)) { ^true };
 		routedAvatar = sourceRoutes[sourceName];
 		if(routedAvatar.notNil) {
 			typed = BmcFrame.fromOSC(message).withoutRoute.withAvatar(routedAvatar.avatarName);
@@ -100,7 +106,8 @@ BmcDispatcher {
 		^(running: isRunning, port: port, received: received,
 			rejected: rejected, dropped: dropped, avatars: avatars.size,
 			lastReceivedTime: lastReceivedTime,
-			sourceRoutes: sourceRoutes.collect(_.avatarID))
+			sourceRoutes: sourceRoutes.collect(_.avatarID),
+			ignoredSources: ignoredSources.asArray)
 	}
 
 	inputActive { |timeout = 0.5|

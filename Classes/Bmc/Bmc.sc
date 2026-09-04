@@ -8,14 +8,14 @@
 Bmc {
 	classvar <boneNames;
 	classvar <dispatcher, <recorder, <players, <library, <avatars, <wires, <modifiers;
-	classvar <soundFileLoader, <takeSonifier, <presetLibrary, <clipEditorWindow;
+	classvar <soundFileLoader, <takeSonifier, <presetLibrary, <clipEditorWindow, <sceneEditorWindow;
 	classvar <defaultAvatar, recordingName, recordingFormat, recorderPublisher;
 	classvar <defaultXrAnimatorOutputPort, <defaultInputPort, <defaultDecoderPort;
 	classvar <defaultAvatarID, <defaultAvatarName, <defaultAvatarVmcPort;
 	classvar <scenes, <currentScene;
 	classvar <decoderPort, <forwardDecoder;
 	classvar <compositor;
-	classvar <cameraSource, <cameraTarget;
+	classvar <cameraSource, <cameraTarget, <cameraAnimationActive = false;
 
 	*initClass {
 		boneNames = #[
@@ -68,6 +68,7 @@ Bmc {
 		currentScene = nil;
 		cameraSource = nil;
 		cameraTarget = defaultAvatarID;
+		cameraAnimationActive = false;
 		takeSonifier = BmcTakeSonifier(Server.default);
 	}
 
@@ -345,7 +346,9 @@ Bmc {
 			this.removeMotionSourceRoute(cameraSource)
 		};
 		cameraSource = sourceName.asSymbol;
+		dispatcher.allowSource(cameraSource);
 		this.routeMotionSource(cameraSource, cameraTarget);
+		cameraAnimationActive = true;
 		^cameraSource
 	}
 	*cameraTarget_ { |avatarName|
@@ -358,14 +361,26 @@ Bmc {
 			// source name is unknown. The default avatar needs no explicit route:
 			// direct avatar matching receives it and enables later discovery.
 			if(cameraTarget == defaultAvatarID) {
+				cameraAnimationActive = true;
 				"Bmc: waiting for the first camera frame for %".format(defaultAvatarID).postln;
 				^cameraTarget
 			};
 			Error("Bmc has not yet received a camera source for %. Set Bmc.cameraSource_ first."
 				.format(defaultAvatarID)).throw
 		};
+		dispatcher.allowSource(cameraSource);
 		this.routeMotionSource(cameraSource, cameraTarget);
+		cameraAnimationActive = true;
 		^cameraTarget
+	}
+	*stopCameraAnimation {
+		cameraSource = cameraSource ?? { dispatcher.lastSourceFor(defaultAvatarID) };
+		if(cameraSource.notNil) {
+			dispatcher.ignoreSource(cameraSource);
+			avatars.values.asSet.do { |avatar| avatar.removeSourcesFor(cameraSource) }
+		};
+		cameraAnimationActive = false;
+		^this
 	}
 
 	*sendOutput { |message|
@@ -511,6 +526,25 @@ Bmc {
 	}
 	*dataFolder { ^BmcDataFolder.root }
 	*sequenceDirectory { ^BmcDataFolder.sequences }
+	*projectDirectory { ^BmcDataFolder.projects }
+	*projects { ^BmcGodotProjectLibrary.projectNames }
+	*projectInfo { |name| ^BmcGodotProjectLibrary.projectInfo(name) }
+	*projectScenes { |name| ^BmcGodotProjectLibrary.scenePaths(name) }
+	*inspectProject { |name, action| ^BmcGodotInspector.inspect(name, action) }
+	*inspectProjectData { |name, action| ^BmcGodotInspector.inspectData(name, action) }
+	*playGodotScene { |project, scenePath, ports, action|
+		^BmcGodotInspector.launchScene(project, scenePath, ports, action)
+	}
+	*godotSceneStatus { |project, scenePath, ports, action|
+		^BmcGodotInspector.runtimeStatus(project, scenePath, ports, action)
+	}
+	*stopGodotScene { |project, scenePath, action|
+		^BmcGodotInspector.stopScene(project, scenePath, action)
+	}
+	*godotServiceReady { ^BmcGodotInspector.serviceReady }
+	*godotServiceStartPath { ^BmcGodotInspector.serviceStartPath }
+	*godotExecutable { ^BmcGodotInspector.godotExecutable }
+	*godotExecutable_ { |path| ^BmcGodotInspector.godotExecutable_(path) }
 	*setDataFolder { |path|
 		if(path.notNil) {
 			BmcDataFolder.root_(path);
@@ -557,6 +591,16 @@ Bmc {
 		if(name.notNil) { library.select(name) };
 		clipEditorWindow = BmcClipEditor(library, presetLibrary, name ?? { library.currentName });
 		^clipEditorWindow
+	}
+
+	*sceneEditor {
+		if(sceneEditorWindow.notNil) { sceneEditorWindow.close };
+		sceneEditorWindow = BmcSceneEditor.new;
+		^sceneEditorWindow
+	}
+	*sceneEditorTargets {
+		if(sceneEditorWindow.isNil) { ^#[] };
+		^sceneEditorWindow.targetNames
 	}
 	*clipPresets { |clipName| ^presetLibrary.names(clipName ?? { library.currentName }) }
 	*clipPreset { |clipName, presetName| ^presetLibrary.at(clipName, presetName) }

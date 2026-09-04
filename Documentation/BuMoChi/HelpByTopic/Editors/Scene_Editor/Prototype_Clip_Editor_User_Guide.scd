@@ -11,8 +11,8 @@
 // 1. Set the BuMoChi data folder
 //
 // Run this line to open a folder-selection dialog. Select the folder that
-// should contain all BuMoChi data. BuMoChi creates the Clips, Videos, and
-// Sequences subfolders there when necessary.
+// should contain all BuMoChi data. BuMoChi creates the Clips, Videos,
+// Sequences, and Projects subfolders there when necessary.
 Bmc.setDataFolder;
 
 // Wait until the folder dialog has closed before running the verification
@@ -22,11 +22,12 @@ Bmc.setDataFolder;
 // folder on your computer or external disk.
 Bmc.setDataFolder("/Volumes/MyExternalDisk/BuMoChi_Data");
 
-// Inspect the currently selected root and its three standard locations.
+// Inspect the currently selected root and its four standard locations.
 Bmc.dataFolder.postln;
 Bmc.clipDirectory.postln;
 Bmc.videoRecordingFolder.postln;
 Bmc.sequenceDirectory.postln;
+Bmc.projectDirectory.postln;
 
 //: Test the selected data folder
 //
@@ -37,6 +38,7 @@ var root = Bmc.dataFolder;
 var clips = root +/+ "Clips";
 var videos = root +/+ "Videos";
 var sequences = root +/+ "Sequences";
+var projects = root +/+ "Projects";
 var checkDirectory = { |path, label|
 	if(File.exists(path).not) {
 		Error("FAIL: % directory was not created: %".format(label, path)).throw
@@ -51,6 +53,7 @@ checkDirectory.(root, "BuMoChi data root");
 checkDirectory.(clips, "Clips");
 checkDirectory.(videos, "Videos");
 checkDirectory.(sequences, "Sequences");
+checkDirectory.(projects, "Projects");
 
 if(Bmc.clipDirectory != clips.standardizePath) {
 	Error("FAIL: Bmc.clipDirectory does not use the selected data folder").throw
@@ -61,11 +64,15 @@ if(Bmc.videoRecordingFolder != videos.standardizePath) {
 if(Bmc.sequenceDirectory != sequences.standardizePath) {
 	Error("FAIL: Bmc.sequenceDirectory does not use the selected data folder").throw
 };
+if(Bmc.projectDirectory != projects.standardizePath) {
+	Error("FAIL: Bmc.projectDirectory does not use the selected data folder").throw
+};
 
 "PASS: Bmc data folder setup is complete".postln;
 )
 
-//: Changing the data folder does not move existing clips, videos, or Sequences.
+//: Changing the data folder does not move existing Clips, Videos, Sequences,
+// or Projects.
 // Move any existing data yourself if it should become available in the new location.
 
 // 2. Open the Clip Editor

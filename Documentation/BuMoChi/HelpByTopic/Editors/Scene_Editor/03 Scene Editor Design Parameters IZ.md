@@ -1,14 +1,15 @@
-# 1. Use a single BuMochi data folder for clips, videos, and Sequences
+# 1. Use a single BuMochi data folder for Clips, Videos, Sequences, and Projects
 
-> **Implementation comment (2026-09-04):** This is now the storage rule being implemented. `Bmc.dataFolder` returns the root and `Bmc.setDataFolder(path)` sets it; calling `Bmc.setDataFolder` without a path opens the folder chooser. The root contains `Clips`, `Videos`, and `Sequences`. Changing the root updates the clip library and video-take destination; `Bmc.sequenceDirectory` returns the selected Sequence directory. Existing data is not moved automatically.
+> **Implementation comment (2026-09-04):** This is now the implemented storage rule. `Bmc.dataFolder` returns the root and `Bmc.setDataFolder(path)` sets it; calling `Bmc.setDataFolder` without a path opens the folder chooser. The root contains `Clips`, `Videos`, `Sequences`, and `Projects`. Changing the root updates the clip library and video-take destination; `Bmc.sequenceDirectory` and `Bmc.projectDirectory` return the corresponding directories. Existing data is not moved automatically.
 
-Use a single BuMochi data folder for Clips, Videos, and Sequences, as follows:
+Use a single BuMochi data folder for Clips, Videos, Sequences, and Projects, as follows:
 
 BuMoChi_Data 
 Subfolders:
 	Clips
 	Videos
 	Sequences
+	Projects
 
 The default location of BuMoChi_Data would be in Platform.userAppSupportDir +/+ "BuMoChi_Data".
 The user should be able to set his custom location with a file dialogue for selecting a folder, using method:
@@ -17,9 +18,9 @@ Bmc.setDataFolder
 
 As remarked before, it is preferable to keep this location on a separate memory location, which has dedicated space for saving the large amounts of data required by videos.
 
-Keeping the clips on an external disk presents the disadvantage that one depends on having this external disk attached to work with clips. However, since each video recording folder contains metadata regarding which clips it uses, it makes sense to have the clips always available in a standardized location relative to the video recordings folder. Sequences likewise refer to the Clips and Scenes they coordinate. That is why Clips, Videos, and Sequences are subdirectories of BuMoChi_Data.
+Keeping the clips on an external disk presents the disadvantage that one depends on having this external disk attached to work with clips. However, since each video recording folder contains metadata regarding which clips it uses, it makes sense to have the clips always available in a standardized location relative to the video recordings folder. Sequences likewise refer to the Clips and Scenes they coordinate, and Scenes refer to Godot projects. That is why Clips, Videos, Sequences, and Projects are subdirectories of BuMoChi_Data.
 
-When a new data folder is chosen, Bmc should check whether the Clips, Videos, and Sequences subdirectories are present. It should create these directories if needed.
+When a new data folder is chosen, Bmc checks whether the Clips, Videos, Sequences, and Projects subdirectories are present and creates them when needed.
 
 # 2. Clip and Preset panel of the Scene Editor
 
