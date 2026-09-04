@@ -61,7 +61,7 @@ Open a Terminal window:
 
 *** Basic version
 
-Use this for simplicity. SuperCollider must embed the correct destination port in every protocol-version-2 frame, either from the active session definition or from manually configured Bmc avatars.
+Use this for simplicity. SuperCollider must embed the correct destination port in every protocol-version-2 frame, either from the active scene definition or from manually configured Bmc avatars.
 
 #+begin_src sh
 BunrakuOSCDecoder \

@@ -14,7 +14,6 @@
 The value of each setting is stored as compile string. 
 
 - The Adapter mechanism is used to notify any dependant objects when a Setting instance changes, for example, when adding, deleting, renaming, or changing the contents of a Setting instance. 
-	- When a Setting instance, the Setting class runs `this.changed(\modified, sessionName)`. 
-	- When a new Settings instance is created, the Setting class runs   `this.changed(\addSession, sessionName)`.
-	- When a new Settings instance is removed, the Setting class runs   `this.changed(\deleteSession, sessionName)`.
-
+	- When a Setting instance, the Setting class runs `this.changed(\modified, settingsName)`.
+	- When a new Settings instance is created, the Setting class runs   `this.changed(\addSettings, settingsName)`.
+	- When a new Settings instance is removed, the Setting class runs   `this.changed(\deleteSettings, settingsName)`.

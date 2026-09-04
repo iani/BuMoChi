@@ -8,7 +8,7 @@ This document explains how motion-capture sources become completed avatar motion
 :PROPERTIES:
 :CUSTOM_ID: core-principle-distributed-sources-local-synthesis
 :END:
-Collaborating workstations exchange motion-source frames, not finished avatar animation. Each workstation receives its own local source directly and receives the other performers' sources through OSCGroups. Its local SuperCollider/Bmc process then evaluates the same session definition, constructs all figures, assigns the completed figures to avatars, and sends the complete scene to its own Godot renderer.
+Collaborating workstations exchange motion-source frames, not finished avatar animation. Each workstation receives its own local source directly and receives the other performers' sources through OSCGroups. Its local SuperCollider/Bmc process then evaluates the same scene definition, constructs all figures, assigns the completed figures to avatars, and sends the complete scene to its own Godot renderer.
 
 Consequently, Workstation A and Workstation B receive the same source material and independently synthesize the same intended animation. The OSCGroups network carries route-free version-1 source frames. Routed version-2 completed figure frames, decoder output, and Godot VMC data remain local to each workstation.
 
@@ -83,7 +83,7 @@ flowchart LR
 4. The server forwards the network copy to Client B. It normally does not echo that frame to Client A because Bmc A already received its direct local copy.
 5. Client B delivers the remote =PerformerA= frame to Bmc B on =57130=.
 6. Bmc A and Bmc B now both possess the latest =PerformerA= source data. The same process occurs in the opposite direction for =PerformerB=.
-7. Each Bmc independently applies its local session, motion, and figure-composition rules to the two sources and produces completed figure frames.
+7. Each Bmc independently applies its local scene, motion, and figure-composition rules to the two sources and produces completed figure frames.
 8. At the figure-to-avatar boundary, Bmc assigns the final avatar identity and embeds the intended Godot VMC destination port.
 9. Each Bmc sends its routed completed frames to its own decoder on =39538=. Each decoder reconstructs VMC and forwards it only to its local Godot receivers.
 
@@ -93,7 +93,7 @@ flowchart LR
 :END:
 The source identity describes where motion data came from. It must remain stable and unique across the collaboration so that every Bmc can distinguish =PerformerA= from =PerformerB= even though both arrive on port =57130=.
 
-A figure is the locally composed logical body. It may use one source, combine several sources, or selectively layer body parts from different motions. Figure construction is performed independently on every workstation according to the shared session definition.
+A figure is the locally composed logical body. It may use one source, combine several sources, or selectively layer body parts from different motions. Figure construction is performed independently on every workstation according to the shared scene definition.
 
 An avatar is the final rendered destination of a completed figure. The avatar assignment determines the outgoing identity and VMC port, but it does not change or become stored in the underlying source clip. In this example the completed Ishidomaru figure is routed to =39539= and the completed Mother figure is routed to =39540= on both workstations.
 
@@ -101,7 +101,7 @@ An avatar is the final rendered destination of a completed figure. The avatar as
 :PROPERTIES:
 :CUSTOM_ID: settings-that-must-agree
 :END:
-Both workstations must use the same session/composition definition, source-name expectations, figure construction rules, avatar assignments, Godot scene, and avatar-to-port map. They may reuse the same local UDP port numbers because the ports belong to different computers. OSCGroups usernames and encoder source identities must remain unique.
+Both workstations must use the same Scene definition, including its source-name expectations, figure construction rules, avatar assignments, Godot scene resource, and avatar-to-port map. They may reuse the same local UDP port numbers because the ports belong to different computers. OSCGroups usernames and encoder source identities must remain unique.
 
 | Meaning                     | Workstation A     | Workstation B     |
 |-----------------------------+-------------------+-------------------|

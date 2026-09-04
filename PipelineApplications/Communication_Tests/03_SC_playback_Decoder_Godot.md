@@ -40,17 +40,17 @@ Bunraku-to-VMC decoding, and Godot rendering without XR Animator or OSCGroups.
 The avatar should perform a deterministic movement for approximately five
 seconds.
 
-## Procedure B — recorded Bunraku session
+## Procedure B — recorded Bunraku Clip
 
 After Procedure A succeeds, load the SuperCollider file that defines your
 recorded-Bunraku playback helper and ensure its destination is
-`NetAddr("127.0.0.1", 39538)`. Then play the full session recording with:
+`NetAddr("127.0.0.1", 39538)`. Then play the full Clip recording with:
 
 ```supercollider
-~playRecordedBunraku.(OscRecorder.default.sessionData);
+~playRecordedBunraku.(OscRecorder.default.recordedData);
 ```
 
-Use `sessionData`, not `data`: `data` contains only the current output file and
+Use `recordedData`, not `data`: `data` contains only the current output file and
 is reset whenever `OscRecorder` opens a new file.
 
 For older recordings in the legacy Avatar message layout, the compatibility
@@ -75,7 +75,7 @@ helper in `BunrakuPipelineTests.scd` can be used:
 - **Decoder rejects frames:** inspect the outgoing OSC address. It must be
   `/bunraku/vmc/frame`, protocol version `1`.
 - **Playback is empty or incomplete:** check
-  `OscRecorder.default.sessionData.size`, then inspect its first and last
+  `OscRecorder.default.recordedData.size`, then inspect its first and last
   elements.
 - **Port unavailable:** run `lsof -nP -iUDP:39538` and stop or reconfigure the
   listed process.

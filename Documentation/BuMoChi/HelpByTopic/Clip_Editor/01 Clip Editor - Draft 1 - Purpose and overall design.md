@@ -165,7 +165,7 @@ The preset should also retain enough source identity to detect mistakes after a 
 
 ## Storage
 
-Preset definitions should be saved as human-readable `.scd` data using `asCompileString`, following the approach already used by `BmcSession`. They should live with the data belonging to their source clip beneath `BuMoChi_Data/Clips`.
+Preset definitions should be saved as human-readable `.scd` data using `asCompileString`, following the approach already used by `BmcScene`. They should live with the data belonging to their source clip beneath `BuMoChi_Data/Clips`.
 
 ```supercollider
 BuMoChi_Data/Clips/ishidomaru1/Presets
@@ -218,7 +218,7 @@ Bmc.playClip(
 );
 ```
 
-Scene and session definitions should eventually accept a clip together with a preset name. The preset supplies the source range, speed, loop behavior, bone selection, targets, and processing code. A scene may explicitly override these values for one performance without modifying the stored preset.
+Scene definitions should eventually accept a clip together with a preset name. The preset supplies the source range, speed, loop behavior, bone selection, targets, and processing code. A scene may explicitly override these values for one performance without modifying the stored preset.
 
 ## Validation and safety
 

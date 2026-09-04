@@ -2,7 +2,7 @@
 :PROPERTIES:
 :CUSTOM_ID: bmc-method-reference
 :END:
-=Bmc= is the recommended entry point for ordinary sessions. The methods
+=Bmc= is the recommended entry point for ordinary BuMoChi work. The methods
 below delegate work to the appropriate supporting object.
 
 ** Clip and preset terminology
@@ -80,7 +80,7 @@ Godot listens on =39539=.
 
 6. =Bmc.reset=
 
-   Stops the current session, replaces the working clip library,
+   Stops the current working environment, replaces the working clip library,
    avatars, recorder, player, dispatcher, and wires with fresh objects,
    restores the Ishidomaru/=39539= default route, and restarts the
    receiver on =57130=. Unsaved in-memory clips are lost, so use it

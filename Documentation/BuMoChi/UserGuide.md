@@ -62,9 +62,9 @@ The components have different jobs. XR Animator observes a person, and the encod
 
 ### Distributed sources, local synthesis
 
-BuMoChi uses a distributed-sources, local-synthesis model. What travels between collaborators is motion source material, not a finished rendered animation. Every workstation receives its own motion source directly and remote motion sources through OSCGroups. Its local SuperCollider/BuMoChi process then creates the complete animation scene from those inputs, using the same session definition as the other workstations. Finally, it routes the completed avatars through its local decoder to its local Godot scene.
+BuMoChi uses a distributed-sources, local-synthesis model. What travels between collaborators is motion source material, not a finished rendered animation. Every workstation receives its own motion source directly and remote motion sources through OSCGroups. Its local SuperCollider/BuMoChi process then creates the complete animation from those inputs, using the same Scene definition as the other workstations. Finally, it routes the completed avatars through its local decoder to its local Godot scene resource.
 
-This separation is fundamental. OSCGroups is the shared source-data layer; BuMoChi is the local animation synthesis layer; Godot is the local renderer. Bmc's processed routed frames never return to OSCGroups. When collaborators load the same session and Godot scene, they synthesize and render the same defined performance independently, in the same way that sc-hacks-redux shared control sources while each workstation synthesized sound locally.
+This separation is fundamental. OSCGroups is the shared source-data layer; BuMoChi is the local animation synthesis layer; Godot is the local renderer. Bmc's processed routed frames never return to OSCGroups. When collaborators load the same Scene, they synthesize and render the same defined performance independently, in the same way that sc-hacks-redux shared control sources while each workstation synthesized sound locally.
 
 ### SuperCollider and BuMoChi
 
@@ -159,7 +159,7 @@ You may later replace the reference character or project. As long as the new God
 
 ## 3. Hello world: capture, record, and replay movement
 
-This first example runs everything on one computer and deliberately omits OSCGroups. It demonstrates the smallest useful BuMoChi session.
+This first example runs everything on one computer and deliberately omits OSCGroups. It demonstrates the smallest useful BuMoChi Scene.
 
 ### Port map
 

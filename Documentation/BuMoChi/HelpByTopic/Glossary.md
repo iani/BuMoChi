@@ -2,21 +2,15 @@
 title: BuMoChi Terminology Glossary
 ---
 
-This document defines the principal terms used when recording, generating, composing, and rendering motion with BuMoChi. The detailed design discussion is in [Session Data Objects and Terminology](SessionDataObjectsAndTerminology.org).
-
-# Session
-
-A session creates the motion of one or more avatars during live coding, rehearsal, or performance. It does this by replaying recorded motion, receiving live motion, generating synthetic motion, and combining these sources into completed motion frames for its figures. When the session is activated and performed, it routes each resulting figure stream to the corresponding avatar in Godot. A session can therefore create an animation containing several avatars, each moving independently according to its assigned motion data.
-
-A session definition defines motion sources, motions, figures, avatars, and their routes. A clip is immutable recorded motion data. A motion configures a clip, live stream, function, or Synth-controlled generator for use in a session. A figure evaluates and layers ordered motions to produce complete frames. An avatar assigns external identity and a VMC destination to a completed figure. Routing information is added only at this final boundary and is not stored in clips.
-
-Each session is saved as a separate named `.scd` file. Loaded sessions are registered by name in the in-memory `Bmc.sessions` dictionary.
+This document defines the principal terms used when recording, generating, composing, and rendering motion with BuMoChi. The detailed design discussion is in [Scene Data Objects and Terminology](SceneDataObjectsAndTerminology.org).
 
 # Scene
 
-A Scene is a Godot node tree, normally stored as a `.tscn` resource within a Godot project. Each Scene has one root node and may contain instances of other Scenes as child branches. One Scene is configured as the project's default or main Scene, which Godot loads when the project starts.
+A Scene is the complete cross-system definition needed to animate one scene in a Godot project. Its SuperCollider definition specifies motion sources, clips and Presets, live animation wirings, figures, avatars, composition rules, and OSC/VMC routing. It also identifies the Godot project and the Godot scene resource that renders those data. Each Scene is saved as a named `.scd` file, represented by `BmcScene`, and registered in `Bmc.scenes` when loaded.
 
-In BuMoChi documentation, **Scene** refers only to this Godot concept. It does not mean a BuMoChi timeline, dramaturgical section, playback preset, or collection of motion data. A Scene may contain avatars, environments, cameras, lights, and the Godot-side receivers that render animation. A Sequence may activate different Scenes belonging to the same Godot project.
+A **Godot scene resource** is the corresponding node tree, normally stored as a `.tscn` file. It may contain avatars, environments, cameras, lights, and Godot-side animation receivers. Each Godot scene resource has one root node and may contain instances of other scene resources as child branches. One is configured as the project's default or main scene.
+
+The capitalized BuMoChi term **Scene** includes both sides of this pairing: the SuperCollider animation configuration and its referenced Godot scene resource. It does not mean recorded motion data or a timeline. A Sequence coordinates one or more Scenes over time.
 
 # Sequence
 
@@ -24,7 +18,7 @@ A Sequence is a time-ordered collection of BuMoChi actions associated with one G
 
 A Sequence action, also called a cue, may activate a Scene; start, stop, or change a clip-preset playback; start, stop, or change an animation wiring; alter routing or target assignments; wait for a duration; or respond to an external event. An animation wiring is a live connection that sends motion from a source to a figure, avatar, or other processing destination.
 
-A Sequence stores references and timing, not recorded motion or Godot node trees. Clips remain the complete recorded data, Presets describe how individual clips are played, Scenes remain resources in the Godot project, and Sessions provide reusable motion, figure, avatar, and routing configuration. A Sequence may select and coordinate these objects over time without modifying them.
+A Sequence stores references and timing, not recorded motion or Godot node trees. Clips remain the complete recorded data, Presets describe how individual clips are played, and Scenes provide paired SuperCollider animation configuration and Godot scene-resource selection. A Sequence may select and coordinate these objects over time without modifying them.
 
 # Clip
 
@@ -40,7 +34,7 @@ The same clip may animate different avatars, supply selected bones, be transform
 
 # Source
 
-A source is anything capable of supplying motion values to a motion. Source is a role or interface, not necessarily a separate top-level session dictionary.
+A source is anything capable of supplying motion values to a motion. Source is a role or interface, not necessarily a separate top-level Scene dictionary.
 
 A source may be:
 
@@ -54,9 +48,9 @@ A source may provide a complete pose or only selected bones or channels.
 
 # Motion
 
-A motion is a configured use of a source within a session. It may specify playback rate, looping, the position at which clip reading begins, transformations, or processing rules.
+A motion is a configured use of a source within a Scene. It may specify playback rate, looping, the position at which clip reading begins, transformations, or processing rules.
 
-For example, `\walk` is a session-local motion name that uses the saved clip `\take1`:
+For example, `\walk` is a Scene-local motion name that uses the saved clip `\take1`:
 
 ``` supercollider
 \walk -> (clip: \take1, rate: 1.0, loop: false, in: 0.0)
@@ -84,9 +78,51 @@ The avatar name stored inside a recorded clip is provenance metadata. It may ide
 
 # Motion name
 
-A motion name is a session-local key for a configured source, such as `\walk` or `\motherEntrance`. It may differ from the saved clip name. For example, motion `\motherEntrance` may use clip `\take1` without renaming or modifying that recording.
+A motion name is a Scene-local key for a configured source, such as `\walk` or `\motherEntrance`. It may differ from the saved clip name. For example, motion `\motherEntrance` may use clip `\take1` without renaming or modifying that recording.
 
-# Conceptual pipeline
+# Core animation concepts in Godot and SuperCollider
+
+Here we explain the top-level objects used to drive an animation in Godot from SuperCollider.
+
+## Godot: Project and scene resource
+
+A **Godot project** is the folder-based application unit loaded to render an animation. A project contains one or more **Godot scene resources**, normally stored as `.tscn` files. A Godot scene resource is a node tree containing rendering-side definitions such as environments, avatars, cameras, lighting, rigging, and animation receivers. Each Godot scene resource may have a different appearance and structure—for example, different background objects, avatars, lighting, and cameras. BuMoChi can therefore switch from one Godot scene resource to another while a Sequence runs.
+
+## SuperCollider: Sequence, Scene, Clip, and Preset
+
+A **Scene** pairs one SuperCollider animation configuration with one Godot scene resource. It defines how sources, motions, figures, avatars, and routes drive that resource. A **Sequence** belongs to one Godot project and coordinates one or more Scenes over time. A **Clip** contains complete recorded motion data, while a **Preset** describes one non-destructive manner of playing a Clip.
+
+The correspondence is thus:
+
+- A **Sequence** in SuperCollider coordinates one or more BuMoChi **Scenes** over time. It may remain in one Godot scene resource or switch between several.
+- A BuMoChi **Scene** corresponds to and controls one Godot **scene resource** in a project.
+- A **Clip** contains complete recorded animation data that can be reused in multiple Scenes for different avatars or objects.
+- A **Preset** describes how to play a Clip. A Scene may use many Presets, referring to one or many Clips.
+
+``` mermaid
+flowchart LR
+    subgraph SC["SuperCollider / BuMoChi"]
+        Q["Sequence<br/>orders actions over time"]
+        S["Scene<br/>animation configuration"]
+        P["Preset<br/>how a Clip is played"]
+        C["Clip<br/>complete recorded data"]
+        Q -->|"coordinates one or more"| S
+        S -->|"uses"| P
+        P -->|"refers to"| C
+    end
+
+    subgraph GD["Godot"]
+        G["Godot project"]
+        R["Godot scene resource<br/>.tscn node tree"]
+        G -->|"contains one or more"| R
+    end
+
+    Q -.->|"belongs to"| G
+    S -->|"controls one"| R
+```
+
+
+# Full Conceptual pipeline
 
 The diagram separates stored definitions from time-ordered control and live data flow. Solid arrows carry motion data or invoke actions; dotted arrows express ownership, reference, or configuration relationships.
 
@@ -95,12 +131,12 @@ flowchart LR
     subgraph Definitions["Stored and reusable definitions"]
         C["Clip<br/>complete recorded motion"]
         P["Preset<br/>range, speed, loop,<br/>bones and targets"]
-        SESS["Session<br/>sources, motions, figures,<br/>avatars and routing"]
+        SCENE["Scene<br/>sources, motions, figures,<br/>avatars and routing"]
         SEQ["Sequence<br/>time-ordered actions and cues"]
         PROJ["Godot project"]
         SCN["Scenes<br/>one or more .tscn trees"]
         C -. "referenced by" .-> P
-        SESS -. "configuration used by" .-> SEQ
+        SCENE -. "configuration used by" .-> SEQ
         PROJ -. "contains" .-> SCN
         SEQ -. "associated with one" .-> PROJ
     end
@@ -136,7 +172,7 @@ flowchart LR
     DEC -- "VMC animation frames" --> CTRL
 ```
 
-# Proposed session data
+# Proposed Scene specification data structure
 
 ``` supercollider
 (
@@ -171,4 +207,4 @@ flowchart LR
 )
 ```
 
-Routed avatar settings and the shared decoder setting are implemented. The fuller `motions` and `figures` composition model remains the next session-format stage.
+Routed avatar settings and the shared decoder setting are implemented. The fuller `motions` and `figures` composition model remains the next Scene-format stage.

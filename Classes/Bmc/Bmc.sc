@@ -2,7 +2,7 @@
 //
 // Bmc(target, source, bones) returns a copy of target in which the selected
 // 7-value transforms have been replaced by values from source. Both arguments
-// may be raw /bunraku/vmc/frame messages or OscRecorder session entries of the
+// may be raw /bunraku/vmc/frame messages or OscRecorder timed frame entries of the
 // form [recordingTime, message]. The input objects are never modified.
 
 Bmc {
@@ -12,7 +12,7 @@ Bmc {
 	classvar <defaultAvatar, recordingName, recordingFormat, recorderPublisher;
 	classvar <defaultXrAnimatorOutputPort, <defaultInputPort, <defaultDecoderPort;
 	classvar <defaultAvatarID, <defaultAvatarName, <defaultAvatarVmcPort;
-	classvar <sessions, <currentSession;
+	classvar <scenes, <currentScene;
 	classvar <decoderPort, <forwardDecoder;
 	classvar <compositor;
 	classvar <cameraSource, <cameraTarget;
@@ -64,8 +64,8 @@ Bmc {
 		players[\default] = BmcClipPlayer(nil, defaultAvatar, \default);
 		players[\default].addDependant(this);
 		compositor = BmcCompositor({ avatars.values.asSet.asArray }, 60.0);
-		sessions = IdentityDictionary.new;
-		currentSession = nil;
+		scenes = IdentityDictionary.new;
+		currentScene = nil;
 		cameraSource = nil;
 		cameraTarget = defaultAvatarID;
 		takeSonifier = BmcTakeSonifier(Server.default);
@@ -643,59 +643,60 @@ Bmc {
 	*rate { |value, playerName = \default| this.player(playerName).rate_(value); ^this }
 	*loop { |flag = true, playerName = \default| this.player(playerName).loop_(flag); ^this }
 
-	// ----- playback sessions -----
-	*saveSession { |name, clipSettings, avatarSettings, path, decoderSettings|
-		var session = BmcSession(name, clipSettings, avatarSettings, decoderSettings);
-		session.write(path);
-		sessions[session.name] = session;
-		currentSession = session;
-		^session
+	// ----- playback scenes -----
+	*saveScene { |name, motionSettings, avatarSettings, path, decoderSettings, project, godotScene|
+		var scene = BmcScene(name, motionSettings, avatarSettings, decoderSettings,
+			project, godotScene);
+		scene.write(path);
+		scenes[scene.name] = scene;
+		currentScene = scene;
+		^scene
 	}
 
-	*loadSession { |nameOrPath|
+	*loadScene { |nameOrPath|
 		var path = nameOrPath.asString;
-		var session;
+		var scene;
 		if(File.exists(path).not) {
-			path = BmcSession.defaultDirectory +/+ (path ++ ".scd");
+			path = BmcScene.defaultDirectory +/+ (path ++ ".scd");
 		};
-		session = BmcSession.read(path);
-		sessions[session.name] = session;
-		currentSession = session;
-		^session
+		scene = BmcScene.read(path);
+		scenes[scene.name] = scene;
+		currentScene = scene;
+		^scene
 	}
 
-	*applySession { |name|
-		var session = if(name.isNil) { currentSession } { sessions[name.asSymbol] };
-		if(session.isNil) { Error("Unknown Bmc session: %".format(name)).throw };
-		if(session.decoder.notNil) { this.decoderPort_(session.decoder[\port]) };
-		session.avatars.keysValuesDo { |avatarName, route|
+	*applyScene { |name|
+		var scene = if(name.isNil) { currentScene } { scenes[name.asSymbol] };
+		if(scene.isNil) { Error("Unknown Bmc scene: %".format(name)).throw };
+		if(scene.decoder.notNil) { this.decoderPort_(scene.decoder[\port]) };
+		scene.avatars.keysValuesDo { |avatarName, route|
 			var object = this.avatar(avatarName);
 			if(object.isNil) { object = this.addAvatar(avatarName, avatarName.asString) };
-			if(session.decoder.isNil) {
-				// Legacy session: each avatar points at its dedicated decoder.
+			if(scene.decoder.isNil) {
+				// Legacy scene: each avatar points at its dedicated decoder.
 				object.vmcPort_(nil);
 				object.output_(NetAddr(route[\host].asString, route[\port].asInteger));
 			} {
 				var vmcPort = route[\vmcPort] ?? { route[\port] };
 				if(vmcPort.isNil) {
-					Error("Session avatar % requires vmcPort for routed decoding"
+					Error("Scene avatar % requires vmcPort for routed decoding"
 						.format(avatarName)).throw;
 				};
 				object.output_({ |message| this.sendOutput(message) });
 				object.vmcPort_(vmcPort);
 			};
 		};
-		currentSession = session;
-		^session
+		currentScene = scene;
+		^scene
 	}
 
-	*playSessionClip { |key, sessionName|
-		var session = if(sessionName.isNil) { currentSession } { sessions[sessionName.asSymbol] };
+	*playSceneMotion { |key, sceneName|
+		var scene = if(sceneName.isNil) { currentScene } { scenes[sceneName.asSymbol] };
 		var settings, avatarObject, clip, clipPath;
-		if(session.isNil) { Error("No Bmc session selected").throw };
-		this.applySession(session.name);
-		settings = session.clipSettings(key);
-		if(settings.isNil) { Error("Unknown session clip: %".format(key)).throw };
+		if(scene.isNil) { Error("No Bmc scene selected").throw };
+		this.applyScene(scene.name);
+		settings = scene.motionSettings(key);
+		if(settings.isNil) { Error("Unknown Scene motion: %".format(key)).throw };
 		avatarObject = this.avatar(settings[\avatar]);
 		clip = library.at(settings[\clip]);
 		if(clip.isNil) {
@@ -710,7 +711,7 @@ Bmc {
 		this.player.clip_(clip);
 		this.player.rate_(settings[\rate]);
 		this.player.loop_(settings[\loop]);
-		this.player.seek(settings[\start]);
+		this.player.seek(settings[\in]);
 		this.player.play;
 		^this.player
 	}
@@ -804,8 +805,8 @@ Bmc {
 
 	*combine { |target, source, bones|
 		var targetIsEntry, sourceIsEntry, targetMessage, sourceMessage, result;
-		targetIsEntry = this.isSessionEntry(target);
-		sourceIsEntry = this.isSessionEntry(source);
+		targetIsEntry = this.isTimedFrameEntry(target);
+		sourceIsEntry = this.isTimedFrameEntry(source);
 		targetMessage = if(targetIsEntry) { target[1] } { target };
 		sourceMessage = if(sourceIsEntry) { source[1] } { source };
 
@@ -822,7 +823,7 @@ Bmc {
 			};
 		};
 
-		// A session entry retains the target's recording time. A raw target
+		// A scene entry retains the target's recording time. A raw target
 		// produces a raw OSC message, irrespective of the source representation.
 		^if(targetIsEntry) { [target[0], result] } { result }
 	}
@@ -861,7 +862,7 @@ Bmc {
 	}
 
 	*bone { |frame, boneName|
-		var message = if(this.isSessionEntry(frame)) { frame[1] } { frame };
+		var message = if(this.isTimedFrameEntry(frame)) { frame[1] } { frame };
 		var start;
 		this.validateMessage(message, "frame");
 		start = this.boneStart(boneName, message);
@@ -903,7 +904,7 @@ Bmc {
 		^bones
 	}
 
-	*isSessionEntry { |object|
+	*isTimedFrameEntry { |object|
 		^object.isSequenceableCollection
 		and: { object.size == 2 }
 		and: { object[1].isSequenceableCollection }

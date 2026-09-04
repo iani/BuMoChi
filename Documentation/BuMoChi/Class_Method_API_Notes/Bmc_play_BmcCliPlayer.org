@@ -25,7 +25,7 @@ Also modify =Bmc.playClip= to mirror exactly the new arguments of =Bmc.play=
 - =BmcClipPlayer.reset= stops and rewinds to =startFrame= while preserving the configured clip, output, frame range, rate, and loop flag.
 - The facade uses =Bmc.stopPlayback=, =Bmc.restartPlayback=, and =Bmc.resetPlayback=. Existing =Bmc.stop= and =Bmc.reset= retain their system-wide meanings so playback control cannot accidentally stop the receiver or discard the in-memory environment.
 - =playerName= selects an independent player. =\default= preserves the original single-player behavior. Reusing a name stops and reconfigures that player; using a new name creates another player, so the same clip can play concurrently with different ranges and rates.
-- The registry is =Bmc.players= rather than =BmcClipPlayer.clips=. =Bmc.clips= already means the dictionary of immutable recorded clips, while named players are session/environment state owned and reset by =Bmc=. Use =Bmc.player(name)= to retrieve an instance and control it directly.
+- The registry is =Bmc.players= rather than =BmcClipPlayer.clips=. =Bmc.clips= already means the dictionary of immutable recorded clips, while named players are Scene/environment state owned and reset by =Bmc=. Use =Bmc.player(name)= to retrieve an instance and control it directly.
 
 
 * BmcClipPlayer

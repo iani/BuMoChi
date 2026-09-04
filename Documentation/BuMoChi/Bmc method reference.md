@@ -1,6 +1,6 @@
 # Bmc method reference
 
-`Bmc` is the recommended entry point for ordinary sessions. The methods below delegate work to the appropriate supporting object.
+`Bmc` is the recommended entry point for ordinary BuMoChi work. The methods below delegate work to the appropriate supporting object.
 
 > **Clip/preset terminology:** A clip is the complete recorded data. Range, speed, looping, selected bones, and target(s) describe how a clip is played. When saved together under a name, those playback choices form a preset; they never trim or otherwise modify the clip.
 
@@ -41,7 +41,7 @@ After the SuperCollider class library compiles, Bmc automatically listens for ro
 
 6.  `Bmc.reset`
 
-    Stops the current session, replaces the working clip library, avatars, recorder, player, dispatcher, and wires with fresh objects, restores the Ishidomaru/`39539` default route, and restarts the receiver on `57130`. Unsaved in-memory clips are lost, so use it deliberately.
+    Stops the current working environment, replaces the working clip library, avatars, recorder, player, dispatcher, and wires with fresh objects, restores the Ishidomaru/`39539` default route, and restarts the receiver on `57130`. Unsaved in-memory clips are lost, so use it deliberately.
 
 7.  `Bmc.compositorRate_(fps)`, `Bmc.startCompositor`, and `Bmc.stopCompositor`
 

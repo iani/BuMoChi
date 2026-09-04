@@ -2,7 +2,7 @@
 //
 // Expected result:
 // - 1,003 messages are sent to the current sclang OSC port.
-// - OscRecorder.maxItems = 1,000 causes the session to span two .scd files.
+// - OscRecorder.maxItems = 1,000 causes the recording to span two .scd files.
 // - Files are written below Platform.userAppSupportDir/OSC_Data.
 //
 // Recompile the class library after installing/linking BuMoChi, then evaluate
@@ -24,7 +24,7 @@ Routine({
 
 	// Make the rollover boundary explicit for this test.
 	recorder.maxItems = 1000;
-	// OscRecorder creates the session directory. Ensure its two parents exist.
+	// OscRecorder creates the recording directory. Ensure its two parents exist.
 	// if (File.exists(rootPath).not) { File.mkdir(rootPath) };
 	// if (File.exists(dayPath).not) { File.mkdir(dayPath) };
 
@@ -63,7 +63,7 @@ Routine({
 	};
 	"PASS: OscRecorder captured and saved all % messages".postf(messageCount);
 
-	"Test complete. Requested messages: %\nSession directory: %\n"
-		.postf(messageCount, recorder.sessionPath);
+	"Test complete. Requested messages: %\nRecording directory: %\n"
+		.postf(messageCount, recorder.recordingPath);
 }).play(AppClock);
 )

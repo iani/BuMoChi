@@ -131,14 +131,14 @@ Examples:
 
 ```
 ~boneFromRecordedFrame.(
-    OscRecorder.default.sessionData[100],
+    OscRecorder.default.recordedData[100],
     \Head
 );
 ```
 
 ```
 ~boneFromRecordedFrame.(
-    OscRecorder.default.sessionData[100],
+    OscRecorder.default.recordedData[100],
     \LeftHand
 );
 ```
@@ -169,7 +169,7 @@ Usage:
 
 ```
 ~frameBones = ~namedBonesFromRecordedFrame.(
-    OscRecorder.default.sessionData[100]
+    OscRecorder.default.recordedData[100]
 );
 
 ~frameBones[\Head];

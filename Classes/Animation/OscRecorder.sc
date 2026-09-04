@@ -8,12 +8,12 @@ file to exist before continuing.
 */
 
 OscRecorder : NamedInstance {
-	var <>data, <>sessionData;
+	var <>data, <>recordedData;
 	var <>maxItems = 1000; // Keep files small!
 	var <>excludedMessages;
 	var <>verbose = false;
 	var <>filter; // if true, ignore the message
-	var <sessionPath, <filePath, <file;
+	var <recordingPath, <filePath, <file;
 
 	init {
 		excludedMessages = [
@@ -32,23 +32,23 @@ OscRecorder : NamedInstance {
 	record {
 		if (this.isEnabled) {
 			^"OSCRecorder is already running. Skipping this.".postln;
-		}{ this.startSession };
+		}{ this.startRecording };
 	}
 
-	startSession {
+	startRecording {
 		var check, rootPath, dayPath;
 		rootPath = OscRecorderPath.rootDir.fullPath;
 		dayPath = rootPath +/+ Date.getDate.dayStamp;
-		sessionPath = OscRecorderPath.sessionPath;
-		sessionData = [];
+		recordingPath = OscRecorderPath.recordingPath;
+		recordedData = [];
 		if (File.exists(rootPath).not) { File.mkdir(rootPath) };
 		if (File.exists(dayPath).not) { File.mkdir(dayPath) };
-		check = File.mkdir(sessionPath);
-		if (check.not and: { File.exists(sessionPath).not }) {
-			postln("Could not create directory:" + sessionPath);
+		check = File.mkdir(recordingPath);
+		if (check.not and: { File.exists(recordingPath).not }) {
+			postln("Could not create directory:" + recordingPath);
 			^"OscRecorder cannot start recording".postln;
 		};
-		postln("OscRecorder made session path:" + sessionPath);
+		postln("OscRecorder made recording path:" + recordingPath);
 		this.enable;
 	}
 
@@ -104,8 +104,8 @@ OscRecorder : NamedInstance {
 	*/
 
 	fullPath {
-		sessionPath ?? { sessionPath = OscRecorderPath.sessionPath };
-		^sessionPath +/+ Date.localtime.stamp ++ ".scd";
+		recordingPath ?? { recordingPath = OscRecorderPath.recordingPath };
+		^recordingPath +/+ Date.localtime.stamp ++ ".scd";
 	}
 
 	exclude { | ... argMessages |
@@ -142,7 +142,7 @@ OscRecorder : NamedInstance {
 			^nil; // do not save or record if file is closed!
 		};
 		data = data add: [time, msg];
-		sessionData = sessionData add: [time, msg];
+		recordedData = recordedData add: [time, msg];
 
 		// ensure code messages are stored as strings:
 		if (msg[0] == '/code') {

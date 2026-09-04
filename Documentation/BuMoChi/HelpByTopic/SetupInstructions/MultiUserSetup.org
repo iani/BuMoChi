@@ -38,7 +38,7 @@ Both input paths converge on every workstation's Bmc at port =57130=:
 :END:
 After combining, filtering, layering, and assigning motions to figures and avatars in SuperCollider, Bmc sends the completed animation frames to its local decoder on =39538=. Each frame is an OSC message containing the VMC destination port assigned to its avatar. The decoder reconstructs a VMC bundle, forwards it to the specified local Godot receiver, and Godot renders the avatar.
 
-SuperCollider/Bmc never sends processed output to OSCGroups. The final animation is synthesized and rendered locally. Because every workstation receives the shared source frames and uses the same session/composition and Godot scene, each workstation independently constructs and renders the same intended animation.
+SuperCollider/Bmc never sends processed output to OSCGroups. The final animation is synthesized and rendered locally. Because every workstation receives the shared source frames and uses the same BuMoChi Scene, each workstation independently constructs and renders the same intended animation.
 
 This is analogous to networked sound synthesis in sc-hacks-redux: collaborators share source material, while every workstation performs the full synthesis locally.
 
@@ -59,7 +59,7 @@ Do not start separate sending and receiving clients on an ordinary workstation.
 :PROPERTIES:
 :CUSTOM_ID: shared-scene-rule
 :END:
-All workstations should load the same Bmc session/composition and run the same Godot scene, including the same avatar-to-VMC-port assignments:
+All workstations should load the same BuMoChi Scene, including the same avatar-to-VMC-port assignments:
 
 | Source stream | Completed avatar | Godot character | VMC port |
 |---------------+------------------+-----------------+----------|
@@ -116,7 +116,7 @@ The diagrams show two workstations. Both synthesize the same scene: Ishidomaru l
 :PROPERTIES:
 :CUSTOM_ID: shared-and-unique-settings
 :END:
-All collaborators must agree on the OSCGroups server, group credentials, stable source identities, Bmc session/composition, Godot scene, and avatar-to-port map. Every workstation needs a unique OSCGroups username. Local application ports, including client input port =22244=, may use the same numbers on different computers because each port belongs to a different host.
+All collaborators must agree on the OSCGroups server, group credentials, stable source identities, BuMoChi Scene and its avatar-to-port map. Every workstation needs a unique OSCGroups username. Local application ports, including client input port =22244=, may use the same numbers on different computers because each port belongs to a different host.
 
 * Port map on each workstation
 :PROPERTIES:
@@ -159,7 +159,7 @@ The allow-list is optional.
 :PROPERTIES:
 :CUSTOM_ID: 3-configure-and-start-bmc
 :END:
-Both workstations load the same session/composition. Minimal routing:
+Both workstations load the same BuMoChi Scene. Minimal routing:
 
 #+begin_src supercollider
 (

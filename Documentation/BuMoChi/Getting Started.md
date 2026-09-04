@@ -282,7 +282,7 @@ Stop Mother's independent playback with:
 ~motherPlayer.stop;
 ```
 
-This example establishes two independent motion paths. Session definitions and the figure-composition system will later provide a higher-level way to save and coordinate several such assignments.
+This example establishes two independent motion paths. Scene definitions and the figure-composition system will later provide a higher-level way to save and coordinate several such assignments.
 
 # Shut down
 

@@ -40,22 +40,22 @@ OSCFunc.trace(true, true); // do not post messages from server.
 OSCFunc.trace(false, false);
 //: 1. Record some data into OscRecorder.default
 
-OscRecorder.default.startSession;
+OscRecorder.default.startRecording;
 //: 2. After a while, stop the recording
 OscRecorder.default.stopRecording;
 
-//: 3. Ask the size of the recorded session data array:
-OscRecorder.default.sessionData.size;
+//: 3. Ask the size of the recorded data array:
+OscRecorder.default.recordedData.size;
 
 //: 4. Inspect the first recorded data item:
-OscRecorder.default.sessionData.first;
+OscRecorder.default.recordedData.first;
 
 //: 5. Inspect the last recorded data item:
-OscRecorder.default.sessionData.last;
+OscRecorder.default.recordedData.last;
 
-. Playback the data stored in OscRecorder.default.sessionData:
+. Playback the data stored in OscRecorder.default.recordedData:
 
-//: 6. Playback the last recorded session data
+//: 6. Playback the last recorded data
 
-~playRecordedBunraku.(OscRecorder.default.sessionData);
+~playRecordedBunraku.(OscRecorder.default.recordedData);
 //:

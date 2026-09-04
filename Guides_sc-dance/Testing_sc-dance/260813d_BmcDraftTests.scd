@@ -32,11 +32,11 @@ leftArm.do { |bone|
 check.(Bmc.bone(merged, \Head) == Array.fill(7, 0.0),
 	"Bmc changed an unrequested bone");
 
-// A session entry preserves its outer recording time.
+// A timed frame entry preserves its outer recording time.
 entryMerged = Bmc([12.5, target], [99.0, source], \Hips);
 check.(entryMerged[0] == 12.5, "Bmc did not preserve target recording time");
 check.(Bmc.bone(entryMerged, \Hips) == Array.fill(7, 1.0),
-	"Bmc failed to copy a single bone in a session entry");
+	"Bmc failed to copy a single bone in a timed frame entry");
 
 // Replace two source frames within a four-frame target sequence, starting at 1.
 targetSequence = 4.collect { |index| [index.asFloat, makeFrame.(0.0, index)] };

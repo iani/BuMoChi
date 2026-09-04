@@ -41,7 +41,7 @@
     message.copyRange(start, start + 6);
 };
 //: Get the first recorded frame
-~frame0 = OscRecorder.default.sessionData.first;
+~frame0 = OscRecorder.default.recordedData.first;
 //: Get the data for \Hips
 
 ~boneFromRecordedFrame.(~frame0, \Hips)

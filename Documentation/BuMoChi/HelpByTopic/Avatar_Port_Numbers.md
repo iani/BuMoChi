@@ -81,13 +81,13 @@ Bmc.selectAvatar(\Mother);
 Bmc.playClip(\mother_take_01);
 ```
 
-# Store routed settings in a session
+# Store routed settings in a scene
 
-The current `BmcSession` implementation accepts an optional shared decoder setting while retaining its legacy clip settings:
+The current `BmcScene` implementation accepts an optional shared decoder setting and stores configured Motions that refer to separate, complete Clips:
 
 ``` supercollider
 (
-~clipSettings = IdentityDictionary[
+~motionSettings = IdentityDictionary[
     \motherEntrance -> (clip: \mother_take_01, avatar: \Mother),
     \ishidomaruReply -> (clip: \ishidomaru_take_03, avatar: \Ishidomaru)
 ];
@@ -97,24 +97,24 @@ The current `BmcSession` implementation accepts an optional shared decoder setti
     \Ishidomaru -> (vmcPort: 39540)
 ];
 
-Bmc.saveSession(
+Bmc.saveScene(
     \duet_rehearsal,
-    ~clipSettings,
+    ~motionSettings,
     ~avatarSettings,
-    nil, // default session-file path
+    nil, // default scene-file path
     (host: "127.0.0.1", port: 39538) // shared decoder input
 );
 )
 ```
 
-After loading, `Bmc.applySession` assigns the same decoder `NetAddr` to every configured avatar and assigns a different `vmcPort` to each:
+After loading, `Bmc.applyScene` assigns the same decoder `NetAddr` to every configured avatar and assigns a different `vmcPort` to each:
 
 ``` supercollider
-Bmc.loadSession(\duet_rehearsal);
-Bmc.applySession;
+Bmc.loadScene(\duet_rehearsal);
+Bmc.applyScene;
 ```
 
-The fuller `motions` and `figures` session format is specified in [Session Data Objects and Terminology](SessionDataObjectsAndTerminology.org) but is not yet implemented by `BmcSession`.
+The fuller `motions` and `figures` scene format is specified in [Scene Data Objects and Terminology](SceneDataObjectsAndTerminology.org) but is not yet implemented by `BmcScene`.
 
 # Legacy version-1 fallback
 

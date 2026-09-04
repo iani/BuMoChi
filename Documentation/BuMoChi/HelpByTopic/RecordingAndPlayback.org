@@ -285,18 +285,18 @@ It is not intrinsically more compact. An =.scd= file is normally considerably la
 
 ** Relationship to OscRecorder
 
-The existing =OscRecorder= class provides the proven long-duration recording strategy used in earlier work. It writes incoming OSC messages directly to readable =.scd= files and starts a new file after =maxItems= messages; the default is =1,000=. Because completed chunks are already on disk, recording duration is not limited by the size that one archive file can serialize. =OscRecorder.sessionData= may still retain the complete session in memory for later use.
+The existing =OscRecorder= class provides the proven long-duration recording strategy used in earlier work. It writes incoming OSC messages directly to readable =.scd= files and starts a new file after =maxItems= messages; the default is =1,000=. Because completed chunks are already on disk, recording duration is not limited by the size that one archive file can serialize. =OscRecorder.recordedData= may still retain the complete recording in memory for later use.
 
 This is different from =Bmc.record=:
 
 | Recorder | Disk behavior during capture | In-memory behavior |
 |----------+------------------------------+--------------------|
 | =Bmc.record= | writes one complete =.scd= file when =Bmc.stopRecording= is called | retains the complete clip |
-| =OscRecorder= | writes successive limited-size =.scd= files while recording | may retain the complete session in =sessionData= |
+| =OscRecorder= | writes successive limited-size =.scd= files while recording | may retain the complete recording in =recordedData= |
 
-The relevant implementation is [[file:../../../Classes/Animation/OscRecorder.sc][Classes/Animation/OscRecorder.sc]]. Its companion =SessionData= and =OscFile= classes read the sequence of recorder files. By contrast, =Bmc.loadClipScd(path)= loads one complete =.scd= clip file. Loading an entire directory of numbered =OscRecorder= chunks as one Bmc clip is not currently part of =Bmc.loadClipScd=.
+The active implementation is [[file:../../../Classes/Animation/OscRecorder.sc][Classes/Animation/OscRecorder.sc]]. The older sc-dance =SessionData= and =OscFile= readers have been archived under =Deprecated/sc-dance-v1=; current BuMoChi does not depend on them. =Bmc.loadClipScd(path)= loads one complete =.scd= clip file. Importing an entire directory of numbered =OscRecorder= chunks as one logical Bmc Clip is not currently implemented.
 
-This division is useful: use =OscRecorder= when uninterrupted, effectively unlimited capture to chunked files is the priority; use the Bmc clip methods when the recording must immediately participate in Bmc selection, composition, session assignment, and playback.
+This division is useful: use =OscRecorder= when uninterrupted, effectively unlimited capture to chunked files is the priority; use the Bmc clip methods when the recording must immediately participate in Bmc selection, composition, scene assignment, and playback.
 
 ** Convert an existing BMC archive to SCD
 
@@ -399,22 +399,22 @@ PathName(~scdPath).pathOnly.postln;
    Disable XR-Animator VMC output, press =Control-C= in the encoder and decoder
    terminals, and stop the running Godot project.
 
-* Clip Playback Settings
+* Implemented Scene Motion settings
 
 A clip archive contains recorded frame data and frame timing. It does not by
 itself specify which staged avatar should receive the replay or which OSC port
 should carry it. Replaying a clip therefore requires the following settings:
 
-1. A /clip key/: the name used inside a session, such as =\motherEntrance=.
+1. A /Motion name/: the name used inside a scene, such as =\motherEntrance=.
 2. A /clip name/: the saved =.bmc= archive, such as =\mother_take_01=.
 3. An /avatar name/: the Bmc avatar destination, such as =\Mother=.
 4. A /route/: the host and UDP port to which Bmc sends encoded frames for that
    avatar. Normally the host is =127.0.0.1= and the port is the corresponding
    Bunraku decoder's listening port.
-5. Optional transport values: playback =rate=, =loop= state, and starting time
+5. Optional transport values: playback =rate=, =loop= state, and the =in= position
    in seconds.
 
-The minimum useful clip setting contains the clip and avatar names:
+The minimum useful Motion setting contains the clip and avatar names:
 
 #+begin_src supercollider
 (clip: \mother_take_01, avatar: \Mother)
@@ -428,7 +428,7 @@ clip: \mother_take_01,
 avatar: \Mother,
 rate: 1.0,
 loop: false,
-start: 0.0
+in: 0.0
 )
 #+end_src
 
@@ -445,41 +445,45 @@ path: "/absolute/path/to/mother_take_01.bmc"
 
 The loading and replay sequence is:
 
-1. Find the settings by their clip key.
+1. Find the settings by their Motion name.
 2. Register the named avatar if it is not already registered.
 3. Set that avatar's output to its configured host and port.
 4. Use the in-memory clip when available; otherwise load its saved =.scd= file, with =.bmc= retained as a legacy fallback.
 5. Select the configured avatar as the player's output.
 6. Rewrite the outgoing frame's avatar field to the selected avatar name.
-7. Apply =rate=, =loop=, and =start=.
+7. Apply =rate=, =loop=, and =in=.
 8. Start playback.
 
-This sequence is performed automatically by =Bmc.playSessionClip=.
+This sequence is performed automatically by =Bmc.playSceneMotion=.
 
-* Sessions
+* Scenes
 
-A Bmc playback session is a named collection of clip playback settings and avatar OSC routes. It is configuration data, not recorded motion data: the =.scd= clip files remain separate files.
+A BuMoChi Scene is the cross-system configuration used to animate one Godot scene. The currently implemented subset stores configured Motions, avatar OSC routes, and references to a Godot project and =.tscn= scene resource. It is configuration data, not recorded motion data: the complete immutable Clips remain in separate =.scd= files.
 
 The proposed two-dictionary design is correct. Bmc stores both dictionaries
-inside one top-level session data object:
+inside one top-level scene data object:
 
 #+begin_src supercollider
 (
 name: \duet_rehearsal,
-clips: IdentityDictionary[
+format: \bmcScene,
+formatVersion: 1,
+project: \boyAndBirds,
+godotScene: "res://scenes/Demo.tscn",
+motions: IdentityDictionary[
     \motherEntrance -> (
         clip: \mother_take_01,
         avatar: \Mother,
         rate: 1.0,
         loop: false,
-        start: 0.0
+        in: 0.0
     ),
     \ishidomaruReply -> (
         clip: \ishidomaru_take_03,
         avatar: \Ishidomaru,
         rate: 0.75,
         loop: false,
-        start: 1.2
+        in: 1.2
     )
 ],
 avatars: IdentityDictionary[
@@ -489,23 +493,21 @@ avatars: IdentityDictionary[
 )
 #+end_src
 
-Although the clip name can equal the clip key, storing it explicitly is
-useful: a dramaturgical cue such as =\motherEntrance= can refer to an archive
-named =\mother_take_01=. The avatar name is required. The host is stored as
-well as the port so that the same session format also works across computers.
+Although a Motion name can equal its Clip name, storing the Clip reference explicitly is useful: a dramaturgical cue such as =\motherEntrance= can refer to the complete recording named =\mother_take_01=. The avatar name is required. The host is stored as
+well as the port so that the same scene format also works across computers.
 A bare port number is accepted as shorthand for localhost:
 
 #+begin_src supercollider
 \Mother -> 39537
 #+end_src
 
-** Save a session
+** Save a scene
 
 Construct the dictionaries and save them:
 
 #+begin_src supercollider
 (
-~clipSettings = IdentityDictionary[
+~motionSettings = IdentityDictionary[
     \motherEntrance -> (clip: \mother_take_01, avatar: \Mother),
     \ishidomaruReply -> (
         clip: \ishidomaru_take_03,
@@ -519,54 +521,58 @@ Construct the dictionaries and save them:
     \Ishidomaru -> 39541
 ];
 
-~session = Bmc.saveSession(
+~scene = Bmc.saveScene(
     \duet_rehearsal,
-    ~clipSettings,
-    ~avatarSettings
+    ~motionSettings,
+    ~avatarSettings,
+    nil, // default Scene-file path
+    nil, // no shared decoder override
+    \boyAndBirds,
+    "res://scenes/Demo.tscn"
 );
-~session.path.postln;
+~scene.path.postln;
 )
 #+end_src
 
 By default this creates:
 
 #+begin_example
-Platform.userAppSupportDir/BmcSessions/duet_rehearsal.scd
+Platform.userAppSupportDir/BmcScenes/duet_rehearsal.scd
 #+end_example
 
-The session name becomes the filename. The =.scd= file contains readable
+The scene name becomes the filename. The =.scd= file contains readable
 sclang data and may be inspected or edited as text. A custom destination may
-be supplied as the fourth argument to =Bmc.saveSession=. Because loading an
-=.scd= file asks sclang to interpret its contents, load session files only
+be supplied as the fourth argument to =Bmc.saveScene=. Because loading an
+=.scd= file asks sclang to interpret its contents, load scene files only
 from sources you trust.
 
-** Load and apply a session
+** Load and apply a scene
 
-After recompiling or restarting SuperCollider, load by session name:
+After recompiling or restarting SuperCollider, load by scene name:
 
 #+begin_src supercollider
-Bmc.loadSession(\duet_rehearsal);
-Bmc.applySession;
+Bmc.loadScene(\duet_rehearsal);
+Bmc.applyScene;
 #+end_src
 
-=Bmc.loadSession= also accepts an absolute =.scd= path. =Bmc.applySession=
+=Bmc.loadScene= also accepts an absolute =.scd= path. =Bmc.applyScene=
 registers the configured avatars when needed and restores their OSC output
 routes. It does not load all clips; clips are loaded on demand.
 
-** Play a configured clip
+** Play a configured Motion
 
-Use the session clip key, not necessarily the archive name:
+Use the Scene-local Motion name, not necessarily the archive name:
 
 #+begin_src supercollider
-Bmc.playSessionClip(\motherEntrance);
+Bmc.playSceneMotion(\motherEntrance);
 
 // Later, after the first playback has stopped:
-Bmc.playSessionClip(\ishidomaruReply);
+Bmc.playSceneMotion(\ishidomaruReply);
 #+end_src
 
 =Bmc.play= and =Bmc.playClip= use the =\default= player unless a =playerName=
 is supplied. Named players can run simultaneously and are independently
-accessible through =Bmc.player(name)=. =Bmc.playSessionClip= currently
+accessible through =Bmc.player(name)=. =Bmc.playSceneMotion= currently
 continues to use the default player.
 
 See [[file:Avatar_Port_Numbers.md][Avatar Port Numbers]] for the complete multi-avatar OSC routing pipeline and terminal commands.
