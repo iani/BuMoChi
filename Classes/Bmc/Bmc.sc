@@ -510,6 +510,7 @@ Bmc {
 		^this
 	}
 	*dataFolder { ^BmcDataFolder.root }
+	*sequenceDirectory { ^BmcDataFolder.sequences }
 	*setDataFolder { |path|
 		if(path.notNil) {
 			BmcDataFolder.root_(path);
