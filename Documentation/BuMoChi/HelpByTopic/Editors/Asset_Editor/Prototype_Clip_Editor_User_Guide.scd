@@ -1,7 +1,7 @@
 // BuMoChi prototype Clip Editor — step-by-step test guide
 //
 // This guide tests the current standalone prototype. Its Clip and Preset
-// controls are intended to become an integrated panel of the Asset Manager.
+// controls are intended to become an integrated panel of the Asset Editor.
 // The prototype is not an additional required step in the final workflow.
 //
 // A clip is the full recorded motion data. A preset describes how a clip is
@@ -11,8 +11,8 @@
 // 1. Set the BuMoChi data folder
 //
 // Run this line to open a folder-selection dialog. Select the folder that
-// should contain all BuMoChi data. BuMoChi creates the Clips, Videos,
-// Sequences, and Projects subfolders there when necessary.
+// should contain all BuMoChi assets. BuMoChi creates all seven standard
+// asset subfolders there when necessary.
 Bmc.setDataFolder;
 
 // Wait until the folder dialog has closed before running the verification
@@ -20,14 +20,14 @@ Bmc.setDataFolder;
 
 // Alternatively, set the folder directly. Replace this example path with the
 // folder on your computer or external disk.
-Bmc.setDataFolder("/Volumes/MyExternalDisk/BuMoChi_Data");
+Bmc.setDataFolder("/Volumes/MyExternalDisk/BuMoChiAssets");
 
-// Inspect the currently selected root and its four standard locations.
+// Inspect the currently selected root and its principal standard locations.
 Bmc.dataFolder.postln;
 Bmc.clipDirectory.postln;
 Bmc.videoRecordingFolder.postln;
-Bmc.sequenceDirectory.postln;
-Bmc.projectDirectory.postln;
+Bmc.scoreDirectory.postln;
+Bmc.godotProjectDirectory.postln;
 
 //: Test the selected data folder
 //
@@ -35,10 +35,13 @@ Bmc.projectDirectory.postln;
 // throws an error if Bmc did not create the required folder structure.
 (
 var root = Bmc.dataFolder;
-var clips = root +/+ "Clips";
+var clips = root +/+ "AnimationClips";
+var animationScripts = root +/+ "AnimationScripts";
 var videos = root +/+ "Videos";
-var sequences = root +/+ "Sequences";
-var projects = root +/+ "Projects";
+var scores = root +/+ "Scores";
+var projects = root +/+ "GodotProjects";
+var soundFiles = root +/+ "SoundFiles";
+var soundScripts = root +/+ "SoundScripts";
 var checkDirectory = { |path, label|
 	if(File.exists(path).not) {
 		Error("FAIL: % directory was not created: %".format(label, path)).throw
@@ -50,10 +53,13 @@ var checkDirectory = { |path, label|
 };
 
 checkDirectory.(root, "BuMoChi data root");
-checkDirectory.(clips, "Clips");
+checkDirectory.(clips, "AnimationClips");
+checkDirectory.(animationScripts, "AnimationScripts");
 checkDirectory.(videos, "Videos");
-checkDirectory.(sequences, "Sequences");
-checkDirectory.(projects, "Projects");
+checkDirectory.(scores, "Scores");
+checkDirectory.(projects, "GodotProjects");
+checkDirectory.(soundFiles, "SoundFiles");
+checkDirectory.(soundScripts, "SoundScripts");
 
 if(Bmc.clipDirectory != clips.standardizePath) {
 	Error("FAIL: Bmc.clipDirectory does not use the selected data folder").throw
@@ -61,18 +67,17 @@ if(Bmc.clipDirectory != clips.standardizePath) {
 if(Bmc.videoRecordingFolder != videos.standardizePath) {
 	Error("FAIL: Bmc.videoRecordingFolder does not use the selected data folder").throw
 };
-if(Bmc.sequenceDirectory != sequences.standardizePath) {
-	Error("FAIL: Bmc.sequenceDirectory does not use the selected data folder").throw
+if(Bmc.scoreDirectory != scores.standardizePath) {
+	Error("FAIL: Bmc.scoreDirectory does not use the selected data folder").throw
 };
-if(Bmc.projectDirectory != projects.standardizePath) {
-	Error("FAIL: Bmc.projectDirectory does not use the selected data folder").throw
+if(Bmc.godotProjectDirectory != projects.standardizePath) {
+	Error("FAIL: Bmc.godotProjectDirectory does not use the selected data folder").throw
 };
 
 "PASS: Bmc data folder setup is complete".postln;
 )
 
-//: Changing the data folder does not move existing Clips, Videos, Sequences,
-// or Projects.
+//: Changing the data folder does not move existing assets.
 // Move any existing data yourself if it should become available in the new location.
 
 // 2. Open the Clip Editor

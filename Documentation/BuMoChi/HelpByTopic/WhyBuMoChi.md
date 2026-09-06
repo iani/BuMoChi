@@ -111,7 +111,7 @@ Sources: [VSeeFace official documentation](https://www.vseeface.icu/), [Warudo i
 
 ### ossia score
 
-ossia score is a free/open interactive intermedia sequencer. It combines timelines, OSC, audio, video, mappings, automation, conditions, loops, scripting, and external control. It is not identified here as a turnkey VMC animation system, but it overlaps strongly with BuMoChi's proposed Sequence timeline and rehearsal interface.
+ossia score is a free/open interactive intermedia sequencer. It combines timelines, OSC, audio, video, mappings, automation, conditions, loops, scripting, and external control. It is not identified here as a turnkey VMC animation system, but it overlaps strongly with BuMoChi's proposed Score timeline and rehearsal interface.
 
 Instead of developing every sequencing and timeline facility in SuperCollider, BuMoChi could interoperate with ossia score or adopt ideas from it. A useful experiment would expose BuMoChi clips, players, ranges, and avatar routes as OSC/OSCQuery parameters and let ossia score handle cues and temporal structure. This would test whether BuMoChi's durable contribution is the VMC-aware motion layer rather than a general-purpose timeline.
 
@@ -202,7 +202,7 @@ Continuation should therefore be conditional on evidence from use: reduced rehea
 2. **Make the VMC-aware motion layer the centre.** Prioritize reliable clips, provenance, subclip browsing, anatomical composition, transformations, multi-avatar routing, and live/generated frame capture.
 3. **Treat SuperCollider as one control plane, not the universal container.** Keep file formats readable and adapters replaceable so another host could use the motion model later.
 4. **Prototype interoperability with Blender.** Test VMC recording, editing, and final rendering there; document what BuMoChi adds and what Blender should own.
-5. **Prototype ossia score control.** Expose clip and player state through stable OSC or OSCQuery before building a complex Sequence timeline from scratch.
+5. **Prototype ossia score control.** Expose clip and player state through stable OSC or OSCQuery before building a complex Score timeline from scratch.
 6. **Investigate Godot-side recording.** Compare Godot Movie Maker output with real-time screen capture for quality, determinism, audio synchronization, and suitability for live takes.
 7. **Separate rehearsal capture from final rendering.** A real-time MP4 is evidence and synchronization material; a deterministic engine or Blender render may be the final artwork.
 8. **Build non-programmer interfaces around observed tasks.** Clip audition, range selection, routing, take naming, recording status, and error recovery are higher priorities than broad graphical abstraction.

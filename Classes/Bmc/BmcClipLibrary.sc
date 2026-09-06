@@ -4,7 +4,7 @@ BmcClipLibrary {
 
 	*defaultDirectory {
 		^defaultDirectory ?? {
-			defaultDirectory = BmcDataFolder.clips
+			defaultDirectory = BmcDataFolder.animationClips
 		}
 	}
 	*defaultDirectory_ { |path|

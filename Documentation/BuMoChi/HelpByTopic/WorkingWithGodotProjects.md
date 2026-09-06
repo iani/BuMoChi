@@ -8,14 +8,14 @@ The following guidelines summarize the required project structure and recommende
 
 ### Required conventions
 
-1. Every BuMoChi data root must contain a `Projects` directory alongside `Clips`, `Videos`, and `Sequences`.
+1. Every BuMoChi asset root must contain the seven standard directories: `AnimationClips`, `AnimationScripts`, `GodotProjects`, `Scores`, `SoundFiles`, `SoundScripts`, and `Videos`.
 2. Every Godot project offered by BuMoChi must have `project.godot` at the root of its project directory.
 3. Complete Godot Scenes intended for automatic BuMoChi discovery must be saved either as `.tscn` files directly in the project root or beneath the project's top-level `scenes` directory.
 4. Reusable avatars, props, user-interface components, and subordinate scene resources must be stored outside `scenes` if they should not be presented as complete performance Scenes.
 5. Every VMC-controllable avatar must have a stable BuMoChi identity and a valid VMC listener port.
 6. Avatars that may operate simultaneously must use distinct VMC ports.
 7. A BuMoChi Scene must identify one Godot project and one of its discovered `.tscn` Scene resources.
-8. A Sequence must be associated with one Godot project, and every Scene used by that Sequence must belong to that project.
+8. A Score must be associated with one Godot project, and every Scene used by that Score must belong to that project.
 
 ### Recommended project practice
 
@@ -27,41 +27,44 @@ The following guidelines summarize the required project structure and recommende
 6. Do not copy the generated `.godot` cache when duplicating a template; allow Godot to reconstruct it.
 7. Move or rename referenced project resources through Godot's FileSystem dock whenever possible so dependencies can be updated safely.
 8. Keep ports configurable even when templates begin with the standard `39539`, `39540`, `39541`, and subsequent-port convention.
-9. Validate a duplicated or customized project before it becomes selectable for Scene or Sequence playback.
+9. Validate a duplicated or customized project before it becomes selectable for Scene or Score playback.
 
 ### Recommended BuMoChi behavior
 
-1. `Bmc.setDataFolder` should create `Projects` automatically when it creates the other required data directories.
+1. `Bmc.setDataFolder` should create `GodotProjects` automatically when it creates the other required asset directories.
 2. BuMoChi should use Godot itself in headless mode to inspect and validate projects and their resolved Scene trees.
-3. The Asset Manager should show invalid or incomplete projects with useful diagnostic information rather than silently hiding them.
-4. BuMoChi should allow Clip recording and unassigned Preset preparation when no valid project exists, but should require a valid project for Scene completion, Godot preview, and Sequence playback.
+3. The Asset Editor should show invalid or incomplete projects with useful diagnostic information rather than silently hiding them.
+4. BuMoChi should allow Clip recording and unassigned Preset preparation when no valid project exists, but should require a valid project for Scene completion, Godot preview, and Score playback.
 5. Godot should confirm project launch, active Scene, detected avatars, port assignments, Scene changes, and errors instead of requiring SuperCollider to assume that an operation succeeded.
 6. Graphical Godot launch and headless inspection should remain distinct operations: inspection discovers and validates content; graphical launch displays and performs it.
 
 These guidelines define the intended architecture. Items that depend on project inspection, template distribution, or the persistent Godot controller remain implementation milestones until their corresponding code is complete.
 
-## Projects in the BuMoChi data folder
+## Godot projects in the BuMoChi asset folder
 
-The selected BuMoChi data folder has four required subdirectories:
+The selected BuMoChi asset folder has seven standard subdirectories:
 
 ```text
-BuMoChiRecordings/
-├── Clips/
-├── Videos/
-├── Sequences/
-└── Projects/
+BuMoChiAssets/
+├── AnimationClips/
+├── AnimationScripts/
+├── GodotProjects/
+├── Scores/
+├── SoundFiles/
+├── SoundScripts/
+└── Videos/
 ```
 
-`Bmc.setDataFolder` must create all four directories when necessary. The directory name of the root itself is user-selectable; `BuMoChiRecordings` is used here as an example.
+`Bmc.setDataFolder` must create all seven directories when necessary. `BuMoChiAssets` is the default root-directory name, but the root itself is user-selectable. Changing the configured root does not move existing data automatically.
 
-The `Projects` directory is structurally mandatory. At least one valid, VMC-controllable Godot project is required before the user can complete a Scene, preview its animation in Godot, or play a Sequence. BuMoChi should nevertheless permit bottom-up Clip recording and creation of unassigned Presets when no valid Godot project is available.
+The `GodotProjects` directory is structurally mandatory. At least one valid, VMC-controllable Godot project is required before the user can complete a Scene, preview its animation in Godot, or play a Score. BuMoChi should nevertheless permit bottom-up Clip recording and creation of unassigned Presets when no valid Godot project is available.
 
 ## Valid Godot project
 
-Each immediate project directory beneath `Projects` is a candidate Godot project. It is recognized as a project only when `project.godot` exists at its root:
+Each immediate project directory beneath `GodotProjects` is a candidate Godot project. It is recognized as a project only when `project.godot` exists at its root:
 
 ```text
-Projects/
+GodotProjects/
 └── BoyAndBirds/
     ├── project.godot
     ├── scenes/
@@ -134,7 +137,7 @@ Automatic inspection may identify likely avatars through VMC tracker nodes, `XRN
 - body and face tracker names where applicable; and
 - the VMC listener port.
 
-The Asset Manager should display discovered avatars and distinguish explicitly identified avatars from uncertain inferred candidates. The user must confirm ambiguous results.
+The Asset Editor should display discovered avatars and distinguish explicitly identified avatars from uncertain inferred candidates. The user must confirm ambiguous results.
 
 ## Port convention
 
@@ -175,7 +178,7 @@ Users may duplicate a template project directory, give the duplicate a new direc
 
 Godot's generated `.godot` cache should not be included in a template copy; Godot reconstructs it. Files already referenced by Scenes should preferably be moved or renamed through Godot's FileSystem dock so Godot can update resource dependencies.
 
-A future **Duplicate project template** action in the Asset Manager should copy only source material, omit generated caches, assign a distinct project name, and validate the result before presenting it as available.
+A future **Duplicate project template** action in the Asset Editor should copy only source material, omit generated caches, assign a distinct project name, and validate the result before presenting it as available.
 
 ## Inspection, launch, and live control
 
@@ -201,8 +204,8 @@ select project
 
 The first filesystem-discovery draft is implemented:
 
-- `Bmc.setDataFolder` creates `Clips`, `Videos`, `Sequences`, and `Projects`.
-- `Bmc.projectDirectory` returns the active `Projects` directory.
+- `Bmc.setDataFolder` creates all seven standard asset directories.
+- `Bmc.godotProjectDirectory` returns the active `GodotProjects` directory; `Bmc.projectDirectory` remains a compatibility shortcut.
 - `Bmc.projects` lists immediate child directories containing `project.godot`.
 - `Bmc.projectScenes(projectName)` lists root-level `.tscn` files and recursively discovered `.tscn` files beneath `scenes`, returning `res://` paths.
 - `Bmc.projectInfo(projectName)` returns the project path, project file, Scene candidates, and preliminary status.
@@ -234,14 +237,14 @@ Bmc.inspectProjectData(\VMC_1_Avatar_F, { |data, error|
 });
 ```
 
-`data` is an Event containing Events and Arrays, so the Asset Manager can use it directly without parsing JSON.
+`data` is an Event containing Events and Arrays, so the Asset Editor can use it directly without parsing JSON.
 
-## Asset Manager project browser draft
+## Asset Editor project browser draft
 
-With the pipeline and Godot service running, open the first Asset Manager draft:
+With the pipeline and Godot service running, open the first Asset Editor draft:
 
 ```supercollider
-Bmc.assetManager;
+Bmc.assetEditor;
 ```
 
 The initial browser shows Godot project folders, their candidate Scenes, and the avatars discovered in the selected Scene. Filesystem results appear immediately. The editor then runs headless inspection and changes its status to `Godot verified` when the resolved Scene data arrives.
@@ -251,10 +254,10 @@ Select an avatar to review its inferred target name. Edit **Target name** and pr
 The names currently offered to Preset playback are available programmatically:
 
 ```supercollider
-Bmc.assetManagerTargets;
+Bmc.assetEditorTargets;
 ```
 
-Ports remain internal routing information and are not used as Preset target identities. This is the first implemented section of the larger Asset Manager specification; Clip/Preset integration and saved BuMoChi Scene editing remain subsequent work.
+Ports remain internal routing information and are not used as Preset target identities. This is the first implemented section of the larger Asset Editor specification; Clip/Preset integration and saved BuMoChi Scene editing remain subsequent work.
 
 Select a verified Scene and press **Play selected Scene** to launch it graphically through the helper service. The editor monitors two separate states:
 
@@ -267,7 +270,7 @@ The second indicator is the meaningful readiness check for animation playback. A
 
 For the current working implementation, the helper service owns at most one graphical Godot project at a time. Playing another Scene closes the previously service-launched Godot project first, including when the new Scene belongs to a different project. The service then checks the new Scene's expected VMC ports. If an unrelated process still owns one of them, launch is refused and the editor reports the conflicting port rather than starting a second receiver with ambiguous routing.
 
-This is an intentional initial limitation, consistent with a Sequence belonging to one Godot project. Supporting several simultaneous Godot projects may be considered later, but would require explicit cross-project port allocation and lifecycle controls.
+This is an intentional initial limitation, consistent with a Score belonging to one Godot project. Supporting several simultaneous Godot projects may be considered later, but would require explicit cross-project port allocation and lifecycle controls.
 
 Inspection is asynchronous so that the SuperCollider application remains responsive. The callback receives the JSON report, an error string (or `nil`), and the temporary report path. The report contains loadability results, inferred avatar candidates, tracker names, and VMC ports. It also distinguishes Scene-local VMC tracker nodes from the project-wide `VmcPlugin` autoload used by the single-avatar templates.
 

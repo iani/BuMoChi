@@ -51,7 +51,7 @@ This icon will open the VMC protocol settings that look like this:
 
 ![[Pasted image 20260829114448.png]]
 
-Single click on item A opens a window for inputing the port number. 
+Single click on item A opens a window for inputing the port number.
 
 The `39539` route appears twice because Bmc must embed the destination in every routed frame and Godot must listen on the same destination. Bmc supplies its side by default. The Godot project must have its VMC tracker configured and saved to listen on `39539`.
 
@@ -182,7 +182,7 @@ BmcDispatcher listening port       = 57131
 
 Each avatar rendered by Godot is assigned its own VMC listening port. This port is encoded in the scene file of the project that contains the avatar, so each project has its own port numbers for its avatars.
 
-For the default Ishidomaru setup saved in project Seed_2_Ishidomaru_C is `39539`. Each avatar must have a different port number, because this is the address where VMC sends its data to animate that avatar. 
+For the default Ishidomaru setup saved in project Seed_2_Ishidomaru_C is `39539`. Each avatar must have a different port number, because this is the address where VMC sends its data to animate that avatar.
 
 To inspect and/or set the port number of an avatar in a project do this:
 

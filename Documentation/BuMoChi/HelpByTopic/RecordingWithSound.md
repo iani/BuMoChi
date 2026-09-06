@@ -3,13 +3,13 @@
 
 This document shows how to sonify playback of an existing movement clip and optionally record the resulting sound. The parameters needed are:
 
-1. The name of the clip to record. 
+1. The name of the clip to record.
 2. The code of the synth processes and their mapping to particular parameters.
 3. Whether the sound should be recorded to disk.
 
 # Recording process, sound cues for starting and stopping.
 
-The initial configuration of this method includes some automation and sound cues to help one synchronize the start and end of the recording while being away from the keyboard.  The recording process is as follows: 
+The initial configuration of this method includes some automation and sound cues to help one synchronize the start and end of the recording while being away from the keyboard.  The recording process is as follows:
 
 ## 1. Specifying the clip, interaction, and sound synthesis parameters
 
@@ -39,7 +39,7 @@ Bmc.sonifyTake(
 );
 ```
 
-## 2. Issuing the recording command. 
+## 2. Issuing the recording command.
 
 The user issues the command with the clip and sound-synthesis algorithms. If recording is enabled, the server recorder is prepared and started before the synchronization countdown.
 

@@ -6,7 +6,7 @@ BmcDataFolder {
 	}
 
 	*defaultRoot {
-		^Platform.userAppSupportDir +/+ "BuMoChi_Data"
+		^Platform.userAppSupportDir +/+ "BuMoChiAssets"
 	}
 
 	*root {
@@ -34,10 +34,18 @@ BmcDataFolder {
 		^rootDirectory
 	}
 
-	*clips { ^this.root +/+ "Clips" }
+	*animationClips { ^this.root +/+ "AnimationClips" }
+	*animationScripts { ^this.root +/+ "AnimationScripts" }
 	*videos { ^this.root +/+ "Videos" }
-	*sequences { ^this.root +/+ "Sequences" }
-	*projects { ^this.root +/+ "Projects" }
+	*scores { ^this.root +/+ "Scores" }
+	*godotProjects { ^this.root +/+ "GodotProjects" }
+	*soundFiles { ^this.root +/+ "SoundFiles" }
+	*soundScripts { ^this.root +/+ "SoundScripts" }
+
+	// Compatibility shortcuts for the former asset names.
+	*clips { ^this.animationClips }
+	*sequences { ^this.scores }
+	*projects { ^this.godotProjects }
 
 	*ensureDirectory { |path|
 		if(File.exists(path).not and: { File.mkdir(path).not }) {
@@ -51,10 +59,13 @@ BmcDataFolder {
 
 	*ensureDirectories {
 		this.ensureDirectory(rootDirectory);
-		this.ensureDirectory(rootDirectory +/+ "Clips");
+		this.ensureDirectory(rootDirectory +/+ "AnimationClips");
+		this.ensureDirectory(rootDirectory +/+ "AnimationScripts");
 		this.ensureDirectory(rootDirectory +/+ "Videos");
-		this.ensureDirectory(rootDirectory +/+ "Sequences");
-		this.ensureDirectory(rootDirectory +/+ "Projects");
+		this.ensureDirectory(rootDirectory +/+ "Scores");
+		this.ensureDirectory(rootDirectory +/+ "GodotProjects");
+		this.ensureDirectory(rootDirectory +/+ "SoundFiles");
+		this.ensureDirectory(rootDirectory +/+ "SoundScripts");
 		^rootDirectory
 	}
 

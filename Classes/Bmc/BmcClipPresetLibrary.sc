@@ -6,11 +6,11 @@ BmcClipPresetLibrary {
 	init { presets = IdentityDictionary.new; ^this }
 
 	directoryFor { |clipName|
-		^BmcDataFolder.clips +/+ clipName.asString +/+ "Presets"
+		^BmcDataFolder.animationClips +/+ clipName.asString +/+ "Presets"
 	}
 
 	ensureDirectoryFor { |clipName|
-		var clipDirectory = BmcDataFolder.clips +/+ clipName.asString;
+		var clipDirectory = BmcDataFolder.animationClips +/+ clipName.asString;
 		BmcDataFolder.ensureDirectory(clipDirectory);
 		^BmcDataFolder.ensureDirectory(clipDirectory +/+ "Presets")
 	}

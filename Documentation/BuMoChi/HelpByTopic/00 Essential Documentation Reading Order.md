@@ -8,7 +8,7 @@ BuMoChi combines motion capture, SuperCollider, OSC/VMC routing, Godot rendering
    Read this first for the artistic and technical purpose of the system.
 
 2. [BuMoChi Terminology Glossary](Glossary.md)
-   Learn the meanings of Project, Sequence, Scene, Clip, Preset, Motion, Figure, and Avatar. These terms have precise meanings in the documentation.
+   Learn the meanings of Project, Score, Scene, Clip, Preset, Motion, Figure, and Avatar. These terms have precise meanings in the documentation.
 
 3. [Component Applications and Sources](Component%20Applications%20and%20Sources.md)
    See which responsibilities belong to XR-Animator, the OSC encoder and decoder, SuperCollider/BuMoChi, OSCGroups, and Godot.
@@ -29,9 +29,10 @@ BuMoChi combines motion capture, SuperCollider, OSC/VMC routing, Godot rendering
 
 # Creating a piece
 
-- [Creating a Piece](Creating%20a%20Piece.md)
-  Read this to learn about the top-level tools and workflow for creating animation material, sonification material and structuring it into animation and interaction sequences.
-## Projects, Scenes, Clips, and Presets
+- [Creating a Piece](Creating%20A%20Piece.md)
+  Read this to learn about the top-level tools and workflow for creating animation material, sonification material, and structuring it into a performance Score.
+
+## Projects, Scores, Scenes, Clips, and Presets
 
 8. [Working with Godot projects](WorkingWithGodotProjects.md)
    Read the project-directory convention, Scene discovery rules, VMC avatar requirements, template-project policy, and planned inspection-and-launch workflow.
@@ -43,12 +44,12 @@ BuMoChi combines motion capture, SuperCollider, OSC/VMC routing, Godot rendering
     Read the more detailed Scene, Motion, Figure, Avatar, and routing design after understanding the Glossary.
 
 11. [Editors overview](Editors/README.md)
-    Understand the division between the integrated Asset Manager and the timeline-oriented Sequence Editor.
+    Understand the division between the integrated Asset Editor and the timeline-oriented Score Editor.
 
-12. [Asset Manager draft](Editors/Asset_Manager/01%20Asset%20Manager%20Draft%201.md)
-    Read the bottom-up material-preparation and Sequence-first Scene workflows.
+12. [Asset Editor draft](Editors/Asset_Editor/01%20Asset%20Editor%20Draft%201.md)
+    Read the bottom-up material-preparation and Score-first Scene workflows.
 
-13. [Sequence Editor draft](Editors/Sequence_Editor/01%20Sequence%20Editor%20Draft%201.md)
+13. [Score Editor draft](Editors/Score_Editor/01%20Score%20Editor%20Draft%201.md)
     Learn how Scenes and their Presets will be arranged over time.
 
 ## Routing and multiple avatars

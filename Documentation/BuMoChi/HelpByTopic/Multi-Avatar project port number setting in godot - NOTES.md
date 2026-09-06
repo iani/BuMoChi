@@ -5,11 +5,11 @@
 ### Set Ishidomaru’s VMC port
 
 1. Stop the running Godot scene, if necessary.
-    
+
 2. Open `demo.tscn`.
-    
+
 3. At the top of the Scene tree, select:
-    
+
 
 ```
 Demo
@@ -17,9 +17,9 @@ Demo
 ```
 
 4. In the panel on the right, select **Inspector**, not **Node**.
-    
+
 5. Find the property:
-    
+
 
 ```
 UDP Listener Port

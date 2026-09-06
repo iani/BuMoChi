@@ -68,7 +68,7 @@ After class-library compilation, Bmc is already listening on `57130` with `Ishid
     ~take1Path.postln;
     ```
 
-    With no explicit path, BuMoChi saves `take1.scd` in the `BmcClips` directory inside `Platform.userAppSupportDir`. Display that directory at any time with:
+    With no explicit path, BuMoChi saves `take1.scd` in the active `BuMoChiAssets/AnimationClips` directory. Display that directory at any time with:
 
     ``` supercollider
     BmcClipLibrary.defaultDirectory.postln;
@@ -98,7 +98,7 @@ The window initially lists clips in memory. Clicking an in-memory row makes that
 
 Use the buttons above the list as follows:
 
-- `List saved` scans the default `BmcClips` directory and lists the names of its `.scd` and `.bmc` files. It does not load their frame data into memory.
+- `List saved` scans the active `BuMoChiAssets/AnimationClips` directory and lists the names of its `.scd` and `.bmc` files. It does not load their frame data into memory.
 - Select a row and press `Play selected`. If the clip is only on disk, Bmc loads it first and then starts playback. If it is already in memory, Bmc plays the existing in-memory clip directly.
 
 The saved-file scan is limited to `BmcClipLibrary.defaultDirectory`. Files stored in other directories must first be loaded explicitly with `Bmc.loadClip`.
@@ -144,7 +144,7 @@ BuMoChi supports two clip storage schemes. SCD is the default used by `Bmc.recor
 | `.scd` | automatic after `Bmc.record`, or `Bmc.saveClipScd` | `Bmc.loadClipScd` | default; readable timestamp/message text |
 | `.bmc` | `Bmc.recordBmc`, or `Bmc.saveClip` | `Bmc.loadClip` | legacy compact SuperCollider object archive |
 
-To save the selected in-memory clip under the default `BmcClips` directory:
+To save the selected in-memory clip under the active `BuMoChiAssets/AnimationClips` directory:
 
 ``` supercollider
 Bmc.record(\take1);
@@ -156,7 +156,7 @@ Bmc.stopRecording; // automatically writes take1.scd
 
 `Bmc.record` retains the complete clip in memory during capture. `Bmc.stopRecording` adds the completed clip to the in-memory library and writes it to `.scd` frame by frame. Use `Bmc.recordScd` when the format should be explicit, or `Bmc.recordBmc` to request the legacy archive format. `Bmc.saveClipScd` remains useful for writing an existing in-memory clip again or choosing a custom path.
 
-The default result is `BmcClips/take1.scd`. Supply an explicit path as the second argument when required:
+The default result is `BuMoChiAssets/AnimationClips/take1.scd`. Supply an explicit path as the second argument when required:
 
 ``` supercollider
 Bmc.saveClipScd(\take1, "/path/to/take1.scd");
@@ -314,7 +314,7 @@ in: 0.0
 )
 ```
 
-An optional `path` may identify a `.bmc` file outside the default BmcClips directory:
+An optional `path` may identify a `.bmc` file outside the active AnimationClips directory:
 
 ``` supercollider
 (

@@ -8,7 +8,7 @@
 Bmc {
 	classvar <boneNames;
 	classvar <dispatcher, <recorder, <players, <library, <avatars, <wires, <modifiers;
-	classvar <soundFileLoader, <takeSonifier, <presetLibrary, <clipEditorWindow, <assetManagerWindow;
+	classvar <soundFileLoader, <takeSonifier, <presetLibrary, <clipEditorWindow, <assetEditorWindow;
 	classvar <defaultAvatar, recordingName, recordingFormat, recorderPublisher;
 	classvar <defaultXrAnimatorOutputPort, <defaultInputPort, <defaultDecoderPort;
 	classvar <defaultAvatarID, <defaultAvatarName, <defaultAvatarVmcPort;
@@ -526,8 +526,16 @@ Bmc {
 		^this
 	}
 	*dataFolder { ^BmcDataFolder.root }
-	*sequenceDirectory { ^BmcDataFolder.sequences }
-	*projectDirectory { ^BmcDataFolder.projects }
+	*animationClipDirectory { ^BmcDataFolder.animationClips }
+	*animationScriptDirectory { ^BmcDataFolder.animationScripts }
+	*videoDirectory { ^BmcDataFolder.videos }
+	*scoreDirectory { ^BmcDataFolder.scores }
+	*godotProjectDirectory { ^BmcDataFolder.godotProjects }
+	*soundFileDirectory { ^BmcDataFolder.soundFiles }
+	*soundScriptDirectory { ^BmcDataFolder.soundScripts }
+	// Compatibility shortcuts for the former asset names.
+	*sequenceDirectory { ^this.scoreDirectory }
+	*projectDirectory { ^this.godotProjectDirectory }
 	*projects { ^BmcGodotProjectLibrary.projectNames }
 	*projectInfo { |name| ^BmcGodotProjectLibrary.projectInfo(name) }
 	*projectScenes { |name| ^BmcGodotProjectLibrary.scenePaths(name) }
@@ -549,7 +557,7 @@ Bmc {
 	*setDataFolder { |path|
 		if(path.notNil) {
 			BmcDataFolder.root_(path);
-			BmcClipLibrary.defaultDirectory_(BmcDataFolder.clips);
+			BmcClipLibrary.defaultDirectory_(BmcDataFolder.animationClips);
 			BmcTakeRecordingPath.recordingDirectory_(BmcDataFolder.videos);
 			library.refreshSaved;
 			"Bmc data will be stored in: %".format(BmcDataFolder.root).postln;
@@ -594,15 +602,18 @@ Bmc {
 		^clipEditorWindow
 	}
 
-	*assetManager {
-		if(assetManagerWindow.notNil) { assetManagerWindow.close };
-		assetManagerWindow = BmcAssetManager.new;
-		^assetManagerWindow
+	*assetEditor {
+		if(assetEditorWindow.notNil) { assetEditorWindow.close };
+		assetEditorWindow = BmcAssetEditor.new;
+		^assetEditorWindow
 	}
-	*assetManagerTargets {
-		if(assetManagerWindow.isNil) { ^#[] };
-		^assetManagerWindow.targetNames
+	*assetEditorTargets {
+		if(assetEditorWindow.isNil) { ^#[] };
+		^assetEditorWindow.targetNames
 	}
+	// Compatibility entry points for scripts written before the GUI rename.
+	*assetManager { ^this.assetEditor }
+	*assetManagerTargets { ^this.assetEditorTargets }
 	*clipPresets { |clipName| ^presetLibrary.names(clipName ?? { library.currentName }) }
 	*clipPreset { |clipName, presetName| ^presetLibrary.at(clipName, presetName) }
 	*playPreset { |clipName, presetName| ^this.playPresetObject(presetLibrary.at(clipName, presetName)) }

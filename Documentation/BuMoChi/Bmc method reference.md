@@ -226,7 +226,7 @@ After the SuperCollider class library compiles, Bmc automatically listens for ro
 
 14. `Bmc.saveClip(name, path)` / `Bmc.save(name, path)`
 
-    Writes a clip archive. If the path is omitted, BuMoChi uses a `BmcClips` directory inside `Platform.userAppSupportDir` and the `.bmc` extension.
+    Writes a clip archive. If the path is omitted, BuMoChi uses the active `BuMoChiAssets/AnimationClips` directory and the `.bmc` extension.
 
 15. `Bmc.loadClip(path, name)` / `Bmc.load(path, name)`
 
@@ -234,7 +234,7 @@ After the SuperCollider class library compiles, Bmc automatically listens for ro
 
 16. `Bmc.saveClipScd(name, path)`
 
-    Explicitly saves or resaves an in-memory clip in the complete, human-readable timestamp/message format. When `path` is omitted, the file is saved as `name.scd` in the default `BmcClips` directory. Ordinary `Bmc.record` already performs this save automatically when `Bmc.stopRecording` is called; use `Bmc.saveClipScd` when an explicit path is required or an existing in-memory clip must be written again.
+    Explicitly saves or resaves an in-memory clip in the complete, human-readable timestamp/message format. When `path` is omitted, the file is saved as `name.scd` in the active `BuMoChiAssets/AnimationClips` directory. Ordinary `Bmc.record` already performs this save automatically when `Bmc.stopRecording` is called; use `Bmc.saveClipScd` when an explicit path is required or an existing in-memory clip must be written again.
 
     ``` supercollider
     Bmc.record(\take1);

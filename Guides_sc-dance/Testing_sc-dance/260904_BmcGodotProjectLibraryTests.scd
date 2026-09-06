@@ -3,7 +3,7 @@
 (
 var originalRoot = Bmc.dataFolder;
 var testRoot = "/tmp/bumochi_godot_projects_test";
-var projectsRoot = testRoot +/+ "Projects";
+var projectsRoot = testRoot +/+ "GodotProjects";
 var rootProject = projectsRoot +/+ "RootProject";
 var nestedProject = projectsRoot +/+ "NestedProject";
 var invalidProject = projectsRoot +/+ "NotAProject";

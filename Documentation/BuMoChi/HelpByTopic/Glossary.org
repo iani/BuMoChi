@@ -9,15 +9,15 @@ A Scene is the complete cross-system definition needed to animate one scene in a
 
 A /Godot scene resource/ is the corresponding node tree, normally stored as a =.tscn= file. It may contain avatars, environments, cameras, lights, and Godot-side animation receivers. Each Godot scene resource has one root node and may contain instances of other scene resources as child branches. One is configured as the project's default or main scene.
 
-The capitalized BuMoChi term /Scene/ includes both sides of this pairing: the SuperCollider animation configuration and its referenced Godot scene resource. It does not mean recorded motion data or a timeline. A Sequence coordinates one or more Scenes over time.
+The capitalized BuMoChi term /Scene/ includes both sides of this pairing: the SuperCollider animation configuration and its referenced Godot scene resource. It does not mean recorded motion data or a timeline. A Score coordinates one or more Scenes over time.
 
-* Sequence
+* Score
 
-A Sequence is a time-ordered collection of BuMoChi actions associated with one Godot project. At minimum, it operates in the project's default Scene. It may also switch sequentially among multiple =.tscn= Scenes belonging to that project.
+A Score is a time-ordered collection of BuMoChi actions associated with one Godot project. At minimum, it operates in the project's default Scene. It may also switch sequentially among multiple =.tscn= Scenes belonging to that project.
 
-A Sequence action, also called a cue, may activate a Scene; start, stop, or change a clip-preset playback; start, stop, or change an animation wiring; alter routing or target assignments; wait for a duration; or respond to an external event. An animation wiring is a live connection that sends motion from a source to a figure, avatar, or other processing destination.
+A Score action, also called a cue, may activate a Scene; start, stop, or change a clip-preset playback; start, stop, or change an animation wiring; alter routing or target assignments; wait for a duration; or respond to an external event. An animation wiring is a live connection that sends motion from a source to a figure, avatar, or other processing destination.
 
-A Sequence stores references and timing, not recorded motion or Godot node trees. Clips remain the complete recorded data, Presets describe how individual clips are played, and Scenes provide paired SuperCollider animation configuration and Godot scene-resource selection. A Sequence may select and coordinate these objects over time without modifying them.
+A Score stores references and timing, not recorded motion or Godot node trees. Clips remain the complete recorded data, Presets describe how individual clips are played, and Scenes provide paired SuperCollider animation configuration and Godot scene-resource selection. A Score may select and coordinate these objects over time without modifying them.
 
 * Clip
 
@@ -55,7 +55,7 @@ For example, =\walk= is a Scene-local motion name that uses the saved clip =\tak
 \walk -> (clip: \take1, rate: 1.0, loop: false, in: 0.0)
 #+end_src
 
-The =clip= field is convenient shorthand for =source: (type: \clip, name: \take1)=. The =in= value is the position in seconds at which reading begins inside the clip. A Sequence action uses a separate =at= value for the time at which a motion begins on the Sequence timeline.
+The =clip= field is convenient shorthand for =source: (type: \clip, name: \take1)=. The =in= value is the position in seconds at which reading begins inside the clip. A Score action uses a separate =at= value for the time at which a motion begins on the Score timeline.
 
 * Figure
 
@@ -85,15 +85,15 @@ Here we explain the top-level objects used to drive an animation in Godot from S
 
 ** Godot: Project and scene resource
 
-A *Godot project* is the folder-based application unit loaded to render an animation. A project contains one or more *Godot scene resources*, normally stored as =.tscn= files. A Godot scene resource is a node tree containing rendering-side definitions such as environments, avatars, cameras, lighting, rigging, and animation receivers. Each Godot scene resource may have a different appearance and structure---for example, different background objects, avatars, lighting, and cameras. BuMoChi can therefore switch from one Godot scene resource to another while a Sequence runs.
+A *Godot project* is the folder-based application unit loaded to render an animation. A project contains one or more *Godot scene resources*, normally stored as =.tscn= files. A Godot scene resource is a node tree containing rendering-side definitions such as environments, avatars, cameras, lighting, rigging, and animation receivers. Each Godot scene resource may have a different appearance and structure---for example, different background objects, avatars, lighting, and cameras. BuMoChi can therefore switch from one Godot scene resource to another while a Score runs.
 
-** SuperCollider: Sequence, Scene, Clip, and Preset
+** SuperCollider: Score, Scene, Clip, and Preset
 
-A *Scene* pairs one SuperCollider animation configuration with one Godot scene resource. It defines how sources, motions, figures, avatars, and routes drive that resource. A *Sequence* belongs to one Godot project and coordinates one or more Scenes over time. A *Clip* contains complete recorded motion data, while a *Preset* describes one non-destructive manner of playing a Clip.
+A *Scene* pairs one SuperCollider animation configuration with one Godot scene resource. It defines how sources, motions, figures, avatars, and routes drive that resource. A *Score* belongs to one Godot project and coordinates one or more Scenes over time. A *Clip* contains complete recorded motion data, while a *Preset* describes one non-destructive manner of playing a Clip.
 
 The correspondence is thus:
 
-- A *Sequence* in SuperCollider coordinates one or more BuMoChi *Scenes* over time. It may remain in one Godot scene resource or switch between several.
+- A *Score* in SuperCollider coordinates one or more BuMoChi *Scenes* over time. It may remain in one Godot scene resource or switch between several.
 - A BuMoChi *Scene* corresponds to and controls one Godot *scene resource* in a project.
 - A *Clip* contains complete recorded animation data that can be reused in multiple Scenes for different avatars or objects.
 - A *Preset* describes how to play a Clip. A Scene may use many Presets, referring to one or many Clips.
@@ -101,7 +101,7 @@ The correspondence is thus:
 #+begin_src mermaid :file glossary-core-concepts.svg
 flowchart LR
     subgraph SC["SuperCollider / BuMoChi"]
-        Q["Sequence<br/>orders actions over time"]
+        Q["Score<br/>orders actions over time"]
         S["Scene<br/>animation configuration"]
         P["Preset<br/>how a Clip is played"]
         C["Clip<br/>complete recorded data"]
@@ -130,7 +130,7 @@ flowchart LR
         C["Clip<br/>complete recorded motion"]
         P["Preset<br/>range, speed, loop,<br/>bones and targets"]
         SCENE["Scene<br/>sources, motions, figures,<br/>avatars and routing"]
-        SEQ["Sequence<br/>time-ordered actions and cues"]
+        SEQ["Score<br/>time-ordered actions and cues"]
         PROJ["Godot project"]
         SCN["Scenes<br/>one or more .tscn trees"]
         C -. "referenced by" .-> P

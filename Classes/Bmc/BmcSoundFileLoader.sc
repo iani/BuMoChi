@@ -12,7 +12,7 @@ BmcSoundFileLoader {
 
 	init { |argServer, argDirectory, argLibrary|
 		server = argServer ?? { Server.default };
-		directory = (argDirectory ?? { Platform.userHomeDir +/+ "audiofiles" }).standardizePath;
+		directory = (argDirectory ?? { BmcDataFolder.soundFiles }).standardizePath;
 		library = argLibrary ?? { Library.global };
 		playbackSynths = List.new;
 		^this
@@ -40,7 +40,7 @@ BmcSoundFileLoader {
 	soundFiles {
 		var folder = PathName(directory);
 		if(folder.isFolder.not) {
-			"Bmc: audiofiles directory not found: %".format(directory).warn;
+			"Bmc: SoundFiles directory not found: %".format(directory).warn;
 			^#[]
 		};
 		^folder.files.select { |file|

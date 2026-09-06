@@ -458,7 +458,7 @@ SuperCollider のクラスライブラリがコンパイルされると、Bmc �
 
 9. `Bmc.saveClip(name, path)` / `Bmc.save(name, path)`
 
-   クリップアーカイブを書き出します。パスを省略すると、BuMoChi は `Platform.userAppSupportDir` 内の `BmcClips` ディレクトリと `.bmc` 拡張子を使用します。
+   クリップアーカイブを書き出します。パスを省略すると、BuMoChi は `BuMoChiAssets/AnimationClips` ディレクトリと `.bmc` 拡張子を使用します。
 
 10. `Bmc.loadClip(path, name)` / `Bmc.load(path, name)`
 
@@ -466,7 +466,7 @@ SuperCollider のクラスライブラリがコンパイルされると、Bmc �
 
 11. `Bmc.saveClipScd(name, path)`
 
-    メモリー内クリップを、完全で人間が読めるタイムスタンプ／メッセージ形式として明示的に保存または再保存します。`path` を省略すると、デフォルトの `BmcClips` ディレクトリに `name.scd` として保存されます。通常の `Bmc.record` は、`Bmc.stopRecording` の呼び出し時にすでにこの保存を自動実行します。明示的なパスが必要な場合や、既存のメモリー内クリップをもう一度書き出す場合に `Bmc.saveClipScd` を使用します。
+    メモリー内クリップを、完全で人間が読めるタイムスタンプ／メッセージ形式として明示的に保存または再保存します。`path` を省略すると、`BuMoChiAssets/AnimationClips` ディレクトリに `name.scd` として保存されます。通常の `Bmc.record` は、`Bmc.stopRecording` の呼び出し時にすでにこの保存を自動実行します。明示的なパスが必要な場合や、既存のメモリー内クリップをもう一度書き出す場合に `Bmc.saveClipScd` を使用します。
 
     ```supercollider
     Bmc.record(\take1);

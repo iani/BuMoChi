@@ -1,5 +1,5 @@
 BmcGodotProjectLibrary {
-	*directory { ^BmcDataFolder.projects }
+	*directory { ^BmcDataFolder.godotProjects }
 
 	*projectFolders {
 		var root = PathName(this.directory);

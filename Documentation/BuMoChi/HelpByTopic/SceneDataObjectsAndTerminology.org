@@ -10,7 +10,7 @@ A scene definition defines motion sources, motions, figures, avatars, and their 
 
 Each scene is stored as a separate named =.scd= file in the Bmc scenes directory. When a scene is loaded, it is registered under its name in the in-memory =Bmc.scenes= dictionary. Keeping one scene per file makes scenes easier to inspect, copy, version, and share, and prevents an error in one scene from affecting every saved scene.
 
-A /Sequence/ adds temporal structure to this configuration: it is an ordered timeline of actions or cues associated with one Godot project. A Sequence operates in the project's default Godot Scene and may switch among other =.tscn= Scenes in that project. A Scene describes the reusable runtime configuration; a Sequence coordinates that configuration and Godot Scene selection over time.
+A /Score/ adds temporal structure to this configuration: it is an ordered timeline of actions or cues associated with one Godot project. A Score operates in the project's default Godot Scene and may switch among other =.tscn= Scenes in that project. A Scene describes the reusable runtime configuration; a Score coordinates that configuration and Godot Scene selection over time.
 
 * Scene data format
 
@@ -95,7 +95,7 @@ In the example, =\walk= is the scene-local motion name and =\take1= is the name 
 \walk -> (clip: \take1, rate: 1.0, loop: false, in: 0.0)
 #+end_src
 
-The =in= value is the position, in seconds, at which reading begins inside the clip. It replaces the less precise name =start=. A Sequence action uses a separate =at= value to specify when a motion begins on the Sequence timeline.
+The =in= value is the position, in seconds, at which reading begins inside the clip. It replaces the less precise name =start=. A Score action uses a separate =at= value to specify when a motion begins on the Score timeline.
 
 * Source types
 

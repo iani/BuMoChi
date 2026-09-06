@@ -1,50 +1,53 @@
-# 1. Use a single BuMochi data folder for Clips, Videos, Sequences, and Projects
+# 1. Use a single BuMoChi asset folder
 
-> **Implementation comment (2026-09-04):** This is now the implemented storage rule. `Bmc.dataFolder` returns the root and `Bmc.setDataFolder(path)` sets it; calling `Bmc.setDataFolder` without a path opens the folder chooser. The root contains `Clips`, `Videos`, `Sequences`, and `Projects`. Changing the root updates the clip library and video-take destination; `Bmc.sequenceDirectory` and `Bmc.projectDirectory` return the corresponding directories. Existing data is not moved automatically.
+> **Implementation comment (2026-09-04):** This is now the implemented storage rule. `Bmc.dataFolder` returns the root and `Bmc.setDataFolder(path)` sets it; calling `Bmc.setDataFolder` without a path opens the folder chooser. The root contains `AnimationClips`, `AnimationScripts`, `GodotProjects`, `Scores`, `SoundFiles`, `SoundScripts`, and `Videos`. Changing the root updates the clip library and video-take destination; `Bmc.scoreDirectory` and `Bmc.projectDirectory` return the corresponding directories. Existing data is not moved automatically.
 
-Use a single BuMochi data folder for Clips, Videos, Sequences, and Projects, as follows:
+Use a single BuMoChi asset folder as follows:
 
-BuMoChi_Data 
+BuMoChiAssets
 Subfolders:
-	Clips
+	AnimationClips
+	AnimationScripts
+	GodotProjects
+	Scores
+	SoundFiles
+	SoundScripts
 	Videos
-	Sequences
-	Projects
 
-The default location of BuMoChi_Data would be in Platform.userAppSupportDir +/+ "BuMoChi_Data".
+The default location of `BuMoChiAssets` is `Platform.userAppSupportDir +/+ "BuMoChiAssets"`.
 The user should be able to set his custom location with a file dialogue for selecting a folder, using method:
 
 Bmc.setDataFolder
 
 As remarked before, it is preferable to keep this location on a separate memory location, which has dedicated space for saving the large amounts of data required by videos.
 
-Keeping the clips on an external disk presents the disadvantage that one depends on having this external disk attached to work with clips. However, since each video recording folder contains metadata regarding which clips it uses, it makes sense to have the clips always available in a standardized location relative to the video recordings folder. Sequences likewise refer to the Clips and Scenes they coordinate, and Scenes refer to Godot projects. That is why Clips, Videos, Sequences, and Projects are subdirectories of BuMoChi_Data.
+Keeping the clips on an external disk presents the disadvantage that one depends on having this external disk attached to work with clips. However, since each video recording folder contains metadata regarding which clips it uses, it makes sense to have the clips always available in a standardized location relative to the video recordings folder. Scores likewise refer to the Clips and Scenes they coordinate, and Scenes refer to Godot projects. These asset types are therefore subdirectories of `BuMoChiAssets`.
 
-When a new data folder is chosen, Bmc checks whether the Clips, Videos, Sequences, and Projects subdirectories are present and creates them when needed.
+When a new asset folder is chosen, Bmc checks whether all seven standard subdirectories are present and creates them when needed.
 
-# 2. Clip and Preset panel of the Asset Manager
+# 2. Clip and Preset panel of the Asset Editor
 
 > **Implementation comment (2026-09-04): clip and preset are distinct.** A **clip** is the full, immutable recorded motion data. A **preset** is a named description of how that clip is played: inclusive frame range, speed, loop behavior, bone selection, target or targets, sonification code, and frame-modification code. Editing or deleting a preset never edits or deletes its source clip.
 
-Here is a first prototype draft for the Clip and Preset panel embedded in the Asset Manager. It browses immutable Clips and creates or changes Presets within the current Scene. The intended principal entry point is `Bmc.assetManager`; opening another editor merely to assign the resulting Preset is explicitly not required.
+Here is a first prototype draft for the Clip and Preset panel embedded in the Asset Editor. It browses immutable Clips and creates or changes Presets within the current Scene. The intended principal entry point is `Bmc.assetEditor`; opening another editor merely to assign the resulting Preset is explicitly not required.
 
-The Asset Manager should have four linked lists. In order from left to right:
+The Asset Editor should have four linked lists. In order from left to right:
 
-1. Clip list.  A list of all clips by name.  This points to the folders that contain the data of the clip. 
-2. Preset list for each clip. This lists the presets defined for the clip chosen in the clip list to the left. 
-3. Sequence list. This lists saved Sequences found in `Bmc.sequenceDirectory`.
-4. Scene list. This lists, in timeline order, the Scenes referenced by the selected Sequence.
+1. Clip list.  A list of all clips by name.  This points to the folders that contain the data of the clip.
+2. Preset list for each clip. This lists the presets defined for the clip chosen in the clip list to the left.
+3. Score list. This lists saved Scores found in `Bmc.scoreDirectory`.
+4. Scene list. This lists, in timeline order, the Scenes referenced by the selected Score.
 
-To the right of the preset list is the area for setting the preset parameters for the chosen preset. These are: 
+To the right of the preset list is the area for setting the preset parameters for the chosen preset. These are:
 1. start frame index (integer constrained between 0 and numframes - 1)
-2. end frame index, (integer constrained between 0 and numframes - 1, must be equal to or larger than start frame index. If it is equal to start frame index, then just a single frame is played. 
+2. end frame index, (integer constrained between 0 and numframes - 1, must be equal to or larger than start frame index. If it is equal to start frame index, then just a single frame is played.
 3. loop or not, (boolean)
 4. speed of playback (float between -100 and 100.  If 0 then the clip is played statically by playing the start frame once)
-5. code for sonifying clip frame data. 
-6. code for modifying clip frame data - if applicable. 
+5. code for sonifying clip frame data.
+6. code for modifying clip frame data - if applicable.
 7. [TO BE DISCUSSED:] bones or body parts that are played back
 8. optional playback target or targets chosen from the figures, avatars, or objects defined by the assigned Scene. These may remain unset while preparing an unassigned Preset.
-9. optional assigned Scene, including its associated Godot project. The selected Sequence is the browsing context used to find the Scene and is not copied into the Preset when the same Scene is shared by several Sequences.
+9. optional assigned Scene, including its associated Godot project. The selected Score is the browsing context used to find the Scene and is not copied into the Preset when the same Scene is shared by several Scores.
 
 When a Scene is current, the editor must display its Godot project and `.tscn` resource, and saving a Preset automatically assigns it to that Scene. Without a current Scene, the editor may save an unassigned Preset for later use. It must refuse to assign or perform a Preset when the Scene is unavailable or when a named target does not exist in that Scene.
 
@@ -56,7 +59,7 @@ At the bottom of the window there should be three additional single lines of ite
 	3. Stop recording
 	4. Start playback
 	5. Stop playback
-	6. Add new preset to selected clip.  
+	6. Add new preset to selected clip.
 	7. Name of new preset (must be set before creating the preset, is set as null string, and remains the same after creation. If null or a preset by the displayed name already exists, prompt the user to enter a different name)
 	8. Clone preset. This copies the selected Preset's playback settings, requires a new name and destination Scene, and permits its targets to be changed before saving.
 	9. Status indication (checkbox), labeled "Animation Data input active:", indicating whether data is incoming from OSCEncoder.
@@ -75,4 +78,4 @@ At the bottom of the window there should be three additional single lines of ite
 
 > **Implementation comment:** The first code slice establishes the shared data root and the player operations needed by the editor (immediate frame preview, stepping, and efficient time seeking). The next slice should introduce `BmcClipPreset` and the two-list editor. Negative and zero speeds need explicit player semantics before the full `-100 ... 100` control is enabled: zero means a static preview of `startFrame`; a negative value means reverse traversal, beginning at the preset's `endFrame` unless the user has explicitly sought elsewhere.
 
-> **Revision comment:** The prototype currently has only Clip and Preset lists. These controls should become a panel of the Asset Manager. In bottom-up material-preparation mode, the panel can save unassigned Presets. In Sequence-first mode, the Asset Manager supplies the linked Sequence and Scene browsers, Scene and Godot-resource display, target validation, and **Clone preset** workflow. There must be no second assignment step after saving a Preset when a Scene is already current.
+> **Revision comment:** The prototype currently has only Clip and Preset lists. These controls should become a panel of the Asset Editor. In bottom-up material-preparation mode, the panel can save unassigned Presets. In Score-first mode, the Asset Editor supplies the linked Score and Scene browsers, Scene and Godot-resource display, target validation, and **Clone preset** workflow. There must be no second assignment step after saving a Preset when a Scene is already current.

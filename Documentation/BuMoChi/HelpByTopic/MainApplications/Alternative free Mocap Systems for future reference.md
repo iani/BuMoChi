@@ -4,7 +4,7 @@
 
 ---
 
- 
+
 Yes, but none currently matches XR-Animator’s complete combination of:
 
 - Free use
@@ -76,7 +76,7 @@ My recommendation for your work is:
 
 For the present BuMoChi pipeline, XR-Animator remains the most practical option because it already supplies VMC data in a form that `BunrakuOSCEncoder` can consume directly.
 
-# Unity Face Capture vs. XR-Animator 
+# Unity Face Capture vs. XR-Animator
 
 > [!question] If detailed tracking of face shape is our first priority, rather than detection of pretrained expressions such as smile, smirk etc., does Unity Face Capture have a quality advantage over XR-Animator?
 
@@ -126,7 +126,7 @@ My recommendation is therefore:
 
 Before changing the whole pipeline, we should also inspect whether Ishidomaru and Mother actually possess the necessary 52 facial morph targets. That determines how much of the capture-quality improvement Godot can display.
 
-# Building a Unity Face Capture to VMC bridge 
+# Building a Unity Face Capture to VMC bridge
 
 We can build a small Unity “Face Capture → VMC” transmitter. It would receive Unity Face Capture’s 52 ARKit coefficients and immediately transmit them as standard VMC/OSC blendshape messages.
 
@@ -150,13 +150,13 @@ BunrakuOSCEncoder
 Create a minimal Unity project containing:
 
 - Unity Live Capture and ARKit Face Capture packages.
-    
+
 - A `FaceCaptureVmcBridge` C# component.
-    
+
 - An OSC sender library or a small purpose-built OSC encoder.
-    
+
 - A configuration panel containing:
-    
+
     - Target IP
     - Target port
     - Avatar name
@@ -274,13 +274,13 @@ Eyes and face: Unity Face Capture
 There are two possible bridge levels:
 
 1. **Pure VMC bridge**
-    
+
     Unity emits ordinary `/VMC/Ext/Blend/Val` messages. This is immediately compatible with existing VMC software.
-    
+
 2. **BuMoChi-aware bridge**
-    
+
     Unity sends a compact complete facial frame directly in the Bunraku frame format, including source and avatar metadata.
-    
+
 
 I recommend beginning with the pure VMC bridge. It is simpler, reusable outside BuMoChi and testable with any VMC monitor. `BunrakuOSCEncoder` remains responsible for converting it into BuMoChi’s source-aware frames.
 
