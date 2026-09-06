@@ -22,13 +22,13 @@ Keeping the clips on an external disk presents the disadvantage that one depends
 
 When a new data folder is chosen, Bmc checks whether the Clips, Videos, Sequences, and Projects subdirectories are present and creates them when needed.
 
-# 2. Clip and Preset panel of the Scene Editor
+# 2. Clip and Preset panel of the Asset Manager
 
 > **Implementation comment (2026-09-04): clip and preset are distinct.** A **clip** is the full, immutable recorded motion data. A **preset** is a named description of how that clip is played: inclusive frame range, speed, loop behavior, bone selection, target or targets, sonification code, and frame-modification code. Editing or deleting a preset never edits or deletes its source clip.
 
-Here is a first prototype draft for the Clip and Preset panel embedded in the Scene Editor. It browses immutable Clips and creates or changes Presets within the current Scene. The intended principal entry point is `Bmc.sceneEditor`; opening another editor merely to assign the resulting Preset is explicitly not required.
+Here is a first prototype draft for the Clip and Preset panel embedded in the Asset Manager. It browses immutable Clips and creates or changes Presets within the current Scene. The intended principal entry point is `Bmc.assetManager`; opening another editor merely to assign the resulting Preset is explicitly not required.
 
-The Scene Editor should have four linked lists. In order from left to right:
+The Asset Manager should have four linked lists. In order from left to right:
 
 1. Clip list.  A list of all clips by name.  This points to the folders that contain the data of the clip. 
 2. Preset list for each clip. This lists the presets defined for the clip chosen in the clip list to the left. 
@@ -75,4 +75,4 @@ At the bottom of the window there should be three additional single lines of ite
 
 > **Implementation comment:** The first code slice establishes the shared data root and the player operations needed by the editor (immediate frame preview, stepping, and efficient time seeking). The next slice should introduce `BmcClipPreset` and the two-list editor. Negative and zero speeds need explicit player semantics before the full `-100 ... 100` control is enabled: zero means a static preview of `startFrame`; a negative value means reverse traversal, beginning at the preset's `endFrame` unless the user has explicitly sought elsewhere.
 
-> **Revision comment:** The prototype currently has only Clip and Preset lists. These controls should become a panel of the Scene Editor. In bottom-up material-preparation mode, the panel can save unassigned Presets. In Sequence-first mode, the Scene Editor supplies the linked Sequence and Scene browsers, Scene and Godot-resource display, target validation, and **Clone preset** workflow. There must be no second assignment step after saving a Preset when a Scene is already current.
+> **Revision comment:** The prototype currently has only Clip and Preset lists. These controls should become a panel of the Asset Manager. In bottom-up material-preparation mode, the panel can save unassigned Presets. In Sequence-first mode, the Asset Manager supplies the linked Sequence and Scene browsers, Scene and Godot-resource display, target validation, and **Clone preset** workflow. There must be no second assignment step after saving a Preset when a Scene is already current.

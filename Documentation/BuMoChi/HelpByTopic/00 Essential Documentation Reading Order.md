@@ -27,6 +27,10 @@ BuMoChi combines motion capture, SuperCollider, OSC/VMC routing, Godot rendering
 7. [Step-by-step startup of pipeline components](Step-by-step%20startup%20of%20pipeline%20components.md)
    Use this when learning what each running process does or when starting components separately.
 
+# Creating a piece
+
+- [Creating a Piece](Creating%20a%20Piece.md)
+  Read this to learn about the top-level tools and workflow for creating animation material, sonification material and structuring it into animation and interaction sequences.
 ## Projects, Scenes, Clips, and Presets
 
 8. [Working with Godot projects](WorkingWithGodotProjects.md)
@@ -39,9 +43,9 @@ BuMoChi combines motion capture, SuperCollider, OSC/VMC routing, Godot rendering
     Read the more detailed Scene, Motion, Figure, Avatar, and routing design after understanding the Glossary.
 
 11. [Editors overview](Editors/README.md)
-    Understand the division between the integrated Scene Editor and the timeline-oriented Sequence Editor.
+    Understand the division between the integrated Asset Manager and the timeline-oriented Sequence Editor.
 
-12. [Scene Editor draft](Editors/Scene_Editor/01%20Scene%20Editor%20Draft%201.md)
+12. [Asset Manager draft](Editors/Asset_Manager/01%20Asset%20Manager%20Draft%201.md)
     Read the bottom-up material-preparation and Sequence-first Scene workflows.
 
 13. [Sequence Editor draft](Editors/Sequence_Editor/01%20Sequence%20Editor%20Draft%201.md)

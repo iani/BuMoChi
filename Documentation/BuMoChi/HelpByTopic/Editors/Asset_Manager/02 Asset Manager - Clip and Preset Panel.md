@@ -1,42 +1,44 @@
-# Clip and Preset panel of the Scene Editor
+# Clip and Preset panel of the Asset Manager
 
 > **Implementation comment (2026-09-04): terminology revised.** A **clip** is the full recorded source data. A **preset** is a named, non-destructive description of how that clip is played. It stores the frame range, playback speed, loop behavior, bone selection, and playback target(s), plus the sonification and frame-modification code described in document 02. A preset never changes the clip. The implementation will use the name `BmcClipPreset`.
 
-> **Revised interface decision:** Distinct data concepts do not require separate workflow steps. The principal configuration GUI is the **Scene Editor**. It embeds Clip browsing, recording, and Preset editing so that a Preset created there is immediately assigned to the Scene already being edited. The **Sequence Editor** remains separate because it edits a timeline. The existing `Bmc.clipEditor` may remain as a lightweight Clip-inspection and troubleshooting utility; it is not the required route for composing a Scene.
+> **Revised interface decision:** Distinct data concepts do not require separate workflow steps. The principal configuration GUI is the **Asset Manager**. It embeds Clip browsing, recording, and Preset editing so that a Preset created there is immediately assigned to the Scene already being edited. The **Sequence Editor** remains separate because it edits a timeline. The existing `Bmc.clipEditor` may remain as a lightweight Clip-inspection and troubleshooting utility; it is not the required route for composing a Scene.
 
 ## Purpose
 
 Long motion clips cannot be edited reliably by guessing frame numbers or repeatedly changing arguments in code. BuMoChi needs a simple visual browser in which the user can play a clip, see the current position on a timeline, seek to any point, mark useful beginning and end boundaries, audition that range repeatedly, and save it under a meaningful name.
 
-The Scene Editor should include a non-destructive Clip and Preset panel. It does not alter or copy the source Clip. At minimum, a Preset stores a named reference to an inclusive range of frames in the source Clip and its playback and processing parameters. It may initially be saved without a Scene. When a Scene is already selected, saving the Preset assigns it to that Scene without a separate assignment step.
+The Asset Manager should include a non-destructive Clip and Preset panel. It does not alter or copy the source Clip. At minimum, a Preset stores a named reference to an inclusive range of frames in the source Clip and its playback and processing parameters. It may initially be saved without a Scene. When a Scene is already selected, saving the Preset assigns it to that Scene without a separate assignment step.
 
 ## Relationship to Sequences and Scenes
 
 Every Preset used in a performance plays in one BuMoChi Scene. A newly prepared Preset may remain unassigned until the user starts constructing a Scene or Sequence. Its eventual Scene identifies one Godot project and one Godot `.tscn` scene resource, and defines the figures, avatars, objects, and routes that are valid playback targets.
 
-The Scene Editor browses saved Sequences and expands each Sequence to show its Scenes. Selecting `Sequence → Scene` opens that Scene as the current editing context. Any Preset added in the Clip and Preset panel is assigned to this current Scene automatically. The Sequence is a browsing context; the Preset stores a stable Scene reference rather than becoming owned by that Sequence. If the same Scene is used by several Sequences, its Presets remain available in all of them.
+The Asset Manager browses saved Sequences and expands each Sequence to show its Scenes. Selecting `Sequence → Scene` opens that Scene as the current editing context. Any Preset added in the Clip and Preset panel is assigned to this current Scene automatically. The Sequence is a browsing context; the Preset stores a stable Scene reference rather than becoming owned by that Sequence. If the same Scene is used by several Sequences, its Presets remain available in all of them.
 
 A Preset cannot simply be reassigned to a different Scene, because its targets may be specific to the original Scene. To reuse the same playback settings elsewhere, the user selects **Clone preset**, supplies a new name, selects the destination Scene, and validates or changes its targets. The clone refers to the same immutable source Clip and initially copies the range, speed, looping, bones, sonification code, and modification code.
 
 ## Proposed entry points
 
-Open the Scene Editor and retain its current Sequence and Scene selection:
+Open the Asset Manager and retain its current Sequence and Scene selection:
 
 ```supercollider
-Bmc.sceneEditor;
+Bmc.assetManager;
 ```
 
 Open a particular Scene from a Sequence:
 
 ```supercollider
-Bmc.sceneEditor(\performanceA, \opening);
+Bmc.assetManager(\performanceA, \opening);
 ```
 
-The embedded preview should use a dedicated player name such as `\sceneEditor`, so it does not unexpectedly reconfigure the default player or another performance playback. `Bmc.clipEditor` remains an optional direct entry point for inspecting Clips and testing Presets without providing the complete Scene-design workflow.
+The embedded preview should use a dedicated player name such as `\assetManager`, so it does not unexpectedly reconfigure the default player or another performance playback. `Bmc.clipEditor` remains an optional direct entry point for inspecting Clips and testing Presets without providing the complete Scene-design workflow.
 
-> **Implementation draft (2026-09-04):** `Bmc.sceneEditor` now groups project, Godot Scene, target identity, launch, and listener-status controls into the upper `ProjectView`. Its lower half lists existing Clips and their Presets. **Add selected Preset to Scene** creates an in-memory assignment to the selected Scene and currently selected avatar target; **Play Preset** prepares that named target with its inspected VMC port and starts playback; **Stop Preset** stops the Scene Editor's Preset players. These assignments remain provisional until Scene persistence is implemented.
+> **Implementation draft (2026-09-05):** `Bmc.assetManager` groups project, Godot Scene, target identity, launch, and listener-status controls in its upper area. The lower area has three equal-purpose columns: existing Clips, existing Presets, and the body parts controlled by the selected Preset. **Add to Scene** creates an in-memory, Scene-specific copy of the selected Preset using the currently selected body parts and avatar target. **Play** prepares that named target with its inspected VMC port and starts playback; **Stop** stops the Asset Manager's Preset players. The source Preset is not changed. These assignments remain provisional until Scene persistence is implemented.
 
-The interface uses self-describing two-state buttons: **Play selected Scene / Stop selected Scene**, **Animate from Camera / Stop Camera Animation**, and **Record clip / Stop recording**. Camera animation targets the currently selected Scene avatar. Stopping it mutes that camera source only after raw input publication, so the independent **Camera data on** indicator and Clip recording continue to work. Recording requires a new Clip name; stopping it saves the Clip and refreshes the Clip list. Godot-running, VMC-listening, and camera-data checkboxes are status indicators rather than action controls.
+The interface uses self-describing two-state buttons: **Open Scene / Close Scene**, **Animate from Camera / Stop Camera Animation**, and **Record clip / Stop recording**. **Open Scene** launches the selected Godot Scene; **Close Scene** closes the currently launched Godot Scene window, if one is running. Camera animation targets the currently selected Scene avatar. Stopping it mutes that camera source only after raw input publication, so the independent **Camera data on** indicator and Clip recording continue to work. Recording requires a new Clip name; stopping it saves the Clip and refreshes the Clip list. Godot-running, VMC-listening, and camera-data checkboxes are status indicators rather than action controls.
+
+A read-only integer box immediately following **Record clip / Stop recording** displays the selected Clip's frame count. During recording it changes to the number of frames captured so far and refreshes approximately every 0.25 seconds. When recording stops, the newly saved Clip remains selected and the box shows its final frame count.
 
 ## Minimum useful editor window
 
@@ -51,7 +53,7 @@ The initial editor should contain:
 7. Visible in and out markers delimiting the preset's selected range.
 8. Numeric displays for current frame/time, in frame/time, out frame/time, and selected duration.
 9. **Set in** and **Set out** buttons that use the current playhead position.
-10. The Scene Editor's Sequence and Scene selectors, showing the current editing context.
+10. The Asset Manager's Sequence and Scene selectors, showing the current editing context.
 11. A clear display of the current Scene's Godot project and `.tscn` resource.
 12. A Preset-name field and **Add preset**, **Save preset**, and **Clone preset** buttons.
 
@@ -79,7 +81,7 @@ Godot: boy_and_birds / res://scenes/opening.tscn
 
 ## Scene editing context
 
-The top-level Scene Editor should use two linked lists or menus:
+The top-level Asset Manager should use two linked lists or menus:
 
 1. **Sequence** lists saved Sequence definitions found in `Bmc.sequenceDirectory`.
 2. **Scene** lists the Scenes referenced by the selected Sequence, in Sequence order.
@@ -276,7 +278,7 @@ The minimum feature that makes boundary selection humanly practical is:
 1. Add immediate frame/time seeking and frame stepping to `BmcClipPlayer`.
 2. Add `BmcClipPreset` and an in-memory preset library with `.scd` persistence.
 3. Define Sequence persistence and the Scene references needed by the `Sequence → Scene` browser.
-4. Add the Clip and Preset panel to `Bmc.sceneEditor(sequenceName, sceneName)`, with transport controls, automatic assignment to the current Scene, cloning, playhead, range selection, numeric frame/time displays, and save-by-name.
+4. Add the Clip and Preset panel to `Bmc.assetManager(sequenceName, sceneName)`, with transport controls, automatic assignment to the current Scene, cloning, playhead, range selection, numeric frame/time displays, and save-by-name.
 5. Add `Bmc.playPreset`, `Bmc.listPresets`, and `Bmc.showPresets`.
 6. Test a short regular Clip, a long Clip, and an irregularly timed Clip.
 7. Test boundary selection while stopped, playing, paused, looping, and at non-unit speed.

@@ -1,8 +1,8 @@
 # BuMoChi Editors
 
-BuMoChi has two principal creative Editors:
+BuMoChi has two principal creative tools with deliberately separate responsibilities:
 
-1. The **Scene Editor** creates a usable animation configuration. It includes Scene definitions, Clip browsing and recording, and Preset creation and editing in one workspace.
-2. The **Sequence Editor** arranges Scene activation, Preset playback, and later live-animation actions on a timeline associated with one Godot project.
+1. The **Asset Manager** creates, configures, and tests reusable creative material. It includes Scene definitions, Clip browsing and recording, Preset creation and editing, and sonification scripts in one workspace.
+2. The **Sequence Editor** uses those prepared assets to arrange Scene activation, Preset playback, sonification, and live-animation actions on a performance timeline associated with one Godot project.
 
-Clips, Presets, Scenes, and Sequences remain distinct data concepts even though the Scene Editor combines several related tasks in one interface. The existing standalone `Bmc.clipEditor` is a prototype inspection and testing utility, not a third required creative Editor.
+Clips, Presets, Scenes, and Sequences remain distinct data concepts even though the Asset Manager combines several related preparation tasks in one interface. Asset creation and testing belong in the Asset Manager; performance-timeline authoring belongs in the Sequence Editor. The existing standalone `Bmc.clipEditor` is a prototype inspection and testing utility, not a third required creative tool.

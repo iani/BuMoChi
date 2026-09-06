@@ -33,7 +33,7 @@ The following guidelines summarize the required project structure and recommende
 
 1. `Bmc.setDataFolder` should create `Projects` automatically when it creates the other required data directories.
 2. BuMoChi should use Godot itself in headless mode to inspect and validate projects and their resolved Scene trees.
-3. The Scene Editor should show invalid or incomplete projects with useful diagnostic information rather than silently hiding them.
+3. The Asset Manager should show invalid or incomplete projects with useful diagnostic information rather than silently hiding them.
 4. BuMoChi should allow Clip recording and unassigned Preset preparation when no valid project exists, but should require a valid project for Scene completion, Godot preview, and Sequence playback.
 5. Godot should confirm project launch, active Scene, detected avatars, port assignments, Scene changes, and errors instead of requiring SuperCollider to assume that an operation succeeded.
 6. Graphical Godot launch and headless inspection should remain distinct operations: inspection discovers and validates content; graphical launch displays and performs it.
@@ -134,7 +134,7 @@ Automatic inspection may identify likely avatars through VMC tracker nodes, `XRN
 - body and face tracker names where applicable; and
 - the VMC listener port.
 
-The Scene Editor should display discovered avatars and distinguish explicitly identified avatars from uncertain inferred candidates. The user must confirm ambiguous results.
+The Asset Manager should display discovered avatars and distinguish explicitly identified avatars from uncertain inferred candidates. The user must confirm ambiguous results.
 
 ## Port convention
 
@@ -175,7 +175,7 @@ Users may duplicate a template project directory, give the duplicate a new direc
 
 Godot's generated `.godot` cache should not be included in a template copy; Godot reconstructs it. Files already referenced by Scenes should preferably be moved or renamed through Godot's FileSystem dock so Godot can update resource dependencies.
 
-A future **Duplicate project template** action in the Scene Editor should copy only source material, omit generated caches, assign a distinct project name, and validate the result before presenting it as available.
+A future **Duplicate project template** action in the Asset Manager should copy only source material, omit generated caches, assign a distinct project name, and validate the result before presenting it as available.
 
 ## Inspection, launch, and live control
 
@@ -234,14 +234,14 @@ Bmc.inspectProjectData(\VMC_1_Avatar_F, { |data, error|
 });
 ```
 
-`data` is an Event containing Events and Arrays, so the Scene Editor can use it directly without parsing JSON.
+`data` is an Event containing Events and Arrays, so the Asset Manager can use it directly without parsing JSON.
 
-## Scene Editor project browser draft
+## Asset Manager project browser draft
 
-With the pipeline and Godot service running, open the first Scene Editor draft:
+With the pipeline and Godot service running, open the first Asset Manager draft:
 
 ```supercollider
-Bmc.sceneEditor;
+Bmc.assetManager;
 ```
 
 The initial browser shows Godot project folders, their candidate Scenes, and the avatars discovered in the selected Scene. Filesystem results appear immediately. The editor then runs headless inspection and changes its status to `Godot verified` when the resolved Scene data arrives.
@@ -251,10 +251,10 @@ Select an avatar to review its inferred target name. Edit **Target name** and pr
 The names currently offered to Preset playback are available programmatically:
 
 ```supercollider
-Bmc.sceneEditorTargets;
+Bmc.assetManagerTargets;
 ```
 
-Ports remain internal routing information and are not used as Preset target identities. This is the first implemented section of the larger Scene Editor specification; Clip/Preset integration and saved BuMoChi Scene editing remain subsequent work.
+Ports remain internal routing information and are not used as Preset target identities. This is the first implemented section of the larger Asset Manager specification; Clip/Preset integration and saved BuMoChi Scene editing remain subsequent work.
 
 Select a verified Scene and press **Play selected Scene** to launch it graphically through the helper service. The editor monitors two separate states:
 

@@ -1,13 +1,14 @@
-BmcSceneEditor {
+BmcAssetManager {
 	var <window, <projectView, <selectedProject, <selectedScene;
 	var projectList, sceneList, avatarList, details, statusText, inspection;
 	var avatarNameField, confirmAvatarButton, avatarMappings;
 	var playSceneButton, runningBox, listeningBox, statusUpdater, statusPending = false;
-	var clipPresetView, clipList, presetList, assignedPresetText;
+	var clipPresetView, clipList, presetList, bodyPartsList;
+	var selectAllBodiesButton, unselectAllBodiesButton;
 	var addPresetButton, playPresetButton, stopPresetButton;
 	var selectedClipName, selectedPresetName, scenePresetAssignments;
 	var animateCameraButton, recordClipButton;
-	var newClipNameField, cameraDataBox;
+	var newClipNameField, frameCountBox, cameraDataBox, statusTick = 0, activeRecordingName;
 
 	*new { ^super.new.init }
 
@@ -19,6 +20,14 @@ BmcSceneEditor {
 	}
 
 	setStatus { |text| statusText.string_(text.asString) }
+
+	showError { |error|
+		// Exception.asString only says "an Error". errorString contains the
+		// explanatory message supplied when the Error was created.
+		this.setStatus(error.tryPerform(\errorString) ?? { error.asString });
+		error.reportError;
+		^this
+	}
 
 	currentSceneReport {
 		var scenes;
@@ -116,10 +125,18 @@ BmcSceneEditor {
 	refreshClips {
 		var names = Bmc.refreshSavedClips;
 		clipList.items_(names.collect(_.asString));
-		selectedClipName = names.first;
-		if(names.notEmpty) { clipList.value_(0); this.selectClipAt(0) } {
+		selectedClipName = if(names.includes(selectedClipName)) {
+			selectedClipName
+		} {
+			names.first
+		};
+		if(selectedClipName.notNil) {
+			clipList.value_(names.indexOfEqual(selectedClipName));
+			this.selectClipAt(clipList.value)
+		} {
 			presetList.items_(#[]);
-			selectedPresetName = nil
+			selectedPresetName = nil;
+			frameCountBox.value_(0)
 		};
 		^this
 	}
@@ -128,7 +145,19 @@ BmcSceneEditor {
 		var names = Bmc.savedClips;
 		if(index.inclusivelyBetween(0, names.size - 1).not) { ^this };
 		selectedClipName = names[index];
+		this.updateFrameCount;
 		this.refreshPresets;
+		^this
+	}
+
+	updateFrameCount {
+		var clip;
+		if(Bmc.isRecording) {
+			frameCountBox.value_(Bmc.recordingFrameCount);
+			^this
+		};
+		clip = if(selectedClipName.isNil) { nil } { Bmc.clip(selectedClipName) };
+		frameCountBox.value_(if(clip.isNil) { 0 } { clip.size });
 		^this
 	}
 
@@ -138,8 +167,12 @@ BmcSceneEditor {
 		names = Bmc.clipPresets(selectedClipName);
 		presetList.items_(names.collect(_.asString));
 		selectedPresetName = names.first;
-		if(names.notEmpty) { presetList.value_(0) };
-		this.updateAssignedPresetText;
+		if(names.notEmpty) {
+			presetList.value_(0);
+			this.loadSelectedPresetBones
+		} {
+			bodyPartsList.selection_(#[])
+		};
 		^this
 	}
 
@@ -148,10 +181,31 @@ BmcSceneEditor {
 		if(selectedClipName.isNil) { ^this };
 		names = Bmc.clipPresets(selectedClipName);
 		if(index.inclusivelyBetween(0, names.size - 1)) {
-			selectedPresetName = names[index]
+			selectedPresetName = names[index];
+			this.loadSelectedPresetBones
 		};
-		this.updateAssignedPresetText;
 		^this
+	}
+
+	loadSelectedPresetBones {
+		var preset, bones, indexes;
+		if(selectedClipName.isNil or: { selectedPresetName.isNil }) {
+			bodyPartsList.selection_(#[]);
+			^this
+		};
+		preset = Bmc.clipPreset(selectedClipName, selectedPresetName);
+		bones = BmcBoneSets.resolve(preset.bones);
+		indexes = bones.collect { |bone| Bmc.boneNames.indexOfEqual(bone) }
+			.reject(_.isNil);
+		bodyPartsList.selection_(indexes);
+		^this
+	}
+
+	selectedBones {
+		var indexes = bodyPartsList.selection ?? { #[] };
+		var bones = indexes.collect { |index| Bmc.boneNames[index] };
+		if(bones.size == Bmc.boneNames.size) { ^\all };
+		^bones
 	}
 
 	selectedTargetNames {
@@ -174,24 +228,13 @@ BmcSceneEditor {
 		if(targets.isEmpty) { Error("The selected Scene has no avatar target").throw };
 		preset = Bmc.clipPreset(selectedClipName, selectedPresetName);
 		assigned = BmcClipPreset(preset.name, preset.sourceClip, preset.startFrame,
-			preset.endFrame, preset.looping, preset.speed, preset.bones, targets,
+			preset.endFrame, preset.looping, preset.speed, this.selectedBones, targets,
 			preset.sonificationCode, preset.modificationCode);
 		scenePresetAssignments[this.assignmentKey] = assigned;
-		this.updateAssignedPresetText;
-		this.setStatus("Added preset % to % for target %"
-			.format(selectedPresetName, selectedScene, targets.join(", ")));
+		this.setStatus("Added preset % to % for target %; % body part(s)"
+			.format(selectedPresetName, selectedScene, targets.join(", "),
+				BmcBoneSets.resolve(assigned.bones).size));
 		^assigned
-	}
-
-	updateAssignedPresetText {
-		var assigned = scenePresetAssignments[this.assignmentKey];
-		if(assigned.isNil) {
-			assignedPresetText.string_("Selected Preset is not added to this Scene")
-		} {
-			assignedPresetText.string_("Added to Scene — target: %"
-				.format(assigned.targets.join(", ")))
-		};
-		^this
 	}
 
 	prepareAssignedTargets { |preset|
@@ -239,19 +282,22 @@ BmcSceneEditor {
 	}
 
 	toggleClipRecording { |enabled|
-		var name;
+		var name = newClipNameField.string.stripWhiteSpace;
 		if(enabled) {
-			name = newClipNameField.string.stripWhiteSpace;
 			if(name.isEmpty) { Error("Enter a new Clip name before recording").throw };
 			if(Bmc.savedClips.includes(name.asSymbol)) {
 				Error("Clip name already exists: %".format(name)).throw
 			};
 			Bmc.record(name.asSymbol, nil, Bmc.cameraSource, \rawFrame,
 				(project: selectedProject, godotScene: selectedScene));
+			activeRecordingName = name.asSymbol;
+			frameCountBox.value_(0);
 			this.setStatus("Recording Clip %".format(name))
 		} {
 			if(Bmc.isRecording) {
 				Bmc.stopRecording;
+				selectedClipName = activeRecordingName;
+				activeRecordingName = nil;
 				this.refreshClips;
 				this.setStatus("Clip recording saved")
 			}
@@ -393,7 +439,6 @@ BmcSceneEditor {
 		};
 		this.setStatus("Godot verified % Scene(s) in %"
 			.format(scenes.size, selectedProject));
-		this.updateAssignedPresetText;
 		^this
 	}
 
@@ -414,21 +459,20 @@ BmcSceneEditor {
 			.format(inspection[\projectName], scene[\path], scene[\rootName],
 				scene[\loadable], avatars.size)
 		);
-		this.updateAssignedPresetText;
 		^this
 	}
 
 	build {
 		{
 			var refreshButton = Button().states_([["Refresh projects"]]);
-			window = Window("BuMoChi Scene Editor", Rect(120, 80, 1000, 720));
+			window = Window("BuMoChi Asset Manager", Rect(120, 80, 1000, 720));
 			projectList = ListView().minWidth_(210);
 			sceneList = ListView().minWidth_(280);
 			avatarList = ListView().minWidth_(260);
 			avatarNameField = TextField();
 			confirmAvatarButton = Button().states_([["Confirm target name"]]);
 			playSceneButton = Button().states_([
-				["Play selected Scene"], ["Stop selected Scene"]
+				["Open Scene"], ["Close Scene"]
 			]);
 			runningBox = CheckBox().string_("Godot Scene running").enabled_(false);
 			listeningBox = CheckBox().string_("VMC listening").enabled_(false);
@@ -437,10 +481,13 @@ BmcSceneEditor {
 			statusText = TextView().editable_(false).minHeight_(32).maxHeight_(48);
 			clipList = ListView().minWidth_(220);
 			presetList = ListView().minWidth_(220);
-			assignedPresetText = StaticText().string_("Select a Clip and Preset");
-			addPresetButton = Button().states_([["Add selected Preset to Scene"]]);
-			playPresetButton = Button().states_([["Play Preset"]]);
-			stopPresetButton = Button().states_([["Stop Preset"]]);
+			bodyPartsList = ListView().minWidth_(220).selectionMode_(\multi);
+			bodyPartsList.items_(Bmc.boneNames.collect(_.asString));
+			selectAllBodiesButton = Button().states_([["Select all"]]);
+			unselectAllBodiesButton = Button().states_([["Unselect all"]]);
+			addPresetButton = Button().states_([["Add to Scene"]]);
+			playPresetButton = Button().states_([["Play"]]);
+			stopPresetButton = Button().states_([["Stop"]]);
 			animateCameraButton = Button().states_([
 				["Animate from Camera"], ["Stop Camera Animation"]
 			]);
@@ -448,6 +495,8 @@ BmcSceneEditor {
 				["Record clip"], ["Stop recording"]
 			]);
 			newClipNameField = TextField();
+			frameCountBox = NumberBox().decimals_(0).clipLo_(0)
+				.enabled_(false).value_(0).fixedWidth_(85);
 			projectList.action_({ |view|
 				var names = Bmc.projects;
 				if(view.value.inclusivelyBetween(0, names.size - 1)) {
@@ -460,8 +509,7 @@ BmcSceneEditor {
 			avatarList.action_({ |view| this.selectAvatarAt(view.value) });
 			confirmAvatarButton.action_({
 				try { this.confirmAvatarName } { |error|
-					this.setStatus(error.asString);
-					error.reportError
+					this.showError(error)
 				}
 			});
 			playSceneButton.action_({ |button|
@@ -469,37 +517,41 @@ BmcSceneEditor {
 					if(button.value == 1) { this.playSelectedScene } { this.stopSelectedScene }
 				} { |error|
 					button.value_(runningBox.value.asInteger);
-					this.setStatus(error.asString);
-					error.reportError
+					this.showError(error)
 				}
 			});
 			addPresetButton.action_({
 				try { this.addSelectedPresetToScene } { |error|
-					this.setStatus(error.asString); error.reportError
+					this.showError(error)
 				}
 			});
 			playPresetButton.action_({
 				try { this.playAssignedPreset } { |error|
-					this.setStatus(error.asString); error.reportError
+					this.showError(error)
 				}
 			});
 			stopPresetButton.action_({ this.stopAssignedPreset });
+			selectAllBodiesButton.action_({
+				bodyPartsList.selection_((0 .. (Bmc.boneNames.size - 1)))
+			});
+			unselectAllBodiesButton.action_({ bodyPartsList.selection_(#[]) });
 			animateCameraButton.action_({ |button|
 				try { this.toggleCameraAnimation(button.value == 1) } { |error|
 					button.value_(Bmc.cameraAnimationActive.asInteger);
-					this.setStatus(error.asString); error.reportError
+					this.showError(error)
 				}
 			});
 			recordClipButton.action_({ |button|
 				try { this.toggleClipRecording(button.value == 1) } { |error|
 					button.value_(Bmc.isRecording.asInteger);
-					this.setStatus(error.asString); error.reportError
+					this.showError(error)
 				}
 			});
 			refreshButton.action_({ this.refreshProjects });
 			projectView = View().maxHeight_(350);
 			projectView.layout = VLayout(
-				StaticText().string_("ProjectView"),
+				HLayout(playSceneButton, animateCameraButton, runningBox,
+					listeningBox, cameraDataBox),
 				HLayout(
 					VLayout(StaticText().string_("Godot projects"), projectList),
 					VLayout(StaticText().string_("Godot Scenes"), sceneList),
@@ -511,24 +563,26 @@ BmcSceneEditor {
 						confirmAvatarButton
 					)
 				), details,
-				HLayout(playSceneButton, animateCameraButton,
-					runningBox, listeningBox, cameraDataBox),
-				HLayout(refreshButton, statusText)
+				HLayout(refreshButton, addPresetButton, playPresetButton,
+					stopPresetButton, statusText)
 			);
 			clipPresetView = View();
 			clipPresetView.layout = VLayout(
 				HLayout(
-					StaticText().string_("Clip and Preset panel"),
-					animateCameraButton,
 					StaticText().string_("Clip name"),
 					newClipNameField,
-					recordClipButton
+					recordClipButton,
+					frameCountBox,
+					StaticText().string_("frames")
 				),
 				HLayout(
 					VLayout(StaticText().string_("Existing Clips"), clipList),
 					VLayout(StaticText().string_("Existing Presets"), presetList),
-					VLayout(assignedPresetText, addPresetButton,
-						playPresetButton, stopPresetButton)
+					VLayout(
+						StaticText().string_("Body parts controlled"),
+						HLayout(selectAllBodiesButton, unselectAllBodiesButton),
+						bodyPartsList
+					)
 				)
 			);
 			window.layout = VLayout(projectView, clipPresetView);
@@ -537,8 +591,10 @@ BmcSceneEditor {
 					cameraDataBox.value_(Bmc.animationDataInputActive.asInteger);
 					animateCameraButton.value_(Bmc.cameraAnimationActive.asInteger);
 					recordClipButton.value_(Bmc.isRecording.asInteger);
-					this.updateRuntimeStatus;
-					1.0.wait
+					this.updateFrameCount;
+					if(statusTick == 0) { this.updateRuntimeStatus };
+					statusTick = (statusTick + 1) % 4;
+					0.25.wait
 				}
 			}).play(AppClock);
 			window.onClose_({ statusUpdater.stop });

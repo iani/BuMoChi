@@ -108,7 +108,7 @@ BmcGodotInspector {
 			error = "Godot inspection produced no output for %".format(projectName)
 		};
 		// Successful replies are deliberately quiet. Runtime status is polled
-		// continuously by the Scene Editor and must not flood the post window.
+		// continuously by the Asset Manager and must not flood the post window.
 		if(error.notNil) { error.warn };
 		if(returnData and: { error.isNil }) {
 			if(File.exists(dataPath)) {

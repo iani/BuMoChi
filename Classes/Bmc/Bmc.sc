@@ -8,7 +8,7 @@
 Bmc {
 	classvar <boneNames;
 	classvar <dispatcher, <recorder, <players, <library, <avatars, <wires, <modifiers;
-	classvar <soundFileLoader, <takeSonifier, <presetLibrary, <clipEditorWindow, <sceneEditorWindow;
+	classvar <soundFileLoader, <takeSonifier, <presetLibrary, <clipEditorWindow, <assetManagerWindow;
 	classvar <defaultAvatar, recordingName, recordingFormat, recorderPublisher;
 	classvar <defaultXrAnimatorOutputPort, <defaultInputPort, <defaultDecoderPort;
 	classvar <defaultAvatarID, <defaultAvatarName, <defaultAvatarVmcPort;
@@ -503,6 +503,7 @@ Bmc {
 	}
 
 	*isRecording { ^recorder.isRecording }
+	*recordingFrameCount { ^recorder.size }
 
 	*sonifyTake { |clipName, sonifications, playerName = \default, record = false,
 		screenCapture = false, loop = false, rate = 1.0, startFrame = 0, endFrame|
@@ -593,14 +594,14 @@ Bmc {
 		^clipEditorWindow
 	}
 
-	*sceneEditor {
-		if(sceneEditorWindow.notNil) { sceneEditorWindow.close };
-		sceneEditorWindow = BmcSceneEditor.new;
-		^sceneEditorWindow
+	*assetManager {
+		if(assetManagerWindow.notNil) { assetManagerWindow.close };
+		assetManagerWindow = BmcAssetManager.new;
+		^assetManagerWindow
 	}
-	*sceneEditorTargets {
-		if(sceneEditorWindow.isNil) { ^#[] };
-		^sceneEditorWindow.targetNames
+	*assetManagerTargets {
+		if(assetManagerWindow.isNil) { ^#[] };
+		^assetManagerWindow.targetNames
 	}
 	*clipPresets { |clipName| ^presetLibrary.names(clipName ?? { library.currentName }) }
 	*clipPreset { |clipName, presetName| ^presetLibrary.at(clipName, presetName) }

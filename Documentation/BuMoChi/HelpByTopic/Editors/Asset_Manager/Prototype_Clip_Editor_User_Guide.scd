@@ -1,7 +1,7 @@
 // BuMoChi prototype Clip Editor — step-by-step test guide
 //
 // This guide tests the current standalone prototype. Its Clip and Preset
-// controls are intended to become an integrated panel of the Scene Editor.
+// controls are intended to become an integrated panel of the Asset Manager.
 // The prototype is not an additional required step in the final workflow.
 //
 // A clip is the full recorded motion data. A preset describes how a clip is

@@ -4,7 +4,7 @@
 
 The Sequence Editor arranges animation actions over time. Each Sequence is associated with one Godot project and may use one or more BuMoChi Scenes belonging to that project. Each BuMoChi Scene identifies the Godot `.tscn` scene resource that it controls.
 
-The Sequence Editor does not edit Clips, Presets, or the internal configuration of a Scene. Those tasks belong to the Scene Editor. It selects existing Scene content and determines when it is activated, played, changed, or stopped.
+The Sequence Editor does not edit Clips, Presets, or the internal configuration of a Scene. Those tasks belong to the Asset Manager. It selects existing Scene content and determines when it is activated, played, changed, or stopped.
 
 ## Initial workflow
 
@@ -16,7 +16,7 @@ The Sequence Editor does not edit Clips, Presets, or the internal configuration 
 6. Set cue start times and, where applicable, durations or stop times.
 7. Preview, stop, seek, and save the Sequence.
 
-If a needed Scene or Preset does not yet exist, the user may open it in the Scene Editor. Returning to the Sequence Editor should preserve the current Sequence and timeline position.
+If a needed Scene or Preset does not yet exist, the user may open it in the Asset Manager. Returning to the Sequence Editor should preserve the current Sequence and timeline position.
 
 ## Minimum cue types
 
