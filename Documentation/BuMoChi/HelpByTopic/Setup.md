@@ -10,7 +10,7 @@ The BuMoChi library includes a `GodotProjects` folder at the repository root, al
 
 2. Check the assets path on the second row. To choose another location, click **Select Asset Folder** and select the assets root (for example, your `BuMoChiAssets` folder), **not** its `GodotProjects` subfolder. BuMoChi saves this choice and creates the standard asset subfolders if needed.
 
-3. In your file manager, open the `GodotProjects` folder inside the BuMoChi repository. Copy its complete project folders into `GodotProjects` inside the assets root shown in AssetEditor. If the destination already contains projects, add the new folders without replacing your existing work. Keep each project's scenes, avatars, textures, scripts, and other resources together; copying only `project.godot` is insufficient.
+3. In your file manager, open the `GodotProjects` folder inside the BuMoChi repository. Copy its complete project folders into `GodotProjects` inside the assets root shown in AssetEditor. If the destination already contains projects, add the new folders without replacing your existing work. For each project folder, take care to copy the entire project folder. Copying only `project.godot` is insufficient, because each project uses its own scenes, avatars, textures, scripts, and other resources, which are in the project’s own folder.
 
 4. Return to AssetEditor and click **Reload**, immediately to the left of **Select Asset Folder**. The project list and feedback refresh to show the copied projects.
 
