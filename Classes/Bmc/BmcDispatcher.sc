@@ -2,6 +2,7 @@ BmcDispatcher {
 	var <port, <oscKey, <isRunning = false, <avatars, <destinations;
 	var <received = 0, <rejected = 0, <dropped = 0, <lastReceivedTime, lastFrameIDs;
 	var <sourceRoutes, <lastSources, <ignoredSources;
+	var <>liveFrameFilter;
 
 	*new { |port = 57130| ^super.new.init(port) }
 
@@ -89,6 +90,9 @@ BmcDispatcher {
 		};
 		// Muting live animation happens after raw-frame publication so camera
 		// recording and activity monitoring continue to work independently.
+		if(liveFrameFilter.notNil and: {
+			liveFrameFilter.value(sourceName, inputAvatar).not
+		}) { ^true };
 		if(ignoredSources.includes(sourceName)) { ^true };
 		routedAvatar = sourceRoutes[sourceName];
 		if(routedAvatar.notNil) {

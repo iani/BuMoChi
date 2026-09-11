@@ -270,7 +270,11 @@ BmcAssetEditor {
 	toggleCameraAnimation { |enabled|
 		var avatars = this.currentAvatars, index = avatarList.value;
 		var detected, target, bmcAvatar;
-		if(enabled.not) { Bmc.stopCameraAnimation; ^this };
+		if(enabled.not) {
+			Bmc.stopCameraAnimation;
+			this.setStatus("Camera animation stopped; incoming data and recording remain available");
+			^this
+		};
 		if(index.inclusivelyBetween(0, avatars.size - 1).not) {
 			Error("Select a Scene avatar target first").throw
 		};
@@ -402,6 +406,10 @@ BmcAssetEditor {
 		scenePresetAssignments.clear;
 		selectedClipName = nil;
 		selectedPresetName = nil;
+		^this.reloadAssets
+	}
+
+	reloadAssets {
 		this.refreshClips;
 		this.refreshProjects;
 		^this
@@ -509,7 +517,7 @@ BmcAssetEditor {
 
 	build {
 		{
-			var refreshButton = Button().states_([["Refresh Godot projects"]]);
+			var reloadButton = Button().states_([["Reload"]]);
 			var selectAssetFolderButton = Button().states_([["Select Asset Folder"]]);
 			window = Window("BuMoChi Asset Editor", Rect(120, 80, 1000, 720));
 			assetPathField = TextField().string_(Bmc.dataFolder).setProperty(\readOnly, true);
@@ -538,7 +546,7 @@ BmcAssetEditor {
 			stopPresetButton = Button().states_([["Stop"]]);
 			animateCameraButton = Button().states_([
 				["Animate from Camera"], ["Stop Camera Animation"]
-			]);
+			]).value_(Bmc.cameraAnimationActive.asInteger);
 			recordClipButton = Button().states_([
 				["Record animation clip"], ["Stop recording"]
 			]);
@@ -595,12 +603,14 @@ BmcAssetEditor {
 					this.showError(error)
 				}
 			});
-			refreshButton.action_({ this.refreshProjects });
+			reloadButton.action_({
+				try { this.reloadAssets } { |error| this.showError(error) }
+			});
 			projectView = View().maxHeight_(420);
 			projectView.layout = VLayout(
 				HLayout(listeningBox, cameraDataBox, runningBox,
 					playSceneButton, animateCameraButton),
-				HLayout(assetPathField, selectAssetFolderButton),
+				HLayout(assetPathField, reloadButton, selectAssetFolderButton),
 				statusText,
 				HLayout(
 					VLayout(StaticText().string_("Godot projects"), projectList),
@@ -613,7 +623,7 @@ BmcAssetEditor {
 						confirmAvatarButton
 					)
 				), details,
-				HLayout(refreshButton, addPresetButton, playPresetButton,
+				HLayout(addPresetButton, playPresetButton,
 					stopPresetButton)
 			);
 			clipPresetView = View();

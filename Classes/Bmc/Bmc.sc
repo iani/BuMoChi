@@ -15,7 +15,7 @@ Bmc {
 	classvar <scenes, <currentScene;
 	classvar <decoderPort, <forwardDecoder;
 	classvar <compositor;
-	classvar <cameraSource, <cameraTarget, <cameraAnimationActive = false;
+	classvar <cameraSource, <cameraTarget, <cameraAnimationActive = true;
 
 	*initClass {
 		boneNames = #[
@@ -68,7 +68,11 @@ Bmc {
 		currentScene = nil;
 		cameraSource = nil;
 		cameraTarget = defaultAvatarID;
-		cameraAnimationActive = false;
+		// Direct avatar matching animates the default avatar at startup.
+		cameraAnimationActive = true;
+		dispatcher.liveFrameFilter_({ |sourceName, inputAvatar|
+			this.allowCameraFrame(sourceName, inputAvatar)
+		});
 		takeSonifier = BmcTakeSonifier(Server.default);
 	}
 
@@ -339,6 +343,14 @@ Bmc {
 	*removeMotionSourceRoute { |sourceName|
 		avatars.values.asSet.do { |avatar| avatar.removeSourcesFor(sourceName) };
 		^dispatcher.removeSourceRoute(sourceName)
+	}
+	*allowCameraFrame { |sourceName, inputAvatar|
+		// Discover the camera even while stopped, without enabling animation.
+		if(cameraSource.isNil and: { inputAvatar.asSymbol == defaultAvatarID }) {
+			cameraSource = sourceName.asSymbol
+		};
+		if(sourceName.asSymbol == cameraSource) { ^cameraAnimationActive };
+		^true
 	}
 	*cameraSource_ { |sourceName|
 		if(sourceName.isNil) { Error("Bmc camera source cannot be nil").throw };
