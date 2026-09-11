@@ -1,3 +1,46 @@
+# First-time setup: install the bundled Godot projects
+
+The BuMoChi library includes a `GodotProjects` folder at the repository root, alongside `Classes` and `Documentation`. Copy these projects into your preferred BuMoChi assets directory before using them in AssetEditor. Installing the library or selecting an assets directory does not copy the bundled projects automatically.
+
+1. In SuperCollider, open AssetEditor:
+
+   ```supercollider
+   Bmc.assetEditor;
+   ```
+
+2. Check the assets path on the second row. To choose another location, click **Select Asset Folder** and select the assets root (for example, your `BuMoChiAssets` folder), **not** its `GodotProjects` subfolder. BuMoChi saves this choice and creates the standard asset subfolders if needed.
+
+3. In your file manager, open the `GodotProjects` folder inside the BuMoChi repository. Copy its complete project folders into `GodotProjects` inside the assets root shown in AssetEditor. If the destination already contains projects, add the new folders without replacing your existing work. Keep each project's scenes, avatars, textures, scripts, and other resources together; copying only `project.godot` is insufficient.
+
+4. Return to AssetEditor and click **Reload**, immediately to the left of **Select Asset Folder**. The project list and feedback refresh to show the copied projects.
+
+For the currently bundled projects, the resulting directory structure is:
+
+```text
+YourChosenAssetsDirectory/
+└── GodotProjects/
+    ├── VMC_1_Avatar_F/
+    │   └── project.godot
+    ├── VMC_1_Avatar_M/
+    │   └── project.godot
+    └── VMC_2_Avatars/
+        └── project.godot
+```
+
+The diagram shows only each project's identifying file; retain all its other contents too. Each project must be an immediate child of the assets `GodotProjects` folder. Avoid accidentally creating `GodotProjects/GodotProjects/...`.
+
+You can display the exact active locations in SuperCollider:
+
+```supercollider
+Bmc.dataFolder.postln;             // Your selected assets root.
+Bmc.godotProjectDirectory.postln;  // Copy the project folders here.
+Bmc.projects.postln;               // Names of the projects found there.
+```
+
+The default assets root is `Platform.userAppSupportDir +/+ "BuMoChiAssets"`; your selected root can be elsewhere. The preference is stored in `Platform.userAppSupportDir +/+ "bumochi_data_folder.scd"`. Changing the root later does not move existing assets: copy them to the new location and click **Reload** again.
+
+If AssetEditor still reports no Godot projects, compare the destination with the displayed assets path and check that `project.godot` is directly inside each copied project folder. Then click **Reload**. For discovery rules and scene layout, see [Working with Godot projects](WorkingWithGodotProjects.md).
+
 # Quick start: one-command pipeline launcher
 
 The launcher starts and supervises `BunrakuOSCEncoder` and `BunrakuOSCDecoder`. With no arguments it starts the local-only pipeline and does not start `OscGroupClient`:

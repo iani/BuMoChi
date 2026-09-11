@@ -2,6 +2,8 @@
 
 This document defines how BuMoChi finds, validates, opens, and controls Godot projects. It also specifies the template-project convention intended to give new users a reliable starting point.
 
+For first-time installation, follow [Setup: install the bundled Godot projects](Setup.md#first-time-setup-install-the-bundled-godot-projects). It explains how to copy the repository’s `GodotProjects` folder into your selected assets root and reload AssetEditor.
+
 ## BuMoChi Godot-project guidelines
 
 The following guidelines summarize the required project structure and recommended working practice.

@@ -7,3 +7,5 @@ BuMoChi assets are data used to design and perform a piece. All BuMoChi assets a
 5. SoundFiles : Audio files that can be used in the performance.  These files are loaded to the SuperCollider sound server (scsynth), when required by configuration scripts.
 6. SoundScripts : SuperCollider scripts in .scd files used to configure sound interaction and generate sound during performance.
 7. Videos : Video recordings and associated capture metadata produced while documenting or rendering a performance.
+
+For first-time installation of the `GodotProjects` folder bundled with the library, follow [Setup: install the bundled Godot projects](Setup.md#first-time-setup-install-the-bundled-godot-projects). Select your preferred assets root, copy the complete project folders into its `GodotProjects` subfolder, and click **Reload** in AssetEditor.
