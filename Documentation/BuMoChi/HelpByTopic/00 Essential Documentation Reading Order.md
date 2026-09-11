@@ -46,7 +46,7 @@ BuMoChi combines motion capture, SuperCollider, OSC/VMC routing, Godot rendering
 11. [Editors overview](Editors/README.md)
     Understand the division between the integrated Asset Editor and the timeline-oriented Score Editor.
 
-12. [Asset Editor draft](Editors/Asset_Editor/01%20Asset%20Editor%20Draft%201.md)
+12. [Asset Editor draft](01%20Asset%20Editor%20Draft%201.md)
     Read the bottom-up material-preparation and Score-first Scene workflows.
 
 13. [Score Editor draft](Editors/Score_Editor/01%20Score%20Editor%20Draft%201.md)

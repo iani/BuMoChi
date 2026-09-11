@@ -2,6 +2,7 @@ BmcAssetEditor {
 	var <window, <projectView, <selectedProject, <selectedScene;
 	var projectList, sceneList, avatarList, details, statusText, inspection;
 	var avatarNameField, confirmAvatarButton, avatarMappings;
+	var assetPathField, projectRevision = 0;
 	var playSceneButton, runningBox, listeningBox, statusUpdater, statusPending = false;
 	var clipPresetView, clipList, presetList, bodyPartsList;
 	var selectAllBodiesButton, unselectAllBodiesButton;
@@ -136,7 +137,8 @@ BmcAssetEditor {
 		} {
 			presetList.items_(#[]);
 			selectedPresetName = nil;
-			frameCountBox.value_(0)
+			frameCountBox.value_(0);
+			bodyPartsList.selection_(#[])
 		};
 		^this
 	}
@@ -308,13 +310,15 @@ BmcAssetEditor {
 	playSelectedScene {
 		var scene = this.currentSceneReport;
 		var project = selectedProject, scenePath = selectedScene;
+		var revision = projectRevision;
 		if(scene.isNil) { Error("Select a Godot-verified Scene before playing").throw };
 		if(scene[\loadable] != true) { Error("The selected Godot Scene is not loadable").throw };
 		if(Bmc.godotServiceReady.not) { Error("The BuMoChi Godot service is not running").throw };
 		this.setStatus("Launching %...".format(scenePath));
 		Bmc.playGodotScene(project, scenePath, this.expectedPorts, { |data, error|
 			{
-				if(project == selectedProject and: { scenePath == selectedScene }) {
+				if(revision == projectRevision and: { project == selectedProject }
+					and: { scenePath == selectedScene }) {
 					if(error.notNil) {
 						runningBox.value_(0);
 						listeningBox.value_(0);
@@ -333,17 +337,20 @@ BmcAssetEditor {
 
 	stopSelectedScene {
 		var project = selectedProject, scenePath = selectedScene;
+		var revision = projectRevision;
 		if(project.isNil or: { scenePath.isNil }) { ^this };
 		this.setStatus("Stopping Godot Scene...");
 		Bmc.stopGodotScene(project, scenePath, { |data, error|
 			{
-				if(error.notNil) {
-					this.setStatus("Could not stop Godot Scene: " ++ error)
-				} {
-					runningBox.value_(0);
-					listeningBox.value_(0);
-					playSceneButton.value_(0);
-					this.setStatus("Godot Scene stopped")
+				if(revision == projectRevision) {
+					if(error.notNil) {
+						this.setStatus("Could not stop Godot Scene: " ++ error)
+					} {
+						runningBox.value_(0);
+						listeningBox.value_(0);
+						playSceneButton.value_(0);
+						this.setStatus("Godot Scene stopped")
+					}
 				}
 			}.defer
 		});
@@ -352,6 +359,7 @@ BmcAssetEditor {
 
 	updateRuntimeStatus {
 		var project = selectedProject, scenePath = selectedScene;
+		var revision = projectRevision;
 		var ports;
 		if(statusPending or: { inspection.isNil } or: { scenePath.isNil }
 			or: { Bmc.godotServiceReady.not }) { ^this };
@@ -360,7 +368,8 @@ BmcAssetEditor {
 		Bmc.godotSceneStatus(project, scenePath, ports, { |data, error|
 			{
 				statusPending = false;
-				if(project == selectedProject and: { scenePath == selectedScene }) {
+				if(revision == projectRevision and: { project == selectedProject }
+					and: { scenePath == selectedScene }) {
 					if(error.notNil) {
 						runningBox.value_(0);
 						listeningBox.value_(0);
@@ -376,11 +385,43 @@ BmcAssetEditor {
 		^this
 	}
 
+	selectAssetFolder {
+		FileDialog({ |paths|
+			if(paths.notEmpty) {
+				try { this.setAssetFolder(paths.first) } { |error|
+					this.showError(error)
+				}
+			}
+		}, fileMode: 2);
+		^this
+	}
+
+	setAssetFolder { |path|
+		Bmc.setDataFolder(path);
+		avatarMappings.clear;
+		scenePresetAssignments.clear;
+		selectedClipName = nil;
+		selectedPresetName = nil;
+		this.refreshClips;
+		this.refreshProjects;
+		^this
+	}
+
 	refreshProjects {
 		var projects = Bmc.projects;
+		projectRevision = projectRevision + 1;
+		assetPathField.string_(Bmc.dataFolder);
+		selectedProject = nil;
+		selectedScene = nil;
+		inspection = nil;
+		runningBox.value_(0);
+		listeningBox.value_(0);
+		playSceneButton.value_(0);
+		avatarNameField.string_("");
+		details.string_("");
 		projectList.items_(projects.collect(_.asString));
 		if(projects.isEmpty) {
-			this.setStatus("No Godot projects found in " ++ Bmc.projectDirectory);
+			this.setStatus("No Godot Projects found. Please copy some projects in the GodotProjects folder and reload");
 			sceneList.items_(#[]);
 			avatarList.items_(#[])
 		} {
@@ -391,7 +432,11 @@ BmcAssetEditor {
 	}
 
 	selectProject { |projectName|
-		var filesystemScenes;
+		var filesystemScenes, revision;
+		projectRevision = projectRevision + 1;
+		revision = projectRevision;
+		playSceneButton.value_(0);
+		avatarNameField.string_("");
 		selectedProject = projectName.asSymbol;
 		selectedScene = nil;
 		runningBox.value_(0);
@@ -413,7 +458,7 @@ BmcAssetEditor {
 		this.setStatus("Inspecting % with Godot...".format(selectedProject));
 		Bmc.inspectProjectData(selectedProject, { |data, error|
 			{
-				if(selectedProject == projectName.asSymbol) {
+				if(revision == projectRevision and: { selectedProject == projectName.asSymbol }) {
 					if(error.notNil) {
 						this.setStatus("Inspection failed: " ++ error)
 					} {
@@ -465,7 +510,10 @@ BmcAssetEditor {
 	build {
 		{
 			var refreshButton = Button().states_([["Refresh Godot projects"]]);
+			var selectAssetFolderButton = Button().states_([["Select Asset Folder"]]);
 			window = Window("BuMoChi Asset Editor", Rect(120, 80, 1000, 720));
+			assetPathField = TextField().string_(Bmc.dataFolder).setProperty(\readOnly, true);
+			selectAssetFolderButton.action_({ this.selectAssetFolder });
 			projectList = ListView().minWidth_(210);
 			sceneList = ListView().minWidth_(280);
 			avatarList = ListView().minWidth_(260);
@@ -548,10 +596,12 @@ BmcAssetEditor {
 				}
 			});
 			refreshButton.action_({ this.refreshProjects });
-			projectView = View().maxHeight_(350);
+			projectView = View().maxHeight_(420);
 			projectView.layout = VLayout(
-				HLayout(playSceneButton, animateCameraButton, runningBox,
-					listeningBox, cameraDataBox),
+				HLayout(listeningBox, cameraDataBox, runningBox,
+					playSceneButton, animateCameraButton),
+				HLayout(assetPathField, selectAssetFolderButton),
+				statusText,
 				HLayout(
 					VLayout(StaticText().string_("Godot projects"), projectList),
 					VLayout(StaticText().string_("Godot Scenes"), sceneList),
@@ -564,7 +614,7 @@ BmcAssetEditor {
 					)
 				), details,
 				HLayout(refreshButton, addPresetButton, playPresetButton,
-					stopPresetButton, statusText)
+					stopPresetButton)
 			);
 			clipPresetView = View();
 			clipPresetView.layout = VLayout(

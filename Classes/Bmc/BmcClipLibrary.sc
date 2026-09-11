@@ -1,5 +1,5 @@
 BmcClipLibrary {
-	var <clips, <currentName;
+	var <clips, <currentName, scannedDirectory;
 	classvar defaultDirectory;
 
 	*defaultDirectory {
@@ -69,8 +69,13 @@ BmcClipLibrary {
 	refreshSaved {
 		var directory = PathName(this.class.defaultDirectory);
 		var found = IdentityDictionary.new;
-		// Loaded and generated clips survive rescans; unloaded placeholders do not.
-		clips.keysValuesDo { |key, clip| if(clip.isLoaded) { found[key] = clip } };
+		// Keep loaded clips on rescans, but discard saved clips from a previous folder.
+		// Unsaved generated clips remain available when the asset folder changes.
+		clips.keysValuesDo { |key, clip|
+			if(clip.isLoaded and: {
+				clip.path.isNil or: { scannedDirectory == this.class.defaultDirectory }
+			}) { found[key] = clip }
+		};
 		if(directory.isFolder) {
 			directory.files.do { |file|
 				var extension = file.extension.asString.toLower.asSymbol;
@@ -86,6 +91,7 @@ BmcClipLibrary {
 			};
 		};
 		clips = found;
+		scannedDirectory = this.class.defaultDirectory;
 		if(currentName.notNil and: { clips.includesKey(currentName).not }) { currentName = nil };
 		^this.names
 	}

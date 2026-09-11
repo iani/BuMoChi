@@ -11,7 +11,7 @@
 	- buffer, audio script specs
 	- ...
 
-Develop Asset Editor GUI
+Develop [[01 Asset Editor Draft 1|Asset Editor GUI]]
 	test:
 		opening a scene
 		animating a scene from XR-ANimator

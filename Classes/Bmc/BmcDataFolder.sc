@@ -11,18 +11,33 @@ BmcDataFolder {
 
 	*root {
 		var data;
-		if(rootDirectory.notNil) { ^rootDirectory };
-		rootDirectory = this.defaultRoot.standardizePath;
-		if(File.exists(this.preferencePath)) {
-			data = File.readAllString(this.preferencePath).interpret;
-			if(data.isKindOf(Dictionary) and: { data[\dataFolder].isString }) {
-				rootDirectory = data[\dataFolder].standardizePath
-			} {
-				"Bmc: ignoring invalid data-folder preference at %"
-					.format(this.preferencePath).warn
-			}
+		if(rootDirectory.notNil and: { File.type(rootDirectory) == \directory }) {
+			^rootDirectory
 		};
-		this.ensureDirectories;
+		try {
+			rootDirectory = this.defaultRoot.standardizePath;
+			if(File.exists(this.preferencePath)) {
+				data = File.readAllString(this.preferencePath).interpret;
+				if(data.isKindOf(Dictionary) and: { data[\dataFolder].isString }) {
+					rootDirectory = data[\dataFolder].standardizePath;
+					// Do not recreate a saved path on a disconnected volume.
+					if(File.type(rootDirectory) != \directory) {
+						Error("Saved Bmc data folder is unavailable: %".format(rootDirectory)).throw
+					}
+				} {
+					Error("Invalid Bmc data-folder preference: %".format(this.preferencePath)).throw
+				}
+			};
+			this.ensureDirectories;
+		} { |error|
+			"Bmc: %. Using local asset folder: % (saved preference unchanged)."
+				.format(error.errorString, this.defaultRoot).warn;
+			rootDirectory = this.defaultRoot.standardizePath;
+			try { this.ensureDirectories } { |fallbackError|
+				rootDirectory = nil;
+				fallbackError.throw
+			};
+		};
 		^rootDirectory
 	}
 

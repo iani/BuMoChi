@@ -57,6 +57,8 @@ BuMoChiAssets/
 
 `Bmc.setDataFolder` must create all seven directories when necessary. `BuMoChiAssets` is the default root-directory name, but the root itself is user-selectable. Changing the configured root does not move existing data automatically.
 
+The default and safe fallback is `Platform.userAppSupportDir +/+ "BuMoChiAssets"`. If the saved folder is unavailable—for example, its external drive is disconnected—BuMoChi warns and creates the local folder and its seven subdirectories. The saved preference stays unchanged. After reconnecting the drive, restart SuperCollider or select the folder again with `Bmc.setDataFolder(path)`. Assets on the disconnected drive remain unavailable until it is reconnected.
+
 The `GodotProjects` directory is structurally mandatory. At least one valid, VMC-controllable Godot project is required before the user can complete a Scene, preview its animation in Godot, or play a Score. BuMoChi should nevertheless permit bottom-up Clip recording and creation of unassigned Presets when no valid Godot project is available.
 
 ## Valid Godot project
