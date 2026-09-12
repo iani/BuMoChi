@@ -1,0 +1,2 @@
+websockets>=13,<17
+python-osc>=1.8,<2

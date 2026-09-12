@@ -1,0 +1,15 @@
+# Tool config only (not a package): install with `pip install -r requirements.txt`.
+# Python >= 3.10; dev tools: pytest, ruff, mypy.
+
+[tool.pytest.ini_options]
+testpaths = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.mypy]
+strict = true

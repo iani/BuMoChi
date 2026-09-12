@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "sourceKind": "synthetic",
+  "mappingId": "fixture",
+  "startedAt": 0,
+  "entries": [
+    {
+      "pose": null,
+      "features": null,
+      "control": {
+        "t": 0,
+        "params": { "intensity": 0.1, "brightness": 0.2, "pitch": 0.3, "width": 0.4, "pan": 0.5, "density": 0.6, "space": 0.7 },
+        "events": []
+      }
+    },
+    {
+      "pose": null,
+      "features": null,
+      "control": {
+        "t": 400,
+        "params": { "intensity": 0.5, "brightness": 0.5, "pitch": 0.5, "width": 0.5, "pan": 0.5, "density": 0.5, "space": 0.5 },
+        "events": [{ "kind": "hit", "strength": 0.9, "t": 400 }]
+      }
+    },
+    {
+      "pose": null,
+      "features": null,
+      "control": {
+        "t": 800,
+        "params": { "intensity": 0.9, "brightness": 0.8, "pitch": 0.7, "width": 0.6, "pan": 0.5, "density": 0.4, "space": 0.3 },
+        "events": [{ "kind": "accent", "strength": 0.6, "t": 800 }]
+      }
+    }
+  ]
+}

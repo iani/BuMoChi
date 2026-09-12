@@ -1,0 +1,12 @@
+# Local Python environments and generated validation files
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Temporary audio and analysis output
+/backend/tmp/*
+!/backend/tmp/.gitkeep

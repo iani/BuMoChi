@@ -1,0 +1,60 @@
+/* ---------------------------------------------------------------------------
+   THEME -- the only file you need to touch to rebrand the whole deck.
+   Swap these values and every slide follows.
+
+   Palette: "Studio Console" -- see docs/VISUAL-STYLE.md for the rationale.
+   Paper-white surfaces by default (projectors and bright rooms), warm
+   off-black ink, one signal-red accent, brass for figures, and a VU-meter
+   pair (sage / amber) for data. Flat colour only: no background gradients,
+   no gradient-filled text. Deliberately NO violet/indigo and NO blue-500,
+   which are the AI-default look we avoid.
+
+   Two themes, both defined here:
+     default / <body class="light">  paper  (use this on a projector)
+     <body class="dark">             console (dim rooms, screen sharing)
+   --------------------------------------------------------------------------- */
+
+:root,
+body.light {
+  /* Surfaces */
+  --bg:     #F4EFE4;   /* page base: warm paper, never pure #FFF */
+  --bg-lift:#FBF8F1;   /* cards, panels, screenshot frames */
+  --rule:   #D8CFBF;   /* hairlines, dividers */
+
+  /* Text */
+  --ink:    #1E1A14;   /* headings and primary copy: warm off-black, never pure #000 */
+  --muted:  #6B6252;   /* body copy, captions, axis labels */
+
+  /* Accents -- a1/a2 for emphasis, a3/a4 for data.
+     All kept under ~80% saturation; contrast comes from value, not chroma. */
+  --a1:     #A63A22;   /* signal red  -- the one brand accent (record light) */
+  --a2:     #6F5510;   /* brass       -- eyebrows, KPI figures, list markers */
+  --a3:     #3E7D72;   /* sage        -- data series A / meter low / code */
+  --a4:     #A8781E;   /* amber       -- data series B / meter high */
+
+  /* Type: a condensed grotesk for headings, system sans for body.
+     Nothing here needs a network fetch, so puppeteer renders offline. */
+  --font-display: "Avenir Next Condensed", "Helvetica Neue Condensed", "Arial Narrow", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+  --font-sans: "Avenir Next", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+
+  /* Shape: hardware-panel radii, never pill-shaped cards */
+  --radius: 6px;
+
+  /* Rhythm */
+  --pad-x: 88px;
+  --pad-y: 72px;
+}
+
+/* Dark variant: same hues, ink and paper swapped. */
+body.dark {
+  --bg:     #16140F;
+  --bg-lift:#24201A;
+  --rule:   #3A342A;
+  --ink:    #F1EBDD;
+  --muted:  #A69C88;
+  --a1:     #C8472B;
+  --a2:     #C9A227;
+  --a3:     #7FB3A8;
+  --a4:     #D9A441;
+}

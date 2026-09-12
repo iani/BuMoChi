@@ -1,0 +1,83 @@
+PROPRIETARY LICENSE — ALL RIGHTS RESERVED
+
+Copyright (c) 2026 the owners of the "openhackbot" GitHub organization
+("Licensor"). All rights reserved.
+
+This repository and everything in it — source code, specifications, prompts,
+skills, documentation, designs, pitch material, recorded sessions, extracted
+data and any other files (together, the "Software") — is the confidential and
+proprietary property of Licensor and is protected by copyright, trade-secret
+and other intellectual-property laws.
+
+1. NO LICENSE GRANTED
+   Nothing in this file or in the repository grants you any right, title or
+   licence to the Software, whether by implication, estoppel or otherwise.
+   Access to the repository (including as a collaborator, reviewer, agent or
+   automation) is not a licence.
+
+2. PROHIBITED ACTS
+   Unless you hold a separate written agreement signed by Licensor, you may
+   NOT, in whole or in part:
+   (a) copy, reproduce, download for retention, mirror or fork the Software
+       outside the openhackbot organization;
+   (b) modify, translate, adapt or create derivative works of the Software;
+   (c) publish, distribute, sublicense, sell, rent, lease, lend or otherwise
+       make the Software available to any third party;
+   (d) use the Software, or any output derived from it, to build a competing
+       product, service, model or dataset;
+   (e) use the Software, in whole or in part, to train, fine-tune, evaluate or
+       ground any machine-learning or AI system, or include it in any such
+       training corpus, except as required to operate agents working inside
+       this repository on Licensor's behalf;
+   (f) remove, obscure or alter this notice or any proprietary marking;
+   (g) reverse-engineer, decompile or disassemble any compiled or deployed
+       part of the Software except to the extent such restriction is
+       prohibited by applicable law.
+
+3. CONTRIBUTIONS
+   By submitting any contribution (code, text, data, review, prompt or other
+   material) to this repository you irrevocably assign to Licensor all right,
+   title and interest in that contribution, including all intellectual-
+   property rights, and waive any moral rights to the extent permitted by
+   law. If assignment is not possible under applicable law, you grant Licensor
+   a perpetual, irrevocable, worldwide, royalty-free, exclusive licence to use
+   the contribution for any purpose.
+
+4. CONFIDENTIALITY
+   The Software is Licensor's confidential information. Anyone with access
+   must keep it confidential, use it only for Licensor's purposes and protect
+   it with at least reasonable care.
+
+5. DEPLOYED INSTANCES
+   Interacting with a deployed instance of the Software (e.g. a demo web
+   page) as an end user does not grant any right to the Software itself.
+   Recordings, exports or other outputs you create with a deployed instance
+   may be used by you for personal, non-commercial purposes only.
+
+6. THIRD-PARTY MATERIAL
+   The Software depends on third-party open-source packages (declared in
+   frontend/package.json, deck/package.json and backend/pyproject.toml) and
+   streams openly licensed demo footage at runtime; each remains under its own
+   licence — see THIRD_PARTY_NOTICES.md. This proprietary licence covers only
+   Licensor's own material and does not restrict those works.
+
+7. NO WARRANTY; LIMITATION OF LIABILITY
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL
+   LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+   CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
+   THE SOFTWARE OR ITS USE.
+
+8. TERMINATION
+   Any right of access is revocable at will by Licensor and terminates
+   automatically upon any breach of these terms. On termination you must
+   destroy every copy of the Software in your possession or control.
+
+9. ENFORCEMENT
+   Unauthorised use is a breach of copyright and may be a criminal offence.
+   Licensor may seek injunctive relief in addition to any other remedy. If any
+   provision is held unenforceable, the remainder stays in force.
+
+For any permission beyond the above, contact the owners of the openhackbot
+GitHub organization.

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI &amp; Music 2026 — Autonomous Spec-to-PR Cascade</title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="slides.css">
+</head>
+<body>
+
+<!-- 1 · Title ------------------------------------------------------------- -->
+<section class="slide">
+  <div class="eyebrow">AI &amp; Music 2026 · hackathon</div>
+  <h1>Audio Workbench<br><span class="grad">built by an agent cascade</span></h1>
+  <p class="lead" style="margin-top:26px">
+    Humans write an EPIC and merge the final PR. Devin agents do everything in
+    between: spec, task breakdown, TDD implementation, review, escalation.
+  </p>
+</section>
+
+<!-- 2 · Problem ----------------------------------------------------------- -->
+<section class="slide">
+  <div class="eyebrow">The problem</div>
+  <h2>A two-day build has no room for a human in the middle</h2>
+  <ul>
+    <li>Turning one feature idea into a spec, tasks, branches and PRs eats the
+        hours a hackathon does not have.</li>
+    <li>Audio work compounds it: WebAudio timing, librosa analysis and a shared
+        API contract must all move together.</li>
+    <li>Handoffs between people are where context, tests and typing get lost.</li>
+  </ul>
+  <p class="note" style="margin-top:36px">
+    The bottleneck is coordination, not typing speed.
+  </p>
+</section>
+
+<!-- 3 · Why this approach ------------------------------------------------- -->
+<section class="slide">
+  <div class="eyebrow">Why an agent cascade</div>
+  <h2>Zero Human Middle</h2>
+  <div class="cards">
+    <div class="card">
+      <h3>Spec first</h3>
+      <p>A TPM agent turns <code>/devin architect</code> on an EPIC into
+         <code>docs/specs/*.md</code> before any code exists.</p>
+    </div>
+    <div class="card">
+      <h3>Atomic tasks</h3>
+      <p>One issue, one branch, one PR per task. Workers run TDD and every
+         quality gate before opening a PR.</p>
+    </div>
+    <div class="card">
+      <h3>Loud failure</h3>
+      <p>Three strikes → <code>BLOCKED: human-attention</code> → Discord
+         pager. No silent loops.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4 · Demo -------------------------------------------------------------- -->
+<section class="slide center">
+  <div class="eyebrow">Live</div>
+  <h1 class="grad">Demo</h1>
+  <p class="note" style="margin-top:28px">
+    Switch away from the deck: open an EPIC, comment <code>/devin architect</code>,
+    watch spec → issues → PR. Come back for one slide only.
+  </p>
+</section>
+
+<!-- 5 · What you just saw ------------------------------------------------- -->
+<section class="slide">
+  <div class="eyebrow">What you just saw</div>
+  <h2>Screenshots, not claims</h2>
+  <div class="shot">
+    <!-- Replace with a real capture: <img src="shots/workbench.png" alt="Audio Workbench UI"> -->
+    <div style="height:46vh;display:grid;place-items:center;
+                color:var(--muted);font-size:19px">
+      &lt;TBD&gt; capture of the Audio Workbench and the PR the cascade opened
+    </div>
+  </div>
+</section>
+
+<!-- 6 · How it works ------------------------------------------------------ -->
+<section class="slide">
+  <div class="eyebrow">How it works</div>
+  <h2>Five boxes, end to end</h2>
+  <div class="cards" style="grid-auto-flow:column">
+    <div class="card"><h3>EPIC</h3><p>Human issue + <code>/devin architect</code>.</p></div>
+    <div class="card"><h3>TPM</h3><p>Spec, task issues, dispatch.</p></div>
+    <div class="card"><h3>Workers</h3><p>TDD on React/Tone.js and FastAPI/librosa.</p></div>
+    <div class="card"><h3>Review</h3><p>Devin Review + CI gates on every PR.</p></div>
+    <div class="card"><h3>Merge</h3><p>A human merges; stuck work pages Discord.</p></div>
+  </div>
+  <p class="note" style="margin-top:34px">
+    Rejected alternatives live in <code>docs/adr/</code>.
+  </p>
+</section>
+
+<!-- 7 · Signal ------------------------------------------------------------ -->
+<section class="slide">
+  <div class="eyebrow">Signal</div>
+  <h2>What the cascade has actually shipped</h2>
+  <div class="kpis">
+    <div class="kpi"><b>&lt;TBD&gt;</b><span>EPICs run through the cascade</span></div>
+    <div class="kpi"><b>&lt;TBD&gt;</b><span>PRs merged without human edits</span></div>
+    <div class="kpi"><b>&lt;TBD&gt;</b><span>Median EPIC → merged PR time</span></div>
+  </div>
+  <p class="note" style="margin-top:28px">
+    Fill these from GitHub before presenting. Never guess a number on this slide.
+  </p>
+</section>
+
+<!-- 8 · Next -------------------------------------------------------------- -->
+<section class="slide center">
+  <h1>What we'd do<br><span class="grad">with two more weeks</span></h1>
+  <p class="lead" style="margin-top:26px">
+    Let the cascade take an audio feature from EPIC to a listenable result in the
+    browser — beat detection, stem analysis, and a Tone.js instrument that plays
+    along.
+  </p>
+</section>
+
+<!-- Presenter chrome: stripped by the exporter, so it never hits the PDF. -->
+<div class="deck-hint">← → to navigate</div>
+<script>
+  const slides = [...document.querySelectorAll('.slide')];
+  let at = 0;
+  const go = (i) => {
+    at = Math.max(0, Math.min(slides.length - 1, i));
+    slides[at].scrollIntoView({ behavior: 'smooth' });
+  };
+  addEventListener('keydown', (e) => {
+    if (['ArrowRight', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); go(at + 1); }
+    if (['ArrowLeft', 'PageUp'].includes(e.key))         { e.preventDefault(); go(at - 1); }
+    if (e.key === 'Home') go(0);
+    if (e.key === 'End')  go(slides.length - 1);
+  });
+  // Keep `at` honest if the user scrolls or swipes instead.
+  addEventListener('scroll', () => {
+    at = Math.round(scrollY / innerHeight);
+  }, { passive: true });
+</script>
+
+</body>
+</html>
