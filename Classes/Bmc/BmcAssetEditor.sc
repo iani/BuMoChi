@@ -10,6 +10,7 @@ BmcAssetEditor {
 	var selectedClipName, selectedPresetName, scenePresetAssignments;
 	var animateCameraButton, recordClipButton;
 	var newClipNameField, frameCountBox, cameraDataBox, statusTick = 0, activeRecordingName;
+	var pipelineWaiter;
 
 	*new { ^super.new.init }
 
@@ -21,6 +22,30 @@ BmcAssetEditor {
 	}
 
 	setStatus { |text| statusText.string_(text.asString) }
+
+	startPipeline {
+		Bmc.startPipeline;
+		this.setStatus("Starting BuMoChi pipeline; waiting for Godot service...");
+		if(pipelineWaiter.notNil) { pipelineWaiter.stop };
+		pipelineWaiter = Routine({
+			var waited = 0;
+			// Allow the launcher's port checks and child-process checks to finish.
+			2.wait;
+			while { Bmc.pipelineRunning and: { Bmc.godotServiceReady.not }
+				and: { waited < 15 } } {
+				0.25.wait;
+				waited = waited + 0.25
+			};
+			if(Bmc.pipelineRunning and: { Bmc.godotServiceReady }) {
+				this.reloadAssets
+			} {
+				this.setStatus(Bmc.pipelineError ?? {
+					"Pipeline did not become ready. See the post window and pipeline logs."
+				})
+			}
+		}).play(AppClock);
+		^this
+	}
 
 	showError { |error|
 		// Exception.asString only says "an Error". errorString contains the
@@ -124,7 +149,9 @@ BmcAssetEditor {
 	}
 
 	refreshClips {
-		var names = Bmc.refreshSavedClips;
+		var names;
+		Bmc.refreshSavedClips;
+		names = Bmc.savedClips;
 		clipList.items_(names.collect(_.asString));
 		selectedClipName = if(names.includes(selectedClipName)) {
 			selectedClipName
@@ -253,7 +280,22 @@ BmcAssetEditor {
 
 	playAssignedPreset {
 		var preset = scenePresetAssignments[this.assignmentKey];
-		if(preset.isNil) { Error("Add the selected Preset to this Scene before playing it").throw };
+		var clip, targets;
+		if(preset.isNil) {
+			if(selectedClipName.isNil) { Error("Select an animation Clip first").throw };
+			targets = this.selectedTargetNames;
+			if(targets.isEmpty) { Error("Select a Godot Scene avatar target first").throw };
+			clip = Bmc.clip(selectedClipName);
+			if(clip.isNil or: { clip.isEmpty }) { Error("The selected Clip is empty").throw };
+			preset = if(selectedPresetName.notNil) {
+				Bmc.clipPreset(selectedClipName, selectedPresetName)
+			} {
+				BmcClipPreset(\fullClip, selectedClipName, 0, clip.size - 1)
+			};
+			preset = BmcClipPreset(preset.name, preset.sourceClip, preset.startFrame,
+				preset.endFrame, preset.looping, preset.speed, preset.bones, targets,
+				preset.sonificationCode, preset.modificationCode);
+		};
 		this.prepareAssignedTargets(preset);
 		Bmc.playPresetObject(preset);
 		this.setStatus("Playing preset % on %".format(preset.name, preset.targets.join(", ")));
@@ -519,9 +561,28 @@ BmcAssetEditor {
 		{
 			var reloadButton = Button().states_([["Reload"]]);
 			var selectAssetFolderButton = Button().states_([["Select Asset Folder"]]);
+			var startPipelineButton = Button().states_([["Start BMC Pipeline"]]);
+			var openXRAnimatorButton = Button().states_([["Open XR-Animator"]]);
 			window = Window("BuMoChi Asset Editor", Rect(120, 80, 1000, 720));
 			assetPathField = TextField().string_(Bmc.dataFolder).setProperty(\readOnly, true);
 			selectAssetFolderButton.action_({ this.selectAssetFolder });
+			startPipelineButton.action_({
+				try { this.startPipeline } { |error| this.showError(error) }
+			});
+			openXRAnimatorButton.action_({
+				try {
+					this.setStatus("Opening XR-Animator...");
+					Bmc.openXRAnimator({ |exitCode|
+						{
+							this.setStatus(if(exitCode == 0) {
+								"XR-Animator launch requested. Select the camera and enable VMC output in XR-Animator."
+							} {
+								"XR-Animator could not open. See the Post window for details."
+							})
+						}.defer
+					})
+				} { |error| this.showError(error) }
+			});
 			projectList = ListView().minWidth_(210);
 			sceneList = ListView().minWidth_(280);
 			avatarList = ListView().minWidth_(260);
@@ -608,7 +669,7 @@ BmcAssetEditor {
 			});
 			projectView = View().maxHeight_(420);
 			projectView.layout = VLayout(
-				HLayout(listeningBox, cameraDataBox, runningBox,
+				HLayout(startPipelineButton, openXRAnimatorButton, listeningBox, cameraDataBox, runningBox,
 					playSceneButton, animateCameraButton),
 				HLayout(assetPathField, reloadButton, selectAssetFolderButton),
 				statusText,
@@ -657,7 +718,10 @@ BmcAssetEditor {
 					0.25.wait
 				}
 			}).play(AppClock);
-			window.onClose_({ statusUpdater.stop });
+			window.onClose_({
+				statusUpdater.stop;
+				if(pipelineWaiter.notNil) { pipelineWaiter.stop }
+			});
 			this.refreshProjects;
 			this.refreshClips;
 			window.front

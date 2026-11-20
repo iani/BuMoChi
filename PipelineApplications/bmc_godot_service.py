@@ -5,6 +5,7 @@ import argparse
 import json
 import os
 import signal
+import re
 import subprocess
 import time
 from pathlib import Path
@@ -12,6 +13,7 @@ from pathlib import Path
 RUNNING = True
 PROJECT_PROCESSES: dict[str, subprocess.Popen[str]] = {}
 PROJECT_LOGS: dict[str, object] = {}
+PROJECT_SCENES: dict[str, str] = {}
 
 def stop(_signal: int, _frame: object) -> None:
     global RUNNING
@@ -47,9 +49,24 @@ def write_report(output_path: str, report: dict[str, object]) -> None:
     atomic_write(output, json.dumps(report, indent=2) + "\n")
     atomic_write(Path(output_path + ".scd"), sc_literal(report) + "\n")
 
+def windows_udp_listeners() -> list[tuple[int, int]]:
+    result = subprocess.run(["netstat", "-ano", "-p", "udp"],
+                            capture_output=True, text=True, check=True)
+    entries = []
+    for line in result.stdout.splitlines():
+        fields = line.split()
+        if len(fields) >= 4 and fields[0].upper() == "UDP":
+            match = re.search(r":(\d+)$", fields[1])
+            if match and fields[-1].isdigit():
+                entries.append((int(match.group(1)), int(fields[-1])))
+    return entries
+
+
 def listening_ports(pid: int, ports: list[int]) -> list[int]:
     if not ports:
         return []
+    if os.name == "nt":
+        return [port for port, owner in windows_udp_listeners() if owner == pid and port in ports]
     completed = subprocess.run(
         ["lsof", "-nP", "-a", "-p", str(pid), "-iUDP"],
         capture_output=True, text=True, check=False,
@@ -57,6 +74,9 @@ def listening_ports(pid: int, ports: list[int]) -> list[int]:
     return [port for port in ports if f":{port}" in completed.stdout]
 
 def occupied_ports(ports: list[int]) -> list[int]:
+    if os.name == "nt":
+        bound = {port for port, _owner in windows_udp_listeners()}
+        return [port for port in ports if port in bound]
     occupied: list[int] = []
     for port in ports:
         completed = subprocess.run(
@@ -82,6 +102,7 @@ def stop_launched_projects() -> None:
         log.close()
     PROJECT_PROCESSES.clear()
     PROJECT_LOGS.clear()
+    PROJECT_SCENES.clear()
 
 def process_request(request: Path) -> None:
     # SuperCollider has no portable atomic-rename primitive. Give its tiny
@@ -128,6 +149,7 @@ def process_request(request: Path) -> None:
                 stdout=log, stderr=subprocess.STDOUT, text=True,
             )
             PROJECT_PROCESSES[project_path] = process
+            PROJECT_SCENES[project_path] = argument
             PROJECT_LOGS[project_path] = log
             time.sleep(0.4)
             running = process.poll() is None
@@ -142,7 +164,8 @@ def process_request(request: Path) -> None:
                 raise RuntimeError(f"Godot stopped during launch; see {log_path}")
         elif action == "status":
             process = PROJECT_PROCESSES.get(project_path)
-            running = process is not None and process.poll() is None
+            running = (process is not None and process.poll() is None
+                       and PROJECT_SCENES.get(project_path) == argument)
             ports = [int(port) for port in port_text.split(",") if port.strip()]
             open_ports = listening_ports(process.pid, ports) if running else []
             write_report(output_path, {
@@ -182,7 +205,7 @@ def main() -> int:
     atomic_write(ready, f"{os.getpid()}\n{Path(__file__).resolve()}\n")
     print(f"BuMoChi Godot service ready: {spool}", flush=True)
     try:
-        while RUNNING:
+        while RUNNING and not (spool / "service.stop").exists():
             for request in sorted(spool.glob("*.request")):
                 process_request(request)
             time.sleep(0.1)

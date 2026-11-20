@@ -1,0 +1,14 @@
+{
+  "macos-arm64": {
+    "url": "https://github.com/ButzYung/SystemAnimatorOnline/releases/download/XR-Animator_v0.34.3/XR-Animator_v0.34.3_macOS-ARM64_beta-03.zip",
+    "sha256": "1b761a4cff00470a52a8489b9d7e91add14ad8f23a2ef35b3320d25122240581"
+  },
+  "windows-x64": {
+    "url": "https://github.com/ButzYung/SystemAnimatorOnline/releases/download/XR-Animator_v0.34.3/XR-Animator_v0.34.3_windows.zip",
+    "sha256": "697986c730bfbca6514720594726ee6d76a1587cde9a628e75966de1940c4019"
+  },
+  "linux-x64": {
+    "url": "https://github.com/ButzYung/SystemAnimatorOnline/releases/download/XR-Animator_v0.34.3/XR-Animator_v0.34.3_linux-x64.zip",
+    "sha256": "cf220634f12a58949083eecec5962013f55d185461715c76b851e57936cf3c04"
+  }
+}

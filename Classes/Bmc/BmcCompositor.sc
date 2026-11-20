@@ -65,10 +65,17 @@ BmcCompositor {
 	}
 
 	tick { |sampleTime|
+		var avatars = this.avatars;
+		var playbackPorts = avatars.select(_.hasPlaybackSource)
+			.collect(_.vmcPort).reject(_.isNil).asSet;
 		tickCount = tickCount + 1;
 		sampleTime = sampleTime ?? { SystemClock.seconds };
-		this.avatars.do { |avatar|
-			if(avatar.shouldSample) {
+		avatars.do { |avatar|
+			// A live-only avatar must not overwrite playback sent to the same
+			// destination. Keep its caches intact so live motion resumes on stop.
+			if(avatar.shouldSample and: {
+				avatar.hasPlaybackSource or: { playbackPorts.includes(avatar.vmcPort).not }
+			}) {
 				avatar.sampleAndSend(sampleTime);
 				frameCount = frameCount + 1;
 			};

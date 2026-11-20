@@ -86,6 +86,7 @@ BmcAvatar {
 			this.addWire(cache);
 		};
 		cache.rule_(compositionRule);
+		cache.isPlayback_(sourceObject.isKindOf(BmcClipPlayer));
 		cache.update(typed, time);
 		dirty = true;
 		^cache
@@ -94,7 +95,12 @@ BmcAvatar {
 	composeFrame { |time|
 		var result = BmcFrame.new(avatarName, "bmc-reference", 0, 0.0, referencePose);
 		var completedPose;
-		wires.reverse.do { |sourceCache| result = sourceCache.applyTo(result) };
+		// Live sources keep updating underneath playback, even if their first
+		// frame arrived after the player. Partial presets override only their bones.
+		wires.reverse.select { |cache| cache.isPlayback.not }
+			.do { |sourceCache| result = sourceCache.applyTo(result) };
+		wires.reverse.select { |cache| cache.isPlayback }
+			.do { |sourceCache| result = sourceCache.applyTo(result) };
 		modifiers.reverse.do { |modifier| result = modifier.applyTo(result, time) };
 		completedPose = result.pose.copy;
 		completedPose.fillMissingFrom(referencePose);
@@ -109,6 +115,9 @@ BmcAvatar {
 	}
 
 	shouldSample { ^wires.notEmpty or: { modifiers.notEmpty } or: { dirty } }
+	hasPlaybackSource {
+		^wires.any { |cache| cache.isPlayback and: { cache.enabled } and: { cache.frame.notNil } }
+	}
 
 	sampleAndSend { |time|
 		var frame = this.composeFrame(time);

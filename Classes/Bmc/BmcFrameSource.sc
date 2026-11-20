@@ -1,6 +1,7 @@
 BmcFrameSource {
 	var <name, <source, <sourceAvatar, <mode, <bones;
 	var <frame, <time, <enabled = true;
+	var <>isPlayback = false;
 
 	*new { |name, source, sourceAvatar, mode = \overwrite, bones|
 		^super.new.init(name, source, sourceAvatar, mode, bones)

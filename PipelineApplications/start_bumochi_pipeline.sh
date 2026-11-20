@@ -34,6 +34,7 @@ USE_OSCGROUPS=0
 USE_GODOT_SERVICE=1
 VERBOSE=0
 DRY_RUN=0
+STATUS_ONLY=0
 LOG_DIR=${BUMOCHI_LOG_DIR:-"${TMPDIR:-/tmp}/bumochi-pipeline-${USER:-user}"}
 
 PIDS=""
@@ -72,6 +73,7 @@ Pipeline options:
   --log-dir PATH         Process log directory
   --verbose              Enable verbose encoder and decoder output
   --dry-run              Validate and display commands without starting them
+  --status               Exit successfully only when the local pipeline is ready
   -h, --help             Show this help
 
 The default password can also be overridden independently with the
@@ -184,10 +186,26 @@ while [ "$#" -gt 0 ]; do
     --no-godot-service) USE_GODOT_SERVICE=0; shift ;;
     --verbose) VERBOSE=1; shift ;;
     --dry-run) DRY_RUN=1; shift ;;
+    --status) STATUS_ONLY=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) die "unknown option: $1 (use --help)" ;;
   esac
 done
+
+# Read-only readiness check, including pipelines started from another session.
+if [ "$STATUS_ONLY" -eq 1 ]; then
+  command -v lsof >/dev/null 2>&1 || exit 1
+  for port in "$ENCODER_PORT" "$DECODER_PORT"; do
+    lsof -nP -iUDP:"$port" -t 2>/dev/null | grep -q . || exit 1
+  done
+  service_pid=
+  if [ -f /tmp/bumochi-godot-service/service.ready ]; then
+    IFS= read -r service_pid < /tmp/bumochi-godot-service/service.ready || true
+  fi
+  case "$service_pid" in ''|*[!0-9]*|0) exit 1 ;; esac
+  kill -0 "$service_pid" 2>/dev/null || exit 1
+  exit 0
+fi
 
 command -v "$PYTHON" >/dev/null 2>&1 || die "Python command not found: $PYTHON"
 [ -f "$APP_DIR/BunrakuOSCEncoder.py" ] || die "BunrakuOSCEncoder.py is missing"
@@ -227,7 +245,8 @@ if [ "$DRY_RUN" -eq 0 ]; then
     port_must_be_free "OscGroupClient input" "$OSCGROUPS_INPUT_PORT"
     port_must_be_free "OscGroupClient local network" "$LOCAL_TO_REMOTE_PORT"
   fi
-  trap stop_all INT TERM EXIT
+  trap 'stop_all; exit 0' INT TERM
+  trap stop_all EXIT
 fi
 
 if [ "$USE_GODOT_SERVICE" -eq 1 ]; then

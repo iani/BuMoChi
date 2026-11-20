@@ -113,6 +113,7 @@ BmcClipPlayer {
 					waitTime.max(0.0).wait;
 				};
 			};
+			if(avatar.notNil and: { name.notNil }) { avatar.removeSourceNamed(name) };
 			this.changed(\end);
 		}, SystemClock);
 		task.start(SystemClock);

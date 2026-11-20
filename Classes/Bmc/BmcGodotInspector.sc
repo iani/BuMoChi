@@ -8,8 +8,21 @@ BmcGodotInspector {
 		^"godot"
 	}
 
-	*godotExecutable { ^godotExecutable ?? { this.defaultExecutable } }
-	*godotExecutable_ { |path| godotExecutable = path.asString.standardizePath; ^godotExecutable }
+	*godotPreferencePath { ^Platform.userAppSupportDir +/+ "bumochi_godot_path.txt" }
+	*godotExecutable {
+		if(godotExecutable.isNil and: { File.exists(this.godotPreferencePath) }) {
+			godotExecutable = File.readAllString(this.godotPreferencePath).stripWhiteSpace
+		};
+		^godotExecutable ?? { this.defaultExecutable }
+	}
+	*godotExecutable_ { |path|
+		var file;
+		godotExecutable = path.asString.standardizePath;
+		file = File(this.godotPreferencePath, "w");
+		if(file.isOpen.not) { Error("Cannot save Godot executable preference").throw };
+		protect { file.write(godotExecutable) } { file.close };
+		^godotExecutable
+	}
 
 	*applicationDirectory {
 		var classDirectory = PathName(this.filenameSymbol.asString).pathOnly;
@@ -18,8 +31,17 @@ BmcGodotInspector {
 
 	*scriptPath { ^this.applicationDirectory +/+ "bmc_godot_inspector.gd" }
 	*serviceStartPath { ^this.applicationDirectory +/+ "start_bumochi_godot_service.sh" }
-	*serviceDirectory { ^"/tmp/bumochi-godot-service" }
-	*serviceReady { ^File.exists(this.serviceDirectory +/+ "service.ready") }
+	*serviceDirectory {
+		^if(thisProcess.platform.name == \windows) {
+			Platform.userAppSupportDir +/+ "bumochi-godot-service"
+		} { "/tmp/bumochi-godot-service" }
+	}
+	*serviceReady {
+		var path = this.serviceDirectory +/+ "service.ready", pid;
+		if(File.exists(path).not) { ^false };
+		pid = (File.readAllString(path) ?? { "" }).split($\n).first.asInteger;
+		^pid > 0 and: { pid.pidRunning }
+	}
 
 	*nextRequestID {
 		requestSerial = requestSerial + 1;

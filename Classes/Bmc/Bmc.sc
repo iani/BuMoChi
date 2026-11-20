@@ -16,6 +16,8 @@ Bmc {
 	classvar <decoderPort, <forwardDecoder;
 	classvar <compositor;
 	classvar <cameraSource, <cameraTarget, <cameraAnimationActive = true;
+	classvar <pipelineProcessID, <pipelineError;
+	classvar <sceneCompositorWindow;
 
 	*initClass {
 		boneNames = #[
@@ -41,7 +43,7 @@ Bmc {
 		// disconnects its network resources. Release Bmc's OSC responder and
 		// compositor here so the custom UDP receive port is not left active while
 		// the language closes its sockets.
-		ShutDown.add({ this.stop });
+		ShutDown.add({ this.stopPipeline; this.stop });
 	}
 
 	*initializeEnvironment {
@@ -82,6 +84,93 @@ Bmc {
 	}
 
 	// ----- top-level system -----
+	*xrAnimatorPath {
+		var root = PathName(this.filenameSymbol.asString).pathOnly +/+ "../../XRAnimator/Bin";
+		var relative = switch(thisProcess.platform.name,
+			\osx, { "MacOS/Electron.app" },
+			\windows, { "Windows/XR-Animator_electron-v35.1.2-win32-x64_SA/electron.exe" },
+			\linux, { "Linux/XR-Animator_electron-v35.1.2-linux-x64_SA/electron" },
+			{ Error("Unsupported XR-Animator platform").throw });
+		^(root +/+ relative).standardizePath
+	}
+
+	*openXRAnimator { |action|
+		var path = this.xrAnimatorPath;
+		var mac = thisProcess.platform.name == \osx;
+		var executable = if(mac) { path +/+ "Contents/MacOS/Electron" } { path };
+		if(File.exists(executable).not) {
+			Error("XR-Animator application not found: " ++ path).throw
+		};
+		^if(mac) { ["/usr/bin/open", path] } { [path] }.unixCmd({ |exitCode|
+			if(exitCode != 0) {
+				"XR-Animator exited with status %: %".format(exitCode, path).warn
+			};
+			action.value(exitCode)
+		}, false)
+	}
+
+	*windowsPipelineCommand {
+		^["python", BmcGodotInspector.applicationDirectory +/+ "start_bumochi_pipeline.py",
+			"--spool-dir", BmcGodotInspector.serviceDirectory]
+	}
+
+	*pipelineStartPath {
+		^BmcGodotInspector.applicationDirectory +/+ if(thisProcess.platform.name == \windows) {
+			"start_bumochi_pipeline.py"
+		} { "start_bumochi_pipeline.sh" }
+	}
+
+	*pipelineRunning {
+		^pipelineProcessID.notNil and: { pipelineProcessID.pidRunning }
+	}
+
+	*pipelineReady { |action|
+		^(if(thisProcess.platform.name == \windows) {
+			this.windowsPipelineCommand
+		} { ["/bin/bash", this.pipelineStartPath] } ++ ["--status",
+			"--decoder-port", decoderPort.asString]).unixCmd({ |exitCode|
+			{ action.value(exitCode == 0) }.defer
+		}, false)
+	}
+
+	*startPipeline {
+		var command;
+		this.start(dispatcher.port);
+		if(this.pipelineRunning) { ^this };
+		if(File.exists(this.pipelineStartPath).not) {
+			Error("BuMoChi pipeline launcher not found: " ++ this.pipelineStartPath).throw
+		};
+		pipelineError = nil;
+		// Array arguments preserve paths containing spaces without shell interpolation.
+		command = if(thisProcess.platform.name == \windows) {
+			this.windowsPipelineCommand
+		} { ["/bin/bash", this.pipelineStartPath] } ++ [
+			"--bmc-port", dispatcher.port.asString,
+			"--decoder-port", decoderPort.asString];
+		pipelineProcessID = command.unixCmd({ |exitCode, pid|
+			if(pipelineProcessID == pid) {
+				pipelineProcessID = nil;
+				if(exitCode != 0) {
+					pipelineError = "BuMoChi pipeline exited with status %. See the post window for details."
+						.format(exitCode);
+					pipelineError.warn
+				}
+			}
+		}, true);
+		^this
+	}
+
+	*stopPipeline {
+		if(this.pipelineRunning) {
+			if(thisProcess.platform.name == \windows) {
+				(this.windowsPipelineCommand ++ ["--stop"]).unixCmd
+			} {
+				["/bin/kill", "-TERM", pipelineProcessID.asString].unixCmd
+			};
+		};
+		^this
+	}
+
 	*start { |port = 57130|
 		CmdPeriod.add(this);
 		dispatcher.start(port);
@@ -618,6 +707,11 @@ Bmc {
 		if(assetEditorWindow.notNil) { assetEditorWindow.close };
 		assetEditorWindow = BmcAssetEditor.new;
 		^assetEditorWindow
+	}
+	*sceneCompositor {
+		if(sceneCompositorWindow.notNil) { sceneCompositorWindow.close };
+		sceneCompositorWindow = BmcSceneCompositor.new;
+		^sceneCompositorWindow
 	}
 	*assetEditorTargets {
 		if(assetEditorWindow.isNil) { ^#[] };

@@ -14,3 +14,8 @@ __pycache__/
 
 # Local Obsidian UI and workspace state
 .obsidian/workspace.json
+
+# Platform apps are shipped as release ZIPs, not stored in Git
+/XRAnimator/Bin/
+/dist/
+/release-build/
