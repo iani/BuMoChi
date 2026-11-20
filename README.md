@@ -87,7 +87,17 @@ The XR-Animator path is resolved relative to BuMoChi. Windows uses the included 
 
 If the Linux archive extractor drops execute permissions, restore them on `XRAnimator/Bin/Linux/XR-Animator_electron-v35.1.2-linux-x64_SA/electron` before opening XR-Animator. Follow upstream platform instructions for any additional runtime requirements.
 
-See [Tutorial](Documentation/BuMoChi/Tutorial/00%20Start%20Here.md) for the workshop and [setup overview code](Documentation/BuMoChi/Tutorial/BuMoChi_Workshop01_SetupAndOverview.scd) for the opening exercise. Some older tutorials describe installing applications individually; this README describes the packaged release layout.
+See [Tutorial](Documentation/BuMoChi/Tutorial/00%20Start%20Here.md) for the workshop and [setup overview code](Documentation/BuMoChi/Tutorial/BuMoChi_Workshop01_SetupAndOverview.scd) for the opening exercise. The installation guide and tutorial describe this packaged release layout.
+
+## Compose recorded gestures in SceneCompositor
+
+```supercollider
+Bmc.sceneCompositor;
+```
+
+Select one or more animation clips, choose a scene and avatar target, and check the VMC port. Set performance, phrase and blend lengths and variation; the blend must be shorter than the phrase. Click **Generate performance**, then **Play performance**. Playback prepares the BMC pipeline and selected Godot scene automatically. Use **Stop** to end playback.
+
+**Play clip** previews an existing recording. **New variation** changes the seed; generate again to hear or see a different selection. Enter a new name and use **Save clip** to retain the generated motion in the asset library. Source recordings remain unchanged. This is a recorded-gesture synthesis prototype, without foot-contact or collision constraints. See [SceneCompositor](Documentation/BuMoChi/HelpByTopic/SceneCompositor.md) for the complete window reference.
 
 ## Included third-party software
 

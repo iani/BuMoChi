@@ -1,59 +1,56 @@
 # Overview
 
-BuMoChi connects several applications. Some are installed separately; others are included in the BuMoChi repository.
+BuMoChi connects several applications. SuperCollider, Python and Godot are installed separately; the OS-specific BuMoChi release ZIP includes XR-Animator and the pipeline helpers. Starter assets are a separate download.
 
 | Component | Where it comes from | Required? |
 |---|---|---|
-| XR-Animator | Download from its official releases page | Required for webcam motion capture; optional for clip-only work |
+| XR-Animator | Included in the OS-specific BuMoChi release ZIP | Required for webcam motion capture; optional for clip-only work |
 | Python 3 | Install from Python or your operating-system package manager | Required for the encoder and decoder |
 | `BunrakuOSCEncoder` | Included in `PipelineApplications/` | Required for XR-Animator input |
 | `OscGroupClient` | Binaries included under `HelperAppsAndExamples/OSCGroups/` | Required only for collaboration over OSCGroups |
 | SuperCollider | Download from its official website | Required |
-| BuMoChi SuperCollider library | This repository | Required |
+| BuMoChi SuperCollider library | OS-specific BuMoChi release ZIP | Required |
 | `BunrakuOSCDecoder` | Included in `PipelineApplications/` | Required for sending BuMoChi animation to Godot |
 | Godot | Download from its official website | Required for rendering avatars |
-| BuMoChi Godot project | Included in the complete ICLC27 workspace, with a reference project also included in BuMoChi | Required for visible avatar output |
+| BuMoChi Godot project | Download BuMoChi_Assets separately; a diagnostic reference project is included in BuMoChi | Required for visible avatar output |
 
 The prepared projects have been developed and tested with Godot 4.5. Install Godot 4.5 for reproducible results. Do not upgrade a working performance project to a newer Godot version without first making a copy.
 
-All paths below are relative to the root of the BuMoChi repository unless stated otherwise.
+All paths below are relative to the root of the extracted BuMoChi folder unless stated otherwise.
 
 # Obtain BuMoChi
 
-If you do not already have the repository, clone it with:
+Open [BuMoChi Releases](https://github.com/iani/BuMoChi/releases) and choose the ZIP for your operating system and processor from the release's **Assets** list:
 
-```bash
-git clone https://github.com/iani/BuMoChi.git
-cd BuMoChi
-```
+| Computer | Package suffix |
+|---|---|
+| Apple silicon Mac | `macos-arm64.zip` |
+| Windows 64-bit Intel/AMD | `windows-x64.zip` |
+| Linux 64-bit Intel/AMD | `linux-x64.zip` |
 
-If you are using the complete ICLC27 workspace, the BuMoChi repository is already located at:
+Extract the archive and keep the complete `BuMoChi` folder in a permanent location. These packages include the matching native **XR-Animator 0.34.3** application under `XRAnimator/`; no separate XR-Animator download is needed. Keep that folder in place so **Open XR-Animator** can find it.
 
-```text
-AppsAndCode/BuMoChi/
-```
+Choose the OS-specific release asset, not **Source code (zip)** or **Code → Download ZIP**. Source archives and Git clones do not include XR-Animator binaries. Cloning remains an option for development, but requires supplying XR-Animator separately. Intel Macs and ARM Windows/Linux are not covered by these three packages.
 
-Keep the repository in a permanent location. The optional command-line launchers and the SuperCollider installation described below may use symbolic links pointing back to it.
+The workshop packages are prereleases. Consult the release notes for platform validation; Windows/Linux camera, audio and complete workshop operation still require native testing.
 
 # XR-Animator
 
-XR-Animator captures body and face motion from a webcam and transmits it as VMC.
+XR-Animator captures body and face motion from a webcam and transmits it as VMC. The native application is included in your OS-specific release ZIP; do not download it again.
 
-1. Open the [official XR-Animator releases page](https://github.com/ButzYung/SystemAnimatorOnline/releases).
-2. Download the native desktop build appropriate for your operating system and processor.
-3. Read the installation notes included with that release. The macOS build is currently described by its developer as a beta.
-4. Extract or install the application in your normal applications folder, outside the BuMoChi repository.
-5. Start XR-Animator and grant camera access when macOS or your operating system asks for it.
+After installing the SuperCollider library below, evaluate `Bmc.assetEditor;` and click **Open XR-Animator**. Select your camera and grant camera access when asked. Keep the bundled `XRAnimator/` directory inside BuMoChi: its application path is resolved relative to the library.
 
-Use the native desktop application for the BuMoChi pipeline. The browser version is useful for experimentation, but native VMC output is required here.
+On Linux, if extraction loses execute permissions, restore them on `XRAnimator/Bin/Linux/XR-Animator_electron-v35.1.2-linux-x64_SA/electron`. Install the graphical runtime dependencies required by Electron for your distribution. Read the upstream notices retained in the bundle.
 
-Do not configure its port yet. The complete startup and port procedure is in [Setup](HelpByTopic/Setup.md) and [Port Number Setup](HelpByTopic/PortNumberSetup.md).
+Use the native desktop application; the browser version does not supply the native VMC output required here. For source-only developer installations, obtain a compatible native build from the [upstream releases](https://github.com/ButzYung/SystemAnimatorOnline/releases).
+
+The normal encoder destination is `127.0.0.1:39537`. See [XR-Animator](HelpByTopic/MainApplications/XR-Animator.md), [Setup](HelpByTopic/Setup.md), and [Port Number Setup](HelpByTopic/PortNumberSetup.md).
 
 # Python 3
 
-The two Bunraku pipeline applications require Python 3. They use only the Python standard library; there is no `pip` installation step and no third-party Python package requirement.
+The two Bunraku pipeline applications require Python 3.10 or later. They use only the Python standard library; there is no `pip` installation step and no third-party Python package requirement.
 
-Check whether Python is already available:
+Check whether Python is already available (on Windows use `python` instead of `python3` throughout this guide and enable **Add Python to PATH** during installation):
 
 ```bash
 python3 --version
@@ -125,10 +122,10 @@ BuMoChi's motion processing does not require the SuperCollider audio server to b
 
 # BuMoChi SuperCollider library
 
-SuperCollider must be able to find the BuMoChi repository under `Platform.userExtensionDir`. Use either of these methods:
+SuperCollider must be able to find the complete BuMoChi folder under `Platform.userExtensionDir`. Use either of these methods:
 
-1. Copy the entire BuMoChi repository folder into the user extensions directory.
-2. Preferably, create a symbolic link in the user extensions directory pointing to the permanent BuMoChi repository. This keeps the working Git checkout and the installed class library synchronized.
+1. Move or copy the entire extracted BuMoChi folder into the user extensions directory.
+2. Alternatively, create a symbolic link in the user extensions directory pointing to the permanent BuMoChi folder. This lets SuperCollider use the library in that location.
 
 On macOS, after confirming the path returned by `Platform.userExtensionDir`, a typical symbolic-link installation looks like this:
 
@@ -137,9 +134,9 @@ mkdir -p "$HOME/Library/Application Support/SuperCollider/Extensions"
 ln -s "/absolute/path/to/BuMoChi" "$HOME/Library/Application Support/SuperCollider/Extensions/BuMoChi"
 ```
 
-Replace `/absolute/path/to/BuMoChi` with the actual repository path. If a `BuMoChi` item already exists at the destination, inspect it before replacing it.
+Replace `/absolute/path/to/BuMoChi` with the actual extracted folder path. If a `BuMoChi` item already exists at the destination, inspect it before replacing it.
 
-After copying or linking the repository:
+Install only one copy of the library. After copying or linking the folder:
 
 1. In SuperCollider choose **Language → Recompile Class Library**.
 2. Check the post window for compilation errors.
@@ -177,43 +174,32 @@ The projects currently declare Godot 4.5 compatibility. A newer Godot release ma
 
 # Godot projects for BuMoChi
 
-If you have the complete ICLC27 workspace, the prepared Godot projects are stored beside BuMoChi at:
+Download [BuMoChi_Assets](https://github.com/iani/BuMoChi_Assets) using **Code → Download ZIP** and extract it. This separate starter asset download is required for the workshop scenes and example clips.
 
-```text
-AppsAndCode/GodotProjects/
+In SuperCollider evaluate:
+
+```supercollider
+Platform.userAppSupportDir.postln;
 ```
 
-For the default single-avatar Ishidomaru pipeline, use:
+Rename `BuMoChi_Assets-main` to `BuMoChiAssets` and place it directly inside the printed directory. `GodotProjects` and `AnimationClips` must be directly inside `BuMoChiAssets`, without an extra enclosing folder. Preserve any existing assets; merge carefully or use **Select Asset Folder** in the Asset Editor to choose another assets root.
 
-```text
-AppsAndCode/GodotProjects/Seed_2_Ishidomaru_C/project.godot
+Use `BuMoChiAssets/GodotProjects/VMC_1_Avatar_M/project.godot` for Ishidomaru, `VMC_1_Avatar_F` for Mother, or `VMC_2_Avatars` for both. Import the selected `project.godot` in Godot and allow its resources to finish importing. Keep each complete project folder, including its supplied add-ons.
+
+Open `Bmc.assetEditor;` and click **Reload** after installing assets. See [BuMoChi Assets](HelpByTopic/BuMoChi%20Assets.md) for folder selection and [Setup](HelpByTopic/Setup.md) for discovery and startup.
+
+BuMoChi also includes `PipelineApplications/GodotVMCReference/project.godot` for pipeline diagnosis.
+
+## Configure the Godot executable
+
+The default is `/Applications/Godot.app/Contents/MacOS/Godot` on macOS and `godot` on PATH elsewhere. If needed, set the executable path, not its containing folder:
+
+```supercollider
+// Example for Windows: replace with your actual executable path.
+Bmc.godotExecutable_("C:/Tools/Godot/Godot_v4.5-stable_win64.exe");
 ```
 
-For the uniform two-avatar Mother and Ishidomaru arrangement, use:
-
-```text
-AppsAndCode/GodotProjects/Seed_4_Mother_Ishidomaru_E/project.godot
-```
-
-Import a project into Godot:
-
-1. Open the Godot Project Manager.
-2. Click **Import**.
-3. Browse to the project's `project.godot` file.
-4. Confirm the project path and import it.
-5. Allow Godot to complete its first import before running the scene.
-
-Each prepared avatar project already contains its required Godot VMC Tracker, VRM importer, and MToon shader add-ons under its own `addons/` directory. Do not install duplicate copies from the Asset Library into that project.
-
-A standalone BuMoChi checkout also includes the body-tracking reference project:
-
-```text
-PipelineApplications/GodotVMCReference/project.godot
-```
-
-That reference project contains Godot VMC Tracker and is intended for pipeline diagnosis. The prepared projects in the complete ICLC27 workspace contain the configured avatars used by the performance examples.
-
-For avatar receiver ports and tracker names, see [Port Number Setup](HelpByTopic/PortNumberSetup.md) and [Multi-Avatar project port number setting in Godot](HelpByTopic/Multi-Avatar%20project%20port%20number%20setting%20in%20godot%20-%20NOTES.md).
+The setting persists after recompilation. On Linux install `lsof` for the Godot process/port checks.
 
 # Verify the installation
 
@@ -234,3 +220,9 @@ Bmc.status;
 In Godot, confirm that the selected project opens without missing-addon or script errors.
 
 Installation is then complete. Continue with [Getting Started](Getting%20Started.md) for a small sequence of user tests, or use [Setup](HelpByTopic/Setup.md) to start and connect the complete XR-Animator–BuMoChi–Godot pipeline.
+
+## Verify the windows
+
+Evaluate `Bmc.assetEditor;`, click **Start BMC Pipeline**, select a project and scene, then click **Open Scene**. Select an avatar and clip to test **Play**. Click **Open XR-Animator** to test the bundled application. Windows uses the Python local-only pipeline launcher; macOS/Linux use the Bash launcher.
+
+Evaluate `Bmc.sceneCompositor;` to open the [SceneCompositor window](HelpByTopic/SceneCompositor.md). Select source clips and a scene, generate a performance, preview it, and save it as a new clip. Clip-only composition does not require a webcam or XR-Animator to be running.

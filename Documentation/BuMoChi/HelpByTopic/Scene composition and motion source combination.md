@@ -1,3 +1,4 @@
+For the window that generates performances from recorded clips, see [SceneCompositor](SceneCompositor.md) (`Bmc.sceneCompositor;`). The topic below describes source-layer composition and routing.
 
 
 This topic describes BuMoChi's cached-source composition system and its constant-rate compositor.

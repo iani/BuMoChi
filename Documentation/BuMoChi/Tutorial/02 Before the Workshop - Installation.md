@@ -2,22 +2,27 @@
 
 Please complete this chapter **before** you arrive. Downloads are large and the workshop network may be slow. The full reference is [Installation](../Installation.md); this is the short version.
 
-## 1. Download and install four things
+## 1. Install the separate prerequisites
 
-| What | Where | Notes |
-|---|---|---|
-| **SuperCollider** | <https://supercollider.github.io/downloads> | Current stable version |
-| **Godot 4.5** | <https://godotengine.org/download/archive/4.5-stable/> | Standard build, not the .NET build. Use 4.5: the bundled projects were made with it |
-| **XR-Animator** | <https://github.com/ButzYung/SystemAnimatorOnline/releases> | The native desktop application, not the browser version. Allow camera access when asked |
-| **Python 3** | <https://www.python.org/downloads/> | Often already installed. No extra packages are needed |
+- [SuperCollider](https://supercollider.github.io/downloads/).
+- [Godot 4.5 standard](https://godotengine.org/download/archive/4.5-stable/) (the .NET build is not needed).
+- [Python 3.10 or later](https://www.python.org/downloads/). No extra Python packages are needed. On Windows enable **Add Python to PATH**.
 
-## 2. Get BuMoChi
+## 2. Download the BuMoChi release
 
-```bash
-git clone https://github.com/iani/BuMoChi.git
-```
+Open [BuMoChi Releases](https://github.com/iani/BuMoChi/releases) and choose the ZIP for your operating system and processor from the release's **Assets** list:
 
-Or download the repository as a ZIP file and unpack it. Put the `BuMoChi` folder somewhere permanent, for example your Documents folder, and do not move it afterwards.
+| Computer | Package suffix |
+|---|---|
+| Apple silicon Mac | `macos-arm64.zip` |
+| Windows 64-bit Intel/AMD | `windows-x64.zip` |
+| Linux 64-bit Intel/AMD | `linux-x64.zip` |
+
+Extract the archive and keep the complete `BuMoChi` folder in a permanent location. These packages include the matching native **XR-Animator 0.34.3** application under `XRAnimator/`; no separate XR-Animator download is needed. Keep that folder in place so **Open XR-Animator** can find it.
+
+Choose the OS-specific release asset, not **Source code (zip)** or **Code → Download ZIP**. Source archives and Git clones do not include XR-Animator binaries. Cloning remains an option for development, but requires supplying XR-Animator separately. Intel Macs and ARM Windows/Linux are not covered by these three packages.
+
+The workshop packages are prereleases. Consult the release notes for platform validation; Windows/Linux camera, audio and complete workshop operation still require native testing.
 
 ## 3. Tell SuperCollider where BuMoChi is
 
@@ -36,18 +41,19 @@ ln -s "/full/path/to/BuMoChi" "$HOME/Library/Application Support/SuperCollider/E
 
 Replace `/full/path/to/BuMoChi` with the real location. Then, in SuperCollider, choose **Language → Recompile Class Library**.
 
-## 4. Import the Godot project
+## 4. Install the starter assets and import a project
 
-1. Start Godot. The Project Manager opens.
-2. Click **Import** and select `BuMoChi/GodotProjects/VMC_1_Avatar_M/project.godot`.
-3. Open the project and wait until Godot has finished importing its files. The first time takes a minute or two.
-4. If Godot offers to upgrade the project to a newer version, decline and install Godot 4.5 instead.
+1. Download [BuMoChi_Assets](https://github.com/iani/BuMoChi_Assets) with **Code → Download ZIP** and extract it.
+2. Evaluate `Platform.userAppSupportDir.postln;` in SuperCollider. Rename the extracted folder to `BuMoChiAssets` and put it directly inside the printed directory. Preserve existing work if that folder already exists.
+3. In Godot, click **Import** and choose `BuMoChiAssets/GodotProjects/VMC_1_Avatar_M/project.godot`.
+4. Wait for resource importing to finish. Use Godot 4.5 for these projects.
+5. Evaluate `Bmc.assetEditor;` and click **Reload**. If Godot is not at its default location, set `Bmc.godotExecutable_` as described in [Installation](../Installation.md#configure-the-godot-executable).
 
 ## 5. The five-point check
 
 Run these before the workshop. If any of them fails, write down the error message and bring it with you.
 
-**Terminal**, at the root of the BuMoChi folder:
+**Terminal**, at the root of the BuMoChi folder (Windows: use `python` instead of `python3`):
 
 ```bash
 python3 --version
@@ -55,7 +61,7 @@ python3 PipelineApplications/BunrakuOSCEncoder.py --help
 python3 PipelineApplications/BunrakuOSCDecoder.py --help
 ```
 
-1. The first line prints a version number starting with 3.
+1. The first line prints Python 3.10 or later.
 2. The second and third print a list of options, not an error.
 
 **SuperCollider:**
@@ -72,7 +78,7 @@ Bmc.status;
 
 **XR-Animator:**
 
-5. The application starts and shows your webcam image when you select the camera.
+5. In the Asset Editor, click **Open XR-Animator**. The bundled application starts and shows your webcam image when you select the camera.
 
 That is all. You do not need to configure any port numbers yet.
 

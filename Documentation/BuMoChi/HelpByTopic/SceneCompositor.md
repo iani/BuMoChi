@@ -1,10 +1,20 @@
-# SceneCompositor prototype
+# SceneCompositor window (prototype)
+
+SceneCompositor creates a performance from a repertoire of recorded animation clips. It selects excerpts, varies their playback speed and blends their joins, then lets you preview and save the result.
+
+## Before opening the window
+
+Complete [Installation](../Installation.md), including the separate starter assets and Godot executable configuration. The OS-specific BuMoChi ZIP includes XR-Animator, but it does not need to be running for composition or playback of saved clips. Record new source material in the Asset Editor when needed.
+
+## Open and use the window
 
 Open the improvisation window in SuperCollider:
 
 ```supercollider
 Bmc.sceneCompositor;
 ```
+
+Click **Refresh clips / scenes** after adding assets outside the window. SceneCompositor uses the same active asset library as the Asset Editor.
 
 In SceneCompositor, select one or more animation clips using
 Command-click or Shift-click. Below the clips, select a project/scene from the
@@ -35,6 +45,23 @@ Scene and automatically prepare the pipeline and Godot. **Stop** stops either.
 Saved performances can also be previewed using **Play clip** after reopening the
 window. Selecting a different source during startup does not change the playback
 request already in progress.
+
+## Window controls
+
+| Control | Purpose |
+|---|---|
+| Animation clips / Play clip | Choose generation sources or preview the active saved clip |
+| Scene / Target / VMC port | Choose the Godot scene, avatar and destination port |
+| Performance seconds | Generated length, 1–120 seconds; default 30 |
+| Phrase seconds | Excerpt length, 0.5–20 seconds; default 4 |
+| Blend seconds | Transition length, 0–5 seconds; default 0.6; must be shorter than a phrase |
+| Variation | Speed and join-selection variation, 0–0.75; default 0.25 |
+| Seed / New variation | Reproduce the result or choose a new seed; generate again to apply it |
+| Generate performance / Play performance | Build and preview the generated motion |
+| Stop | Cancel startup, stop playback or stop generation |
+| Save clip | Save under a new name; existing names are rejected |
+
+## Generated motion and playback
 
 The generator samples candidate excerpts and prefers similar poses at their
 joins. Variation controls speed changes and randomness in join selection. It

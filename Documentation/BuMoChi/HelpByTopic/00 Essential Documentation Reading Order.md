@@ -16,7 +16,7 @@ BuMoChi combines motion capture, SuperCollider, OSC/VMC routing, Godot rendering
 ## First installation and launch
 
 4. [Installation](../Installation.md)
-   Install the required applications and the BuMoChi SuperCollider library.
+   Download the OS-specific release ZIP (including XR-Animator), install the separate prerequisites and starter assets, and register the SuperCollider library.
 
 5. [Getting Started](../Getting%20Started.md)
    Follow the main beginner walkthrough.
@@ -51,6 +51,9 @@ BuMoChi combines motion capture, SuperCollider, OSC/VMC routing, Godot rendering
 
 13. [Score Editor draft](Editors/Score_Editor/01%20Score%20Editor%20Draft%201.md)
     Learn how Scenes and their Presets will be arranged over time.
+
+- [SceneCompositor window](SceneCompositor.md)
+  Generate a performance from recorded clips, preview it in Godot, and save it to the asset library with `Bmc.sceneCompositor;`.
 
 ## Routing and multiple avatars
 

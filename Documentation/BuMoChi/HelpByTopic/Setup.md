@@ -1,6 +1,8 @@
 # First-time setup: install the bundled Godot projects
 
-The BuMoChi library includes a `GodotProjects` folder at the repository root, alongside `Classes` and `Documentation`. Copy these projects into your preferred BuMoChi assets directory before using them in AssetEditor. Installing the library or selecting an assets directory does not copy the bundled projects automatically.
+First install the OS-specific [BuMoChi release ZIP](https://github.com/iani/BuMoChi/releases), which includes XR-Animator. Follow [Installation](../Installation.md) for SuperCollider, Python 3.10+, Godot 4.5 standard and the separate [BuMoChi_Assets](https://github.com/iani/BuMoChi_Assets) download.
+
+Extract the starter assets as `BuMoChiAssets` directly inside `Platform.userAppSupportDir`. Its `GodotProjects` and `AnimationClips` folders must be directly inside the assets root. If you already installed this starter folder, open AssetEditor and click **Reload**. To merge projects into another assets root, use the steps below. Installing the library or selecting an assets directory does not copy projects automatically.
 
 1. In SuperCollider, open AssetEditor:
 
@@ -10,11 +12,11 @@ The BuMoChi library includes a `GodotProjects` folder at the repository root, al
 
 2. Check the assets path on the second row. To choose another location, click **Select Asset Folder** and select the assets root (for example, your `BuMoChiAssets` folder), **not** its `GodotProjects` subfolder. BuMoChi saves this choice and creates the standard asset subfolders if needed.
 
-3. In your file manager, open the `GodotProjects` folder inside the BuMoChi repository. Copy its complete project folders into `GodotProjects` inside the assets root shown in AssetEditor. If the destination already contains projects, add the new folders without replacing your existing work. For each project folder, take care to copy the entire project folder. Copying only `project.godot` is insufficient, because each project uses its own scenes, avatars, textures, scripts, and other resources, which are in the project’s own folder.
+3. In your file manager, open the `GodotProjects` folder inside the extracted BuMoChi_Assets download. Copy its complete project folders into `GodotProjects` inside the assets root shown in AssetEditor. If the destination already contains projects, add the new folders without replacing your existing work. For each project folder, take care to copy the entire project folder. Copying only `project.godot` is insufficient, because each project uses its own scenes, avatars, textures, scripts, and other resources, which are in the project’s own folder.
 
 4. Return to AssetEditor and click **Reload**, immediately to the left of **Select Asset Folder**. The project list and feedback refresh to show the copied projects.
 
-For the currently bundled projects, the resulting directory structure is:
+For the starter projects, the resulting directory structure is:
 
 ```text
 YourChosenAssetsDirectory/
@@ -40,6 +42,14 @@ Bmc.projects.postln;               // Names of the projects found there.
 The default assets root is `Platform.userAppSupportDir +/+ "BuMoChiAssets"`; your selected root can be elsewhere. The preference is stored in `Platform.userAppSupportDir +/+ "bumochi_data_folder.scd"`. Changing the root later does not move existing assets: copy them to the new location and click **Reload** again.
 
 If AssetEditor still reports no Godot projects, compare the destination with the displayed assets path and check that `project.godot` is directly inside each copied project folder. Then click **Reload**. For discovery rules and scene layout, see [Working with Godot projects](WorkingWithGodotProjects.md).
+
+# Window-based startup
+
+Evaluate `Bmc.assetEditor;`. Click **Start BMC Pipeline**, select a project and scene, then click **Open Scene**. Select an avatar and clip to test **Play**. For live capture, click **Open XR-Animator** to launch the bundled application and enable its VMC output to `127.0.0.1:39537`; no separate XR-Animator download is needed.
+
+Set `Bmc.godotExecutable_("/actual/path/to/Godot");` if the default executable location does not match your installation. Windows uses the included Python local-only pipeline launcher; macOS/Linux use the Bash launcher below. Windows OSCGroups networking requires separate client configuration.
+
+For recorded-motion composition, evaluate `Bmc.sceneCompositor;`. Select clips, a scene and target, then **Generate performance** and **Play performance**. Both **Play clip** and **Play performance** prepare the pipeline and Godot scene automatically. See [SceneCompositor](SceneCompositor.md) for saving, settings and playback behaviour.
 
 # Quick start: one-command pipeline launcher
 

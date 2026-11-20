@@ -6,7 +6,7 @@ BuMoChi は複数のアプリケーションを接続します。個別にイン
 
 | コンポーネント                   | 入手先                                                                    | 必須か                                                                       |
 |----------------------------------+---------------------------------------------------------------------------+------------------------------------------------------------------------------|
-| XR-Animator                      | 公式リリースページからダウンロード                                        | Web カメラによるモーションキャプチャーには必須。クリップだけを扱う場合は任意 |
+| XR-Animator                      | OS 別 BuMoChi リリース ZIP に同梱                                         | Web カメラによるモーションキャプチャーには必須。クリップだけを扱う場合は任意 |
 | Python 3                         | Python 公式サイトまたは OS のパッケージマネージャーからインストール       | エンコーダーとデコーダーに必須                                               |
 | =BunrakuOSCEncoder=              | =PipelineApplications/= に同梱                                            | XR-Animator の入力に必須                                                     |
 | =OscGroupClient=                 | =HelperAppsAndExamples/OSCGroups/= 以下にバイナリを同梱                   | OSCGroups を介した共同作業にのみ必須                                         |
@@ -24,36 +24,19 @@ BuMoChi は複数のアプリケーションを接続します。個別にイン
 :PROPERTIES:
 :CUSTOM_ID: bumochi-を入手する
 :END:
-まだリポジトリを取得していない場合は、次のコマンドでクローンします。
+[[https://github.com/iani/BuMoChi/releases][BuMoChi Releases]] の *Assets* から、OS と CPU に合う ZIP をダウンロードしてください。Apple silicon Mac は =macos-arm64.zip=、Windows Intel/AMD 64-bit は =windows-x64.zip=、Linux Intel/AMD 64-bit は =linux-x64.zip= です。展開した =BuMoChi= フォルダー全体を恒久的な場所に置きます。
 
-#+begin_src sh
-git clone https://github.com/iani/BuMoChi.git
-cd BuMoChi
-#+end_src
-
-完全版 ICLC27 ワークスペースを使用している場合、BuMoChi リポジトリはすでに次の場所にあります。
-
-#+begin_src text
-AppsAndCode/BuMoChi/
-#+end_src
-
-リポジトリは恒久的な場所に置いてください。以下で説明するオプションのコマンドラインランチャーと SuperCollider のインストールでは、この場所を指すシンボリックリンクを使用できます。
+*Source code (zip)* や *Code → Download ZIP*、Git クローンには XR-Animator の実行ファイルが含まれません。通常は OS 別リリース ZIP を使用してください。
 
 * XR-Animator
 :PROPERTIES:
 :CUSTOM_ID: xr-animator
 :END:
-XR-Animator は Web カメラから身体と顔の動きを取得し、VMC として送信します。
+OS 別リリース ZIP にはネイティブ XR-Animator が同梱されているため、別途ダウンロードする必要はありません。=XRAnimator/= を BuMoChi フォルダー内に保持してください。ライブラリのインストール後、=Bmc.assetEditor;= を評価し、*Open XR-Animator* をクリックします。カメラを選択し、アクセスを許可してください。通常の VMC 送信先は =127.0.0.1:39537= です。
 
-1. [[https://github.com/ButzYung/SystemAnimatorOnline/releases][XR-Animator 公式リリースページ]]を開きます。
-2. 使用している OS とプロセッサーに適したネイティブデスクトップ版をダウンロードします。
-3. そのリリースに付属するインストールノートを読んでください。macOS 版は現在、開発者によってベータ版と説明されています。
-4. アプリケーションを BuMoChi リポジトリの外にある通常のアプリケーションフォルダーへ展開またはインストールします。
-5. XR-Animator を起動し、macOS または OS から求められた場合はカメラへのアクセスを許可します。
+SuperCollider、Python 3.10 以降、Godot 4.5 standard、および [[https://github.com/iani/BuMoChi_Assets][BuMoChi_Assets]] は別途インストールします。スターターアセットは =Platform.userAppSupportDir= の直下に =BuMoChiAssets= として配置してください。最新の詳細手順は [[file:Installation.md][Installation]] を参照してください。
 
-BuMoChi パイプラインではネイティブデスクトップアプリケーションを使用してください。ブラウザー版は実験には便利ですが、ここではネイティブ VMC 出力が必要です。
-
-この時点ではポートを設定しないでください。完全な起動手順とポート設定については、[[file:HelpByTopic/BuMoChi%20セットアップ.md][BuMoChi セットアップ]]および [[file:HelpByTopic/PortNumberSetup.md][Port Number Setup]]を参照してください。
+=Bmc.sceneCompositor;= で [[file:HelpByTopic/SceneCompositor.md][SceneCompositor ウィンドウ]] を開き、録画済みクリップからパフォーマンスを生成・再生・保存できます。クリップのみを扱う場合、XR-Animator の起動は不要です。
 
 * Python 3
 :PROPERTIES:
@@ -199,43 +182,11 @@ Godot はローカルで合成されたアバターシーンをレンダリン�
 :PROPERTIES:
 :CUSTOM_ID: bumochi-用-godot-プロジェクト
 :END:
-完全版 ICLC27 ワークスペースがある場合、準備済み Godot プロジェクトは BuMoChi と並んで次の場所に保存されています。
+[[https://github.com/iani/BuMoChi_Assets][BuMoChi_Assets]] を *Code → Download ZIP* から取得し、展開したフォルダーを =BuMoChiAssets= に変更して =Platform.userAppSupportDir= の直下に置きます。=GodotProjects= と =AnimationClips= がその直下にあることを確認してください。既存の作品を上書きしないでください。
 
-#+begin_src text
-AppsAndCode/GodotProjects/
-#+end_src
+Godot 4.5 で =BuMoChiAssets/GodotProjects/VMC_1_Avatar_M/project.godot= をインポートすると Ishidomaru を使用できます。Mother は =VMC_1_Avatar_F=、2体のシーンは =VMC_2_Avatars= にあります。プロジェクト全体を保持し、リソースのインポート完了を待ってください。Asset Editor で *Reload* をクリックします。
 
-デフォルトの単一アバター Ishidomaru パイプラインには、次を使用します。
-
-#+begin_src text
-AppsAndCode/GodotProjects/Seed_2_Ishidomaru_C/project.godot
-#+end_src
-
-Mother と Ishidomaru を均一に扱う2体構成には、次を使用します。
-
-#+begin_src text
-AppsAndCode/GodotProjects/Seed_4_Mother_Ishidomaru_E/project.godot
-#+end_src
-
-プロジェクトを Godot にインポートします。
-
-1. Godot Project Manager を開きます。
-2. *Import* をクリックします。
-3. プロジェクトの =project.godot= ファイルを選択します。
-4. プロジェクトパスを確認し、インポートします。
-5. シーンを実行する前に、Godot の初回インポートが完了するまで待ちます。
-
-準備済みの各アバタープロジェクトには、必要な Godot VMC Tracker、VRM importer、MToon shader アドオンが、それぞれの =addons/= ディレクトリ内に含まれています。そのプロジェクトへ Asset Library から重複するアドオンをインストールしないでください。
-
-BuMoChi の単独チェックアウトにも、身体トラッキングの参照プロジェクトが含まれています。
-
-#+begin_src text
-PipelineApplications/GodotVMCReference/project.godot
-#+end_src
-
-この参照プロジェクトには Godot VMC Tracker が含まれており、パイプラインの診断を目的としています。完全版 ICLC27 ワークスペースの準備済みプロジェクトには、パフォーマンス例で使用する設定済みアバターが含まれています。
-
-アバターの受信ポートとトラッカー名については、[[file:HelpByTopic/PortNumberSetup.md][Port Number Setup]]および [[file:HelpByTopic/Multi-Avatar%20project%20port%20number%20setting%20in%20godot%20-%20NOTES.md][Godot における複数アバタープロジェクトのポート番号設定]]を参照してください。
+Godot が標準の場所にない場合は =Bmc.godotExecutable_= に実行ファイルのパスを設定してください。詳しくは [[file:Installation.md#configure-the-godot-executable][Installation]] を参照してください。
 
 * インストールを確認する
 :PROPERTIES:

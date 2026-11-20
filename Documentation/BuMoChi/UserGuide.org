@@ -4,12 +4,8 @@
 :END:
 This is a user guide draft for the current Bmc interface. It outlines the purpose of the BuMoChi library, the applications it works with, and gives examples of commands for doing basic tasks with this library like recording, playback and composition of animation clips.
 
-/*For installation and getting started see files [[Documentation/BuMoChi/Installation|Installation]] and [[Getting Started]].*/
+*/For installation and getting started see files [[Documentation/BuMoChi/Installation|Installation]] and [[Getting Started]]./* ## 1. What BuMoChi is
 
-** 1. What BuMoChi is
-:PROPERTIES:
-:CUSTOM_ID: 1-what-bumochi-is
-:END:
 BuMoChi is a SuperCollider library for performing with motion-capture data and animated characters. It lets a live coder treat movement as material: receive it from a camera, record it, replay it, change its timing, combine selected body parts, and send the result to an animated character. BuMoChi also supports live collaboration among separate performance workstations, each with its own motion-capture tracking, computer, sound-generation, and animation systems. By sharing motion-capture data as OSC through OSCGroups, it makes it possible to rehearse and perform together from different locations over the network.
 
 The library is intended for networked dance, theatre, music, animation, and other performance situations in which movement should remain open to live intervention. A performer can be captured in one place while collaborators process the movement or render the avatar somewhere else.
@@ -44,9 +40,21 @@ With the current Bmc interface you can:
 
 BuMoChi operates inside SuperCollider, but using the movement features does not require booting SuperCollider's audio server. The audio server becomes relevant when a performance also synthesizes sound or uses synth control buses to change movement.
 
+** Compose recorded gestures in SceneCompositor
+:PROPERTIES:
+:CUSTOM_ID: compose-recorded-gestures-in-scenecompositor
+:END:
+#+begin_src supercollider
+Bmc.sceneCompositor;
+#+end_src
+
+Select one or more animation clips, choose a scene and avatar target, and check the VMC port. Set performance, phrase and blend lengths and variation; the blend must be shorter than the phrase. Click *Generate performance*, then *Play performance*. Playback prepares the BMC pipeline and selected Godot scene automatically. Use *Stop* to end playback.
+
+*Play clip* previews an existing recording. *New variation* changes the seed; generate again to hear or see a different selection. Enter a new name and use *Save clip* to retain the generated motion in the asset library. Source recordings remain unchanged. This is a recorded-gesture synthesis prototype, without foot-contact or collision constraints. See [[file:HelpByTopic/SceneCompositor.md][SceneCompositor]] for the complete window reference.
+
 ** 2. The software connected by BuMoChi
 :PROPERTIES:
-:CUSTOM_ID: 2-the-software-connected-by-bumochi
+:CUSTOM_ID: the-software-connected-by-bumochi
 :END:
 The complete networked pipeline is:
 
@@ -103,6 +111,8 @@ Classes/Bmc/
 :PROPERTIES:
 :CUSTOM_ID: xr-animator
 :END:
+The native application is included in the OS-specific [[https://github.com/iani/BuMoChi/releases][BuMoChi release ZIP]]. No separate download is needed. Open it with *Open XR-Animator* in =Bmc.assetEditor;=. Source-only installations must supply the native application separately.
+
 XR Animator uses a webcam to track a performer and animate a humanoid model. In this pipeline it is the source of standard VMC motion messages.
 
 - Project and documentation: [[https://github.com/ButzYung/SystemAnimatorOnline]]
@@ -115,7 +125,7 @@ Use the native Electron application for this pipeline because VMC output is a na
 :PROPERTIES:
 :CUSTOM_ID: python-encoder-and-decoder
 :END:
-/*The two Python command-line scripts described here can be started together with the one-command shell launcher described in [[file:HelpByTopic/Setup.md#quick-start-one-command-pipeline-launcher][Setup]].*/
+*/The two Python command-line scripts described here can be started together with the one-command shell launcher described in [[file:HelpByTopic/Setup.md#quick-start-one-command-pipeline-launcher][Setup]]./*
 
 The required Python command-line scripts are included in the BuMoChi distribution:
 
@@ -158,7 +168,7 @@ Upstream source and build instructions are available from:
 
 You do not need OSCGroups for the first local test. Introduce it after the encoder-to-BuMoChi-to-decoder path works on one computer. Detailed staged tests are in =PipelineApplications/Communication_Tests/=.
 
-/*The =OscGroupClient= application can optionally be started by the same one-command shell launcher described in [[file:HelpByTopic/Setup.md#quick-start-one-command-pipeline-launcher][Setup]].*/
+*/The =OscGroupClient= application can optionally be started by the same one-command shell launcher described in [[file:HelpByTopic/Setup.md#quick-start-one-command-pipeline-launcher][Setup]]./*
 
 *** Godot
 :PROPERTIES:
@@ -180,7 +190,7 @@ You may later replace the reference character or project. As long as the new God
 
 ** 3. Hello world: capture, record, and replay movement
 :PROPERTIES:
-:CUSTOM_ID: 3-hello-world-capture-record-and-replay-movement
+:CUSTOM_ID: hello-world-capture-record-and-replay-movement
 :END:
 This first example runs everything on one computer and deliberately omits OSCGroups. It demonstrates the smallest useful BuMoChi Scene.
 
@@ -339,14 +349,13 @@ Then disable XR Animator output, press *Control-C* in the encoder and decoder te
 
 ** 4. Bmc method reference
 :PROPERTIES:
-:CUSTOM_ID: 4-bmc-method-reference
+:CUSTOM_ID: bmc-method-reference
 :END:
-
-[[file:Bmc method reference.org][Bmc method reference]]
+[[file:Bmc%20method%20reference.md][Bmc method reference]]
 
 ** 5. Bmc class overview
 :PROPERTIES:
-:CUSTOM_ID: 5-bmc-class-overview
+:CUSTOM_ID: bmc-class-overview
 :END:
 Most users can work entirely through =Bmc=. These supporting classes explain how responsibilities are divided and provide extension points for advanced work
 

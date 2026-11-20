@@ -24,6 +24,8 @@ All the code in the exercises is collected in one file that you can open in Supe
 Documentation/BuMoChi/Tutorial/BuMoChi_Workshop02_RecordingAndPlayback.scd
 ```
 
+For a window-based composition exercise, open `Bmc.sceneCompositor;` and follow [SceneCompositor](../HelpByTopic/SceneCompositor.md) to generate, preview and save a performance from your recorded clips.
+
 ## What you need
 
 - A laptop with a webcam (built-in is fine). macOS or Linux is the tested setup; Windows users see the note in chapter 03.
@@ -40,7 +42,7 @@ Documentation/BuMoChi/Tutorial/BuMoChi_Workshop02_RecordingAndPlayback.scd
 
 ## The names you will meet
 
-The default character is called **Ishidomaru**. A second character, **Mother**, appears in the two-avatar project. Both come from the bundled Godot projects in the `GodotProjects` folder:
+The default character is called **Ishidomaru**. A second character, **Mother**, appears in the two-avatar project. Both come from the separate BuMoChi_Assets download installed in chapter 02, under `BuMoChiAssets/GodotProjects`:
 
 | Godot project folder | Character(s) |
 |---|---|

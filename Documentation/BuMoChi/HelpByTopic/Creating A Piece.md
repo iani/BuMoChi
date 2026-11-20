@@ -1,9 +1,20 @@
 # Overview: Assets and performance scripts (scores)
 
-There are 2 steps to creating a piece with BuMoChi, associated with corresponding GUI tools:
+Prepare reusable assets, optionally compose new movement in SceneCompositor, and structure the result into a performance score:
 
 1. Create clip recordings for prerecorded animation, configurations for live animation, and configurations for sound synthesis, and test these with your selected scenes from a Godot project.  For this, use the [[01 Asset Editor Draft 1]].
-2. Create a performance script in SuperCollider code to play selected animations, configurations, animation and sonification scripts in a performance score. Scores can be coded and performed as fixed timelines.  Optionally one can execute parts of the script interactively at any point in the performance. For this, use the [[01 Score Editor Draft 1]].
+2. Open `Bmc.sceneCompositor;` to generate, preview and save a performance from recorded clips. See the workflow below.
+3. Create a performance script in SuperCollider code to play selected animations, configurations, animation and sonification scripts in a performance score. Scores can be coded and performed as fixed timelines.  Optionally one can execute parts of the script interactively at any point in the performance. For this, use the [[01 Score Editor Draft 1]].
+
+## Compose recorded gestures in SceneCompositor
+
+```supercollider
+Bmc.sceneCompositor;
+```
+
+Select one or more animation clips, choose a scene and avatar target, and check the VMC port. Set performance, phrase and blend lengths and variation; the blend must be shorter than the phrase. Click **Generate performance**, then **Play performance**. Playback prepares the BMC pipeline and selected Godot scene automatically. Use **Stop** to end playback.
+
+**Play clip** previews an existing recording. **New variation** changes the seed; generate again to hear or see a different selection. Enter a new name and use **Save clip** to retain the generated motion in the asset library. Source recordings remain unchanged. This is a recorded-gesture synthesis prototype, without foot-contact or collision constraints. See [SceneCompositor](SceneCompositor.md) for the complete window reference.
 
 # Assets
 

@@ -37,6 +37,16 @@ With the current Bmc interface you can:
 
 BuMoChi operates inside SuperCollider, but using the movement features does not require booting SuperCollider's audio server. The audio server becomes relevant when a performance also synthesizes sound or uses synth control buses to change movement.
 
+## Compose recorded gestures in SceneCompositor
+
+```supercollider
+Bmc.sceneCompositor;
+```
+
+Select one or more animation clips, choose a scene and avatar target, and check the VMC port. Set performance, phrase and blend lengths and variation; the blend must be shorter than the phrase. Click **Generate performance**, then **Play performance**. Playback prepares the BMC pipeline and selected Godot scene automatically. Use **Stop** to end playback.
+
+**Play clip** previews an existing recording. **New variation** changes the seed; generate again to hear or see a different selection. Enter a new name and use **Save clip** to retain the generated motion in the asset library. Source recordings remain unchanged. This is a recorded-gesture synthesis prototype, without foot-contact or collision constraints. See [SceneCompositor](HelpByTopic/SceneCompositor.md) for the complete window reference.
+
 ## 2. The software connected by BuMoChi
 
 The complete networked pipeline is:
@@ -87,6 +97,8 @@ Classes/Bmc/
 ```
 
 ### XR Animator
+
+The native application is included in the OS-specific [BuMoChi release ZIP](https://github.com/iani/BuMoChi/releases). No separate download is needed. Open it with **Open XR-Animator** in `Bmc.assetEditor;`. Source-only installations must supply the native application separately.
 
 XR Animator uses a webcam to track a performer and animate a humanoid model. In this pipeline it is the source of standard VMC motion messages.
 
