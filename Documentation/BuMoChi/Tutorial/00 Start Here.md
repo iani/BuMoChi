@@ -21,7 +21,7 @@ BuMoChi is in pre-alpha development. The steps here use only the parts of the li
 All the code in the exercises is collected in one file that you can open in SuperCollider and run block by block:
 
 ```text
-Documentation/BuMoChi/Tutorial/BuMoChi_Workshop.scd
+Documentation/BuMoChi/Tutorial/BuMoChi_Workshop02_RecordingAndPlayback.scd
 ```
 
 ## What you need

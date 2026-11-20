@@ -26,7 +26,7 @@ Code inside a pair of parentheses that start and end on their own lines is one b
 )
 ```
 
-In the workshop file `BuMoChi_Workshop.scd`, run one line or one block at a time, from top to bottom. Never select the whole file and run it.
+In the workshop file `BuMoChi_Workshop02_RecordingAndPlayback.scd`, run one line or one block at a time, from top to bottom. Never select the whole file and run it.
 
 ## 3. The Post window
 
